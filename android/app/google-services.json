@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "467154173876",
+    "project_id": "military-calisthenics-women",
+    "storage_bucket": "military-calisthenics-women.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:467154173876:android:d31beaded7e66fd7b6bce1",
+        "android_client_info": {
+          "package_name": "com.swiftbee.military_calisthenics_women"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBL_9Y-xhfG3-8nFJpmnZchQ2tDuiH_OSs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
