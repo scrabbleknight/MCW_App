@@ -267,7 +267,7 @@ class _ProfileBodyState extends State<_ProfileBody> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                onPressed: () => FirebaseAuth.instance.signOut(),
+                onPressed: () => _confirmSignOut(context),
                 icon: const Icon(Icons.logout_rounded, size: 18),
                 label: const Text('Sign out'),
               ),
@@ -276,6 +276,63 @@ class _ProfileBodyState extends State<_ProfileBody> {
         const SliverToBoxAdapter(child: SizedBox(height: 24)),
       ],
     );
+  }
+
+  Future<void> _confirmSignOut(BuildContext context) async {
+    final palette = context.palette;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        backgroundColor: palette.surface,
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        title: Text(
+          'Sign out?',
+          style:
+              TextStyle(color: palette.chalk, fontWeight: FontWeight.w800),
+        ),
+        content: Text(
+          "You'll need to sign in again to access your account and progress.",
+          style: TextStyle(color: palette.mist, fontSize: 13, height: 1.4),
+        ),
+        actionsPadding: const EdgeInsets.fromLTRB(24, 0, 24, 20),
+        actions: [
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: palette.surfaceHigh,
+                    foregroundColor: palette.chalk,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                  onPressed: () => Navigator.of(dialogCtx).pop(false),
+                  child: const Text('Cancel'),
+                ),
+              ),
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: palette.danger,
+                    foregroundColor: palette.chalk,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                  onPressed: () => Navigator.of(dialogCtx).pop(true),
+                  child: const Text('Sign out'),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      await FirebaseAuth.instance.signOut();
+    }
   }
 }
 
