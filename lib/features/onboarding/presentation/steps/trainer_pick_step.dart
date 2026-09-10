@@ -201,10 +201,24 @@ class _TrainerCardView extends StatelessWidget {
           padding: const EdgeInsets.all(3),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(19),
-            child: Image.asset(
-              card.imageAsset,
-              fit: BoxFit.cover,
-              alignment: Alignment.topCenter,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                // Trainer cards carry their name + tagline baked into the
+                // image, so cropping the bottom (BoxFit.cover) hides the
+                // description on shorter phones. Contain-fit against a dark
+                // ground guarantees the full portrait — text included —
+                // shows on every screen size.
+                return ColoredBox(
+                  color: const Color(0xFF0B111C),
+                  child: Center(
+                    child: Image.asset(
+                      card.imageAsset,
+                      fit: BoxFit.contain,
+                      alignment: Alignment.center,
+                    ),
+                  ),
+                );
+              },
             ),
           ),
         ),

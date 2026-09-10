@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:military_calisthenics_women/core/onboarding_kit/onboarding_kit.dart';
 import 'package:military_calisthenics_women/features/auth/presentation/login_screen.dart';
@@ -155,6 +157,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         return false;
       },
       onRestore: purchases.restore,
+      // Debug-only bypass — the pill renders only in `kDebugMode`, so
+      // release builds skip past this callback even though it's wired.
+      onDevSkip: () {
+        controller.setAnswer('paywall_plan', PaywallPlan.yearly);
+        _next();
+      },
     );
   }
 
@@ -195,6 +203,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       inputs: inputs,
       onReady: (plan) {
         controller.setAnswer('plan', plan);
+        // Fire-and-forget: persist the inputs so a cold restart can
+        // regenerate this exact plan instead of falling back to defaults.
+        unawaited(controller.persistPlanInputs(inputs));
         _next();
       },
     );

@@ -8,9 +8,17 @@ import 'package:military_calisthenics_women/features/auth/application/auth_servi
 /// Two-step phone login: enter number → enter SMS code. Returns the final
 /// [LoginResult] via Navigator.pop when the flow is done or cancelled.
 class PhoneLoginScreen extends StatefulWidget {
-  const PhoneLoginScreen({super.key, required this.authService});
+  const PhoneLoginScreen({
+    super.key,
+    required this.authService,
+    this.signUp = false,
+  });
 
   final AuthService authService;
+
+  /// When true, treat this flow as sign-up: existing accounts are rejected,
+  /// new numbers create an account. Defaults to log-in.
+  final bool signUp;
 
   @override
   State<PhoneLoginScreen> createState() => _PhoneLoginScreenState();
@@ -44,7 +52,8 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
       _error = null;
     });
     try {
-      final challenge = await widget.authService.sendPhoneCode(phone);
+      final challenge = await widget.authService
+          .sendPhoneCode(phone, signUp: widget.signUp);
       if (!mounted) return;
       if (challenge.wasAutoVerified && challenge.autoResult != null) {
         Navigator.of(context).pop(challenge.autoResult);
@@ -74,6 +83,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
     final result = await widget.authService.signInWithPhoneCode(
       verificationId: verificationId,
       smsCode: code,
+      signUp: widget.signUp,
     );
     if (!mounted) return;
     Navigator.of(context).pop(result);
@@ -82,9 +92,9 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
   @override
   Widget build(BuildContext context) {
     final text = Theme.of(context).textTheme;
-    final titleStyle = GoogleFonts.bigShouldersDisplay(
+    final titleStyle = GoogleFonts.plusJakartaSans(
       fontWeight: FontWeight.w900,
-      color: TacticalPalette.chalk,
+      color: context.palette.chalk,
       height: 0.9,
       letterSpacing: 1.3,
       fontSize: 44,
@@ -93,7 +103,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
     final askingForNumber = _verificationId == null;
 
     return Scaffold(
-      backgroundColor: TacticalPalette.abyss,
+      backgroundColor: context.palette.abyss,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
@@ -111,9 +121,9 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
                     clipBehavior: Clip.antiAlias,
                     child: InkWell(
                       onTap: () => Navigator.of(context).maybePop(),
-                      child: const Icon(
+                      child: Icon(
                         Icons.chevron_left_rounded,
-                        color: TacticalPalette.chalk,
+                        color: context.palette.chalk,
                         size: 30,
                       ),
                     ),
@@ -131,7 +141,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
                     ? 'We\'ll send you a one-time code by SMS.'
                     : 'Enter the 6-digit code we just sent to '
                         '${_phoneController.text.trim()}.',
-                style: text.bodyMedium?.copyWith(color: TacticalPalette.mist),
+                style: text.bodyMedium?.copyWith(color: context.palette.mist),
               ),
               const SizedBox(height: 28),
               if (askingForNumber)
@@ -157,7 +167,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
                 const SizedBox(height: 12),
                 Text(
                   _error!,
-                  style: text.bodySmall?.copyWith(color: TacticalPalette.danger),
+                  style: text.bodySmall?.copyWith(color: context.palette.danger),
                 ),
               ],
               const Spacer(),
@@ -197,23 +207,23 @@ class _TacticalField extends StatelessWidget {
       inputFormatters: inputFormatters,
       autofocus: true,
       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            color: TacticalPalette.chalk,
+            color: context.palette.chalk,
             letterSpacing: 1.5,
           ),
-      cursorColor: TacticalPalette.arctic,
+      cursorColor: context.palette.arctic,
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: TextStyle(color: TacticalPalette.muted.withValues(alpha: 0.6)),
+        hintStyle: TextStyle(color: context.palette.muted.withValues(alpha: 0.6)),
         filled: true,
-        fillColor: TacticalPalette.surface,
+        fillColor: context.palette.surface,
         contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: TacticalPalette.hairline, width: 1.2),
+          borderSide: BorderSide(color: context.palette.hairline, width: 1.2),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: TacticalPalette.arctic, width: 1.6),
+          borderSide: BorderSide(color: context.palette.arctic, width: 1.6),
         ),
       ),
     );

@@ -26,7 +26,14 @@ class OptionTile extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
     final baseSurface = scheme.surfaceContainerHighest;
-    final borderColor = selected ? scheme.primary : Colors.transparent;
+    // In light mode the tile fill sits very close to the scaffold ground, so
+    // fall back to the outline for the unselected border to keep the row
+    // visible. Dark mode has enough contrast already so we keep the borderless
+    // look there.
+    final isLight = Theme.of(context).brightness == Brightness.light;
+    final borderColor = selected
+        ? scheme.primary
+        : (isLight ? scheme.outline : Colors.transparent);
     final fill = selected
         ? Color.alphaBlend(scheme.primary.withValues(alpha: 0.08), baseSurface)
         : baseSurface;

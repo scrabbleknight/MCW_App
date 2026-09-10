@@ -81,15 +81,15 @@ class StartupScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     if (isLoading) {
       return Scaffold(
-        backgroundColor: TacticalPalette.abyss,
-        body: const SafeArea(
+        backgroundColor: context.palette.abyss,
+        body: SafeArea(
           child: Center(
             child: SizedBox(
               width: 28,
               height: 28,
               child: CircularProgressIndicator(
                 strokeWidth: 2.6,
-                color: TacticalPalette.arctic,
+                color: context.palette.arctic,
               ),
             ),
           ),
@@ -99,7 +99,7 @@ class StartupScaffold extends StatelessWidget {
 
     final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: TacticalPalette.abyss,
+      backgroundColor: context.palette.abyss,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -127,7 +127,7 @@ class StartupScaffold extends StatelessWidget {
                       width: double.infinity,
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        color: TacticalPalette.surface,
+                        color: context.palette.surface,
                         borderRadius: BorderRadius.circular(18),
                       ),
                       child: Text(

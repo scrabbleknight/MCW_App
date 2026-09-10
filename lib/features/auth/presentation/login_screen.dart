@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:military_calisthenics_women/core/theme/tactical_palette.dart';
 import 'package:military_calisthenics_women/features/auth/application/auth_service.dart';
 import 'package:military_calisthenics_women/features/auth/presentation/phone_login_screen.dart';
+import 'package:military_calisthenics_women/features/auth/presentation/sign_up_screen.dart';
 import 'package:military_calisthenics_women/features/onboarding/application/onboarding_controller.dart';
 import 'package:provider/provider.dart';
 
@@ -37,16 +38,16 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _handleResult(LoginResult result) async {
     switch (result.outcome) {
       case LoginOutcome.existingUser:
-        // Existing account: mirror the "onboarding done" flag locally so
-        // the AppFlowGate routes them to Home on next rebuild.
         await context.read<OnboardingController>().markCompleted();
         if (!mounted) return;
         Navigator.of(context).pop();
       case LoginOutcome.newUserRejected:
         _snack(
-          "No account found for that sign-in. Tap Start Now on the "
-          "previous screen to create one.",
+          "No account found for that sign-in. Tap Start Now to create one.",
         );
+      case LoginOutcome.existingUserRejected:
+        // Not expected on the log-in screen, but handle defensively.
+        _snack("You already have an account — try logging in.");
       case LoginOutcome.cancelled:
         if (result.error != null) {
           _snack("Couldn't sign in: ${result.error}");
@@ -61,16 +62,16 @@ class _LoginScreenState extends State<LoginScreen> {
         SnackBar(
           content: Text(
             message,
-            style: const TextStyle(
-              color: TacticalPalette.chalk,
+            style: TextStyle(
+              color: context.palette.chalk,
               fontWeight: FontWeight.w600,
             ),
           ),
-          backgroundColor: TacticalPalette.surfaceHigh,
+          backgroundColor: context.palette.surfaceHigh,
           behavior: SnackBarBehavior.floating,
           duration: const Duration(seconds: 8),
           showCloseIcon: true,
-          closeIconColor: TacticalPalette.chalk,
+          closeIconColor: context.palette.chalk,
         ),
       );
   }
@@ -83,19 +84,25 @@ class _LoginScreenState extends State<LoginScreen> {
     if (result != null && mounted) _handleResult(result);
   }
 
+  void _openSignUp() {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const SignUpScreen()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final text = Theme.of(context).textTheme;
-    final titleStyle = GoogleFonts.bigShouldersDisplay(
+    final titleStyle = GoogleFonts.plusJakartaSans(
       fontWeight: FontWeight.w900,
-      color: TacticalPalette.chalk,
+      color: context.palette.chalk,
       height: 0.9,
       letterSpacing: 1.4,
-      fontSize: 56,
+      fontSize: 38,
     );
 
     return Scaffold(
-      backgroundColor: TacticalPalette.abyss,
+      backgroundColor: context.palette.abyss,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
@@ -108,7 +115,7 @@ class _LoginScreenState extends State<LoginScreen> {
               const SizedBox(height: 12),
               Text(
                 'Continue with the account you already have.',
-                style: text.bodyLarge?.copyWith(color: TacticalPalette.mist),
+                style: text.bodyLarge?.copyWith(color: context.palette.mist),
               ),
               const SizedBox(height: 40),
               _ProviderTile(
@@ -133,33 +140,33 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const Spacer(),
               if (_busy)
-                const Center(
+                Center(
                   child: SizedBox(
                     width: 24,
                     height: 24,
                     child: CircularProgressIndicator(
                       strokeWidth: 2.4,
-                      color: TacticalPalette.arctic,
+                      color: context.palette.arctic,
                     ),
                   ),
                 ),
               Center(
                 child: Text.rich(
                   TextSpan(
-                    style: text.bodyMedium?.copyWith(color: TacticalPalette.muted),
+                    style: text.bodyMedium?.copyWith(color: context.palette.muted),
                     children: [
                       const TextSpan(text: "Don't have an account? "),
                       WidgetSpan(
                         alignment: PlaceholderAlignment.middle,
                         child: GestureDetector(
-                          onTap: () => Navigator.of(context).maybePop(),
+                          onTap: _openSignUp,
                           child: Text(
                             'Start Now',
                             style: text.bodyMedium?.copyWith(
-                              color: TacticalPalette.arcticSoft,
+                              color: context.palette.arcticSoft,
                               fontWeight: FontWeight.w700,
                               decoration: TextDecoration.underline,
-                              decorationColor: TacticalPalette.arcticSoft,
+                              decorationColor: context.palette.arcticSoft,
                             ),
                           ),
                         ),
@@ -194,9 +201,9 @@ class _BackChevron extends StatelessWidget {
           clipBehavior: Clip.antiAlias,
           child: InkWell(
             onTap: onTap,
-            child: const Icon(
+            child: Icon(
               Icons.chevron_left_rounded,
-              color: TacticalPalette.chalk,
+              color: context.palette.chalk,
               size: 30,
             ),
           ),
@@ -224,9 +231,9 @@ class _ProviderTile extends StatelessWidget {
     return Opacity(
       opacity: enabled ? 1 : 0.5,
       child: Material(
-        color: TacticalPalette.surface,
+        color: context.palette.surface,
         shape: RoundedRectangleBorder(
-          side: const BorderSide(color: TacticalPalette.hairline, width: 1.2),
+          side: BorderSide(color: context.palette.hairline, width: 1.2),
           borderRadius: BorderRadius.circular(18),
         ),
         clipBehavior: Clip.antiAlias,
@@ -236,20 +243,20 @@ class _ProviderTile extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
             child: Row(
               children: [
-                Icon(icon, color: TacticalPalette.chalk, size: 26),
+                Icon(icon, color: context.palette.chalk, size: 26),
                 const SizedBox(width: 16),
                 Expanded(
                   child: Text(
                     label,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w700,
-                          color: TacticalPalette.chalk,
+                          color: context.palette.chalk,
                         ),
                   ),
                 ),
-                const Icon(
+                Icon(
                   Icons.chevron_right_rounded,
-                  color: TacticalPalette.muted,
+                  color: context.palette.muted,
                 ),
               ],
             ),

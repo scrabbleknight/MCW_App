@@ -20,9 +20,9 @@ class WelcomeStep extends StatelessWidget {
     // Broad, industrial-athletic display face — sits closer to the reference
     // than the system sans and reads as "military poster" without a bespoke
     // font file. Swap the family in one place if this app's brand changes.
-    final titleStyle = GoogleFonts.bigShouldersDisplay(
+    final titleStyle = GoogleFonts.plusJakartaSans(
       fontWeight: FontWeight.w900,
-      color: TacticalPalette.chalk,
+      color: context.palette.chalk,
       height: 0.88,
       letterSpacing: 1.2,
       fontSize: 68,
@@ -43,7 +43,7 @@ class WelcomeStep extends StatelessWidget {
       primaryCtaLabel: 'Start Now',
       onPrimaryCta: onContinue,
       onLogIn: onLogIn,
-      overlayColor: TacticalPalette.abyss,
+      overlayColor: context.palette.abyss,
       titleTextStyle: titleStyle,
       // Hand-designed blue-camo backdrop, provided as an asset — richer than
       // the procedural [CamoBackground] painter (kept in the kit for future
@@ -56,23 +56,23 @@ class WelcomeStep extends StatelessWidget {
       termsRich: Text.rich(
         TextSpan(
           text: 'By continuing you agree to the ',
-          style: text.bodySmall?.copyWith(color: TacticalPalette.muted),
+          style: text.bodySmall?.copyWith(color: context.palette.muted),
           children: [
             TextSpan(
               text: 'Privacy Policy',
               style: text.bodySmall?.copyWith(
-                color: TacticalPalette.arcticSoft,
+                color: context.palette.arcticSoft,
                 decoration: TextDecoration.underline,
-                decorationColor: TacticalPalette.arcticSoft,
+                decorationColor: context.palette.arcticSoft,
               ),
             ),
             const TextSpan(text: ' and '),
             TextSpan(
               text: 'Terms of Use',
               style: text.bodySmall?.copyWith(
-                color: TacticalPalette.arcticSoft,
+                color: context.palette.arcticSoft,
                 decoration: TextDecoration.underline,
-                decorationColor: TacticalPalette.arcticSoft,
+                decorationColor: context.palette.arcticSoft,
               ),
             ),
           ],

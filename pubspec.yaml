@@ -29,10 +29,13 @@ dependencies:
   provider: ^6.1.5
   shared_preferences: ^2.5.3
   url_launcher: ^6.3.2
+  health: ^13.0.1
   cupertino_icons: ^1.0.8
   flutter_timezone: ^5.0.2
   sign_in_with_apple: ^7.0.1
   video_player: ^2.9.5
+  image_picker: ^1.1.2
+  path_provider: ^2.1.4
 
 dev_dependencies:
   flutter_test:

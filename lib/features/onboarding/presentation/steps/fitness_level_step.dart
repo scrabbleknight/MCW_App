@@ -77,7 +77,7 @@ class _FitnessLevelStepState extends State<FitnessLevelStep> {
           style: text.titleLarge?.copyWith(
             fontWeight: FontWeight.w800,
             letterSpacing: 1.2,
-            color: TacticalPalette.chalk,
+            color: context.palette.chalk,
           ),
         ),
         const SizedBox(height: 6),
@@ -87,7 +87,7 @@ class _FitnessLevelStepState extends State<FitnessLevelStep> {
             spec.body,
             textAlign: TextAlign.center,
             style: text.bodyMedium?.copyWith(
-              color: TacticalPalette.mist,
+              color: context.palette.mist,
               height: 1.4,
             ),
           ),
@@ -107,7 +107,7 @@ class _FitnessLevelStepState extends State<FitnessLevelStep> {
               Text(
                 'Newbie',
                 style: text.labelLarge?.copyWith(
-                  color: TacticalPalette.muted,
+                  color: context.palette.muted,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 1,
                 ),
@@ -115,7 +115,7 @@ class _FitnessLevelStepState extends State<FitnessLevelStep> {
               Text(
                 'Advanced',
                 style: text.labelLarge?.copyWith(
-                  color: TacticalPalette.muted,
+                  color: context.palette.muted,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 1,
                 ),
@@ -150,15 +150,19 @@ class _ChevronRank extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return CustomPaint(
-      painter: _ChevronRankPainter(activeCount: activeCount),
+      painter: _ChevronRankPainter(
+        activeCount: activeCount,
+        palette: context.palette,
+      ),
     );
   }
 }
 
 class _ChevronRankPainter extends CustomPainter {
-  _ChevronRankPainter({required this.activeCount});
+  _ChevronRankPainter({required this.activeCount, required this.palette});
 
   final int activeCount;
+  final AppPalette palette;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -194,14 +198,14 @@ class _ChevronRankPainter extends CustomPainter {
         final gradient = LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [TacticalPalette.glacier, TacticalPalette.arctic],
+          colors: [palette.glacier, palette.arctic],
         ).createShader(Rect.fromLTWH(leftX, top, w, chevronH));
         final glowPaint = Paint()
           ..style = PaintingStyle.stroke
           ..strokeWidth = 18
           ..strokeCap = StrokeCap.round
           ..strokeJoin = StrokeJoin.round
-          ..color = TacticalPalette.arctic.withValues(alpha: 0.22)
+          ..color = palette.arctic.withValues(alpha: 0.22)
           ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
         canvas.drawPath(path, glowPaint);
         final paint = Paint()
@@ -217,7 +221,7 @@ class _ChevronRankPainter extends CustomPainter {
           ..strokeWidth = 4
           ..strokeCap = StrokeCap.round
           ..strokeJoin = StrokeJoin.round
-          ..color = TacticalPalette.hairline;
+          ..color = palette.hairline;
         canvas.drawPath(path, paint);
       }
     }
@@ -225,7 +229,7 @@ class _ChevronRankPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _ChevronRankPainter old) =>
-      old.activeCount != activeCount;
+      old.activeCount != activeCount || old.palette != palette;
 }
 
 class _RankSlider extends StatelessWidget {
@@ -244,12 +248,12 @@ class _RankSlider extends StatelessWidget {
     return SliderTheme(
       data: SliderTheme.of(context).copyWith(
         trackHeight: 8,
-        activeTrackColor: TacticalPalette.arctic,
-        inactiveTrackColor: TacticalPalette.hairline,
-        thumbColor: TacticalPalette.chalk,
-        overlayColor: TacticalPalette.arctic.withValues(alpha: 0.15),
-        activeTickMarkColor: TacticalPalette.chalk,
-        inactiveTickMarkColor: TacticalPalette.muted.withValues(alpha: 0.6),
+        activeTrackColor: context.palette.arctic,
+        inactiveTrackColor: context.palette.hairline,
+        thumbColor: context.palette.chalk,
+        overlayColor: context.palette.arctic.withValues(alpha: 0.15),
+        activeTickMarkColor: context.palette.chalk,
+        inactiveTickMarkColor: context.palette.muted.withValues(alpha: 0.6),
         thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 12),
         tickMarkShape: const RoundSliderTickMarkShape(tickMarkRadius: 3),
         showValueIndicator: ShowValueIndicator.never,

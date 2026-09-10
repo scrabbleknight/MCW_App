@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 /// Final onboarding step — a hard paywall. Presents two plans (weekly and
@@ -12,6 +13,7 @@ class PaywallStep extends StatefulWidget {
     required this.onPurchase,
     this.onClose,
     this.onRestore,
+    this.onDevSkip,
     this.trialDays = 3,
   });
 
@@ -31,6 +33,11 @@ class PaywallStep extends StatefulWidget {
   /// the account is already subscribed). The paywall auto-advances in
   /// that case; `false` shows a "nothing to restore" SnackBar instead.
   final Future<bool> Function()? onRestore;
+
+  /// Debug-only bypass: when provided AND the build is in debug mode, a
+  /// small "DEV SKIP" pill appears above the CTA and advances the flow as
+  /// if a purchase succeeded. Release builds ignore this callback entirely.
+  final VoidCallback? onDevSkip;
 
   final int trialDays;
 
@@ -105,6 +112,12 @@ class _PaywallStepState extends State<PaywallStep> {
 
   @override
   Widget build(BuildContext context) {
+    // Compact the vertical rhythm on smaller phones so both plan cards
+    // sit above the fold — hero shrinks in `_HeroSplit`, gaps shrink here.
+    final screenH = MediaQuery.of(context).size.height;
+    final tight = screenH < 760;
+    final gapLg = tight ? 12.0 : 20.0;
+    final gapSm = tight ? 8.0 : 12.0;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -115,9 +128,9 @@ class _PaywallStepState extends State<PaywallStep> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 _HeroSplit(onClose: widget.onClose),
-                const SizedBox(height: 20),
+                SizedBox(height: gapLg),
                 _Header(),
-                const SizedBox(height: 20),
+                SizedBox(height: gapLg),
                 _PlanCard(
                   label: 'Yearly Plan',
                   price: _yearlyPriceLabel,
@@ -126,7 +139,7 @@ class _PaywallStepState extends State<PaywallStep> {
                   selected: _selected == PaywallPlan.yearly,
                   onTap: () => setState(() => _selected = PaywallPlan.yearly),
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: gapSm),
                 _PlanCard(
                   label: 'Weekly Plan',
                   price: _weeklyPriceLabel,
@@ -134,7 +147,7 @@ class _PaywallStepState extends State<PaywallStep> {
                   selected: _selected == PaywallPlan.weekly,
                   onTap: () => setState(() => _selected = PaywallPlan.weekly),
                 ),
-                const SizedBox(height: 24),
+                SizedBox(height: tight ? 12 : 24),
               ],
             ),
           ),
@@ -146,6 +159,10 @@ class _PaywallStepState extends State<PaywallStep> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                if (kDebugMode && widget.onDevSkip != null) ...[
+                  _DevSkipPill(onTap: widget.onDevSkip!),
+                  const SizedBox(height: 8),
+                ],
                 _PrimaryCta(
                   label: _ctaLabel,
                   onPressed: _purchasing ? null : _startPurchase,
@@ -187,8 +204,14 @@ class _HeroSplit extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Scale the before/after hero to the screen so pricing + CTA always
+    // stay above the fold. Ratio is tuned against a 6.7"/812pt reference
+    // (~34% of available height) and clamped so the hero never dominates
+    // small phones or floats away on tablets.
+    final screenH = MediaQuery.of(context).size.height;
+    final heroHeight = (screenH * 0.24).clamp(160.0, 240.0);
     return SizedBox(
-      height: 320,
+      height: heroHeight,
       child: ClipRRect(
         borderRadius: const BorderRadius.vertical(
           bottom: Radius.circular(24),
@@ -347,7 +370,7 @@ class _PlanCard extends StatelessWidget {
           child: InkWell(
             onTap: onTap,
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               child: Row(
                 children: [
                   Expanded(
@@ -401,6 +424,51 @@ class _PlanCard extends StatelessWidget {
 // ============================================================================
 // Primary CTA + footer bits
 // ============================================================================
+
+/// Small orange-tinted pill that only ships in debug builds — lets you skip
+/// past the paywall in the simulator without going through the App Store.
+/// Guarded by [kDebugMode] at the callsite so this never lands in a release
+/// build even if a wiring mistake left [PaywallStep.onDevSkip] set.
+class _DevSkipPill extends StatelessWidget {
+  const _DevSkipPill({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.centerRight,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4),
+        child: Material(
+          color: const Color(0xFFE07B39).withValues(alpha: 0.20),
+          shape: StadiumBorder(
+            side: BorderSide(
+              color: const Color(0xFFE07B39).withValues(alpha: 0.7),
+            ),
+          ),
+          child: InkWell(
+            customBorder: const StadiumBorder(),
+            onTap: onTap,
+            child: const Padding(
+              padding:
+                  EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+              child: Text(
+                'DEV · SKIP PAYWALL',
+                style: TextStyle(
+                  color: Color(0xFFE07B39),
+                  fontWeight: FontWeight.w800,
+                  fontSize: 11,
+                  letterSpacing: 1.2,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 class _PrimaryCta extends StatelessWidget {
   const _PrimaryCta({

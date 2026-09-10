@@ -34,6 +34,7 @@ class StageProgressRail extends StatelessWidget {
                 isLast: isLast,
                 isActive: isActive,
                 isCompleted: isCompleted,
+                palette: context.palette,
               ),
             ),
           ),
@@ -51,12 +52,14 @@ class _RailPainter extends CustomPainter {
     required this.isLast,
     required this.isActive,
     required this.isCompleted,
+    required this.palette,
   });
 
   final bool isFirst;
   final bool isLast;
   final bool isActive;
   final bool isCompleted;
+  final AppPalette palette;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -64,7 +67,7 @@ class _RailPainter extends CustomPainter {
     final nodeY = 50.0.clamp(20.0, size.height - 20);
 
     final linePaint = Paint()
-      ..color = TacticalPalette.hairline
+      ..color = palette.hairline
       ..strokeWidth = 2;
 
     if (!isFirst) {
@@ -82,12 +85,11 @@ class _RailPainter extends CustomPainter {
       );
     }
 
-    // Node — outer ring + inner fill for completed/active.
     final ringColor = isActive
-        ? TacticalPalette.arctic
+        ? palette.arctic
         : isCompleted
-            ? TacticalPalette.arcticSoft
-            : TacticalPalette.hairline;
+            ? palette.arcticSoft
+            : palette.hairline;
     final ringPaint = Paint()
       ..color = ringColor
       ..strokeWidth = 2
@@ -96,18 +98,32 @@ class _RailPainter extends CustomPainter {
 
     if (isActive) {
       final glow = Paint()
-        ..color = TacticalPalette.arctic.withOpacity(0.35)
+        ..color = palette.arctic.withOpacity(0.35)
         ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
       canvas.drawCircle(Offset(centerX, nodeY), 10, glow);
-      final fill = Paint()..color = TacticalPalette.arctic;
+      final fill = Paint()..color = palette.arctic;
       canvas.drawCircle(Offset(centerX, nodeY), 4, fill);
     } else if (isCompleted) {
-      final fill = Paint()..color = TacticalPalette.arcticSoft;
+      final fill = Paint()..color = palette.arcticSoft;
       canvas.drawCircle(Offset(centerX, nodeY), 4, fill);
+
+      // Draw a small check mark on top of the completed node.
+      final check = Paint()
+        ..color = palette.arcticSoft
+        ..strokeWidth = 1.6
+        ..strokeCap = StrokeCap.round
+        ..style = PaintingStyle.stroke;
+      final path = Path()
+        ..moveTo(centerX - 3, nodeY)
+        ..lineTo(centerX - 0.5, nodeY + 2.5)
+        ..lineTo(centerX + 3.5, nodeY - 2.5);
+      canvas.drawPath(path, check);
     }
   }
 
   @override
   bool shouldRepaint(covariant _RailPainter old) =>
-      old.isActive != isActive || old.isCompleted != isCompleted;
+      old.isActive != isActive ||
+      old.isCompleted != isCompleted ||
+      old.palette != palette;
 }

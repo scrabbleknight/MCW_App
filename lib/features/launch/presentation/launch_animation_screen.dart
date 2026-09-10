@@ -89,7 +89,7 @@ class _LaunchAnimationScreenState extends State<LaunchAnimationScreen> {
     final showVideo = _ready && controller != null && controller.value.isInitialized;
 
     return Scaffold(
-      backgroundColor: TacticalPalette.abyss,
+      backgroundColor: context.palette.abyss,
       body: GestureDetector(
         onTap: _complete,
         behavior: HitTestBehavior.opaque,

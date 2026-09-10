@@ -28,7 +28,11 @@ class _BootstrapAppState extends State<BootstrapApp> {
 
   Future<void> _bootstrap() async {
     await _loadEnvironment();
-    unawaited(_warmUpFirebase());
+    // Await Firebase warm-up before the app runs — otherwise controllers
+    // that touch FirebaseAuth / Firestore during their initial `load()`
+    // hit "No Firebase App '[DEFAULT]' has been created". The call already
+    // has an 8-second timeout so a bad network can't wedge boot.
+    await _warmUpFirebase();
   }
 
   Future<void> _loadEnvironment() async {

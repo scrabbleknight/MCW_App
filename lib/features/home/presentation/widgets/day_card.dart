@@ -16,15 +16,22 @@ class DayCard extends StatelessWidget {
     required this.day,
     required this.isActive,
     required this.onTap,
+    this.isCompleted = false,
   });
 
   final PlanDay day;
   final bool isActive;
+  final bool isCompleted;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return isActive ? _ActiveDayCard(day: day, onTap: onTap) : _QueuedDayCard(day: day, onTap: onTap);
+    if (isActive) return _ActiveDayCard(day: day, onTap: onTap);
+    return _QueuedDayCard(
+      day: day,
+      onTap: onTap,
+      isCompleted: isCompleted,
+    );
   }
 }
 
@@ -36,65 +43,86 @@ class _ActiveDayCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    // Content is clipped to the rounded rect FIRST, then the border is
+    // painted in a separate overlay on top. This stops the placeholder's
+    // top edge from covering the border stroke at the corners.
+    final radius = BorderRadius.circular(18);
+    return DecoratedBox(
       decoration: BoxDecoration(
-        color: TacticalPalette.surface,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: TacticalPalette.arctic.withOpacity(0.55),
-          width: 1.5,
-        ),
+        borderRadius: radius,
         boxShadow: [
           BoxShadow(
-            color: TacticalPalette.arctic.withOpacity(0.22),
+            color: context.palette.arctic.withOpacity(0.22),
             blurRadius: 24,
           ),
         ],
       ),
-      clipBehavior: Clip.antiAlias,
-      child: Column(
+      child: Stack(
         children: [
-          _WorkoutPlaceholder(
-            title: day.title,
-            minutes: day.estimatedMinutes,
-            calories: day.estimatedCalories,
-            height: 190,
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      'DAY ${day.dayIndex}',
-                      style: GoogleFonts.bigShouldersDisplay(
-                        color: TacticalPalette.chalk,
-                        fontWeight: FontWeight.w900,
-                        fontSize: 26,
-                        letterSpacing: 1.2,
-                        height: 1,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 2),
-                      child: Text(
-                        _weekdayLabel(day.dayIndex),
-                        style: TextStyle(
-                          color: TacticalPalette.mist,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
+          ClipRRect(
+            borderRadius: radius,
+            child: ColoredBox(
+              color: context.palette.surface,
+              child: Column(
+                children: [
+                  _WorkoutPlaceholder(
+                    title: day.title,
+                    minutes: day.estimatedMinutes,
+                    calories: day.estimatedCalories,
+                    height: 190,
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(
+                              'DAY ${day.dayIndex}',
+                              style: GoogleFonts.plusJakartaSans(
+                                color: context.palette.chalk,
+                                fontWeight: FontWeight.w900,
+                                fontSize: 26,
+                                letterSpacing: 1.2,
+                                height: 1,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 2),
+                              child: Text(
+                                _weekdayLabel(day.dayIndex),
+                                style: TextStyle(
+                                  color: context.palette.mist,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
+                        const SizedBox(height: 14),
+                        _StartTrainingButton(onTap: onTap),
+                      ],
                     ),
-                  ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Positioned.fill(
+            child: IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  borderRadius: radius,
+                  border: Border.all(
+                    color: context.palette.arctic.withOpacity(0.55),
+                    width: 1.5,
+                  ),
                 ),
-                const SizedBox(height: 14),
-                _StartTrainingButton(onTap: onTap),
-              ],
+              ),
             ),
           ),
         ],
@@ -104,15 +132,20 @@ class _ActiveDayCard extends StatelessWidget {
 }
 
 class _QueuedDayCard extends StatelessWidget {
-  const _QueuedDayCard({required this.day, required this.onTap});
+  const _QueuedDayCard({
+    required this.day,
+    required this.onTap,
+    this.isCompleted = false,
+  });
 
   final PlanDay day;
   final VoidCallback onTap;
+  final bool isCompleted;
 
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: TacticalPalette.surface,
+      color: context.palette.surface,
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
@@ -126,6 +159,7 @@ class _QueuedDayCard extends StatelessWidget {
                 minutes: day.estimatedMinutes,
                 calories: day.estimatedCalories,
                 compact: true,
+                isCompleted: isCompleted,
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -135,8 +169,8 @@ class _QueuedDayCard extends StatelessWidget {
                   children: [
                     Text(
                       'DAY ${day.dayIndex}',
-                      style: GoogleFonts.bigShouldersDisplay(
-                        color: TacticalPalette.chalk,
+                      style: GoogleFonts.plusJakartaSans(
+                        color: context.palette.chalk,
                         fontWeight: FontWeight.w900,
                         fontSize: 22,
                         letterSpacing: 1.1,
@@ -147,16 +181,18 @@ class _QueuedDayCard extends StatelessWidget {
                     Text(
                       '${day.estimatedMinutes} Mins  ·  ${day.estimatedCalories} Kcal',
                       style: TextStyle(
-                        color: TacticalPalette.muted,
+                        color: context.palette.muted,
                         fontSize: 13,
                       ),
                     ),
                   ],
                 ),
               ),
-              const Icon(
-                Icons.chevron_right_rounded,
-                color: TacticalPalette.muted,
+              Icon(
+                isCompleted
+                    ? Icons.keyboard_double_arrow_right_rounded
+                    : Icons.chevron_right_rounded,
+                color: context.palette.muted,
               ),
             ],
           ),
@@ -176,6 +212,7 @@ class _WorkoutPlaceholder extends StatelessWidget {
     required this.calories,
     this.height,
     this.compact = false,
+    this.isCompleted = false,
   });
 
   final String title;
@@ -183,6 +220,7 @@ class _WorkoutPlaceholder extends StatelessWidget {
   final int calories;
   final double? height;
   final bool compact;
+  final bool isCompleted;
 
   @override
   Widget build(BuildContext context) {
@@ -192,7 +230,13 @@ class _WorkoutPlaceholder extends StatelessWidget {
         child: SizedBox(
           width: 72,
           height: 72,
-          child: _PlaceholderBg(seed: title.hashCode),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              _PlaceholderBg(seed: title.hashCode),
+              if (isCompleted) const _DoneRibbon(),
+            ],
+          ),
         ),
       );
     }
@@ -212,34 +256,38 @@ class _WorkoutPlaceholder extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: GoogleFonts.bigShouldersDisplay(
-                    color: TacticalPalette.chalk,
+                  style: GoogleFonts.plusJakartaSans(
+                    color: context.palette.chalk,
                     fontWeight: FontWeight.w900,
                     fontSize: 28,
                     letterSpacing: 1.1,
                     height: 1,
-                    shadows: [
-                      const Shadow(
-                        blurRadius: 10,
-                        color: Colors.black87,
-                        offset: Offset(0, 2),
-                      ),
-                    ],
+                    shadows: Theme.of(context).brightness == Brightness.dark
+                        ? const [
+                            Shadow(
+                              blurRadius: 10,
+                              color: Colors.black87,
+                              offset: Offset(0, 2),
+                            ),
+                          ]
+                        : null,
                   ),
                 ),
                 const SizedBox(height: 6),
                 Text(
                   '$minutes Mins  ·  $calories Kcal',
                   style: TextStyle(
-                    color: TacticalPalette.chalk.withOpacity(0.85),
+                    color: context.palette.chalk.withOpacity(0.85),
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    shadows: const [
-                      Shadow(
-                        blurRadius: 6,
-                        color: Colors.black87,
-                      ),
-                    ],
+                    shadows: Theme.of(context).brightness == Brightness.dark
+                        ? const [
+                            Shadow(
+                              blurRadius: 6,
+                              color: Colors.black87,
+                            ),
+                          ]
+                        : null,
                   ),
                 ),
               ],
@@ -254,15 +302,15 @@ class _WorkoutPlaceholder extends StatelessWidget {
               padding:
                   const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
-                color: TacticalPalette.abyss.withOpacity(0.55),
+                color: context.palette.abyss.withOpacity(0.55),
                 borderRadius: BorderRadius.circular(4),
                 border:
-                    Border.all(color: TacticalPalette.arcticSoft.withOpacity(0.6)),
+                    Border.all(color: context.palette.arcticSoft.withOpacity(0.6)),
               ),
               child: Text(
                 'PLACEHOLDER',
-                style: GoogleFonts.jetBrainsMono(
-                  color: TacticalPalette.arcticSoft,
+                style: GoogleFonts.plusJakartaSans(
+                  color: context.palette.arcticSoft,
                   fontSize: 8,
                   letterSpacing: 1.4,
                   fontWeight: FontWeight.w700,
@@ -286,12 +334,17 @@ class _PlaceholderBg extends StatelessWidget {
     // Rotate through a small palette of blue-camo gradient variants so
     // adjacent day placeholders don't look identical.
     final variants = <List<Color>>[
-      [TacticalPalette.arcticDeep, TacticalPalette.midnight],
-      [TacticalPalette.surfaceHigh, TacticalPalette.abyss],
-      [TacticalPalette.arctic, TacticalPalette.arcticDeep],
-      [TacticalPalette.midnight, TacticalPalette.surface],
+      [context.palette.arcticDeep, context.palette.midnight],
+      [context.palette.surfaceHigh, context.palette.abyss],
+      [context.palette.arctic, context.palette.arcticDeep],
+      [context.palette.midnight, context.palette.surface],
     ];
     final colors = variants[seed.abs() % variants.length];
+    // Bright-blue thumbnails need a white dumbbell so it reads in light mode;
+    // neutral surface tones keep the theme's default foreground.
+    final onBlue = colors.first == context.palette.arctic ||
+        colors.first == context.palette.arcticDeep;
+    final iconColor = onBlue ? Colors.white : context.palette.chalk;
     return Stack(
       fit: StackFit.expand,
       children: [
@@ -312,7 +365,7 @@ class _PlaceholderBg extends StatelessWidget {
             height: 120,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: TacticalPalette.arcticSoft.withOpacity(0.08),
+              color: context.palette.arcticSoft.withOpacity(0.08),
             ),
           ),
         ),
@@ -321,7 +374,7 @@ class _PlaceholderBg extends StatelessWidget {
             opacity: 0.25,
             child: Icon(
               Icons.fitness_center_rounded,
-              color: TacticalPalette.chalk,
+              color: iconColor,
               size: 48,
             ),
           ),
@@ -349,21 +402,21 @@ class _StartTrainingButton extends StatelessWidget {
             height: 52,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(14),
-              gradient: const LinearGradient(
+              gradient: LinearGradient(
                 colors: [
-                  TacticalPalette.arcticDeep,
-                  TacticalPalette.arctic,
+                  context.palette.arcticDeep,
+                  context.palette.arctic,
                 ],
               ),
               border: Border.all(
-                color: TacticalPalette.glacier.withOpacity(0.6),
+                color: context.palette.glacier.withOpacity(0.6),
               ),
             ),
             alignment: Alignment.center,
             child: Text(
-              'START TRAINING',
-              style: GoogleFonts.bigShouldersDisplay(
-                color: TacticalPalette.chalk,
+              'START SESSION',
+              style: GoogleFonts.plusJakartaSans(
+                color: Colors.white,
                 fontWeight: FontWeight.w900,
                 fontSize: 18,
                 letterSpacing: 2,
@@ -372,6 +425,46 @@ class _StartTrainingButton extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _DoneRibbon extends StatelessWidget {
+  const _DoneRibbon();
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        // Soften the underlying thumbnail so the badge reads clearly.
+        const DecoratedBox(
+          decoration: BoxDecoration(color: Color(0x66000000)),
+        ),
+        Align(
+          alignment: Alignment.bottomCenter,
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: context.palette.arctic,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                'DONE',
+                style: GoogleFonts.plusJakartaSans(
+                  color: Colors.white,
+                  fontSize: 9,
+                  letterSpacing: 1.4,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

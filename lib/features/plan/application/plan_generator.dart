@@ -50,6 +50,40 @@ class PlanInputs {
   final DietType? dietType;
   final Set<EatingHabit>? eatingHabits;
   final int? dailyCalorieTarget;
+
+  PlanInputs copyWith({
+    double? weightKg,
+    double? heightCm,
+    AgeBand? ageBand,
+    FitnessGoal? goal,
+    FitnessLevel? fitnessLevel,
+    ExerciseFrequency? exerciseFrequency,
+    WorkoutDuration? workoutDuration,
+    WorkoutPreference? workoutPreference,
+    Trainer? trainer,
+    MainReason? mainReason,
+    UpcomingEvent? upcomingEvent,
+    DietType? dietType,
+    Set<EatingHabit>? eatingHabits,
+    int? dailyCalorieTarget,
+  }) {
+    return PlanInputs(
+      weightKg: weightKg ?? this.weightKg,
+      heightCm: heightCm ?? this.heightCm,
+      ageBand: ageBand ?? this.ageBand,
+      goal: goal ?? this.goal,
+      fitnessLevel: fitnessLevel ?? this.fitnessLevel,
+      exerciseFrequency: exerciseFrequency ?? this.exerciseFrequency,
+      workoutDuration: workoutDuration ?? this.workoutDuration,
+      workoutPreference: workoutPreference ?? this.workoutPreference,
+      trainer: trainer ?? this.trainer,
+      mainReason: mainReason ?? this.mainReason,
+      upcomingEvent: upcomingEvent ?? this.upcomingEvent,
+      dietType: dietType ?? this.dietType,
+      eatingHabits: eatingHabits ?? this.eatingHabits,
+      dailyCalorieTarget: dailyCalorieTarget ?? this.dailyCalorieTarget,
+    );
+  }
 }
 
 /// 21-day mission builder. Every day gets:

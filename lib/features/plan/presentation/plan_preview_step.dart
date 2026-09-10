@@ -501,17 +501,23 @@ class _PointOverlay extends StatelessWidget {
 
   Widget _buildLabel() {
     if (variant == _LabelVariant.plain) {
-      return Text(
-        label,
-        maxLines: 1,
-        softWrap: false,
-        overflow: TextOverflow.visible,
-        style: const TextStyle(
-          color: Colors.white,
-          fontWeight: FontWeight.w800,
-          fontSize: 15,
-        ),
-      );
+      return Builder(builder: (context) {
+        // The "plain" label sits directly on the page ground with no bubble
+        // behind it — so its colour has to follow the theme instead of being
+        // pinned white (invisible on the light-mode background).
+        final onSurface = Theme.of(context).colorScheme.onSurface;
+        return Text(
+          label,
+          maxLines: 1,
+          softWrap: false,
+          overflow: TextOverflow.visible,
+          style: TextStyle(
+            color: onSurface,
+            fontWeight: FontWeight.w800,
+            fontSize: 15,
+          ),
+        );
+      });
     }
     final isFilled = variant == _LabelVariant.filledBubble;
     final bubbleColor = isFilled ? color : Colors.white;

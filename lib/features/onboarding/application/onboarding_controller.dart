@@ -1,4 +1,6 @@
 import 'package:flutter/foundation.dart';
+import 'package:military_calisthenics_women/features/plan/application/plan_generator.dart';
+import 'package:military_calisthenics_women/features/plan/application/plan_inputs_store.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Tracks completion of the onboarding flow and holds the in-memory answers
@@ -19,6 +21,7 @@ class OnboardingController extends ChangeNotifier {
   bool _completed = false;
   bool _loaded = false;
   final Map<String, Object?> _answers = <String, Object?>{};
+  final PlanInputsStore _planInputsStore = PlanInputsStore();
 
   bool get hasCompletedOnboarding =>
       _forceReplayOnboarding ? false : _completed;
@@ -40,9 +43,20 @@ class OnboardingController extends ChangeNotifier {
         // the user starts from a clean slate rather than inheriting a value
         // written during development.
         await prefs.remove(_completedKey);
+        await _planInputsStore.clear();
         _completed = false;
       } else {
         _completed = prefs.getBool(_completedKey) ?? false;
+      }
+      if (_completed) {
+        // Rehydrate the generated plan so the home screen finds a mission on
+        // file after a cold restart. We store the small inputs record and
+        // regenerate deterministically rather than serialising the full plan.
+        final inputs = await _planInputsStore.load();
+        if (inputs != null) {
+          _answers['plan_inputs'] = inputs;
+          _answers['plan'] = generatePlan(inputs);
+        }
       }
     } catch (error) {
       debugPrint('OnboardingController: load failed — $error');
@@ -50,6 +64,15 @@ class OnboardingController extends ChangeNotifier {
       _loaded = true;
       notifyListeners();
     }
+  }
+
+  /// Persist the inputs used to build the current plan so [load] can
+  /// regenerate it on the next launch. Called from the calibration step once
+  /// the plan is ready.
+  Future<void> persistPlanInputs(PlanInputs inputs) {
+    _answers['plan_inputs'] = inputs;
+    notifyListeners();
+    return _planInputsStore.save(inputs);
   }
 
   Future<void> markCompleted() async {

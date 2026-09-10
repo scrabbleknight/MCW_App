@@ -55,7 +55,7 @@ class _SquadWelcomeStepState extends State<SquadWelcomeStep>
     final size = MediaQuery.sizeOf(context);
 
     return DecoratedBox(
-      decoration: const BoxDecoration(color: TacticalPalette.abyss),
+      decoration: BoxDecoration(color: context.palette.abyss),
       child: Stack(
         fit: StackFit.expand,
         children: [
@@ -122,8 +122,8 @@ class _CamoScrim extends StatelessWidget {
             center: const Alignment(0, -0.4),
             radius: 1.3,
             colors: [
-              TacticalPalette.abyss.withOpacity(0.25),
-              TacticalPalette.abyss.withOpacity(0.92),
+              context.palette.abyss.withOpacity(0.25),
+              context.palette.abyss.withOpacity(0.92),
             ],
           ),
         ),
@@ -145,9 +145,9 @@ class _SquadTag extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: TacticalPalette.surface.withOpacity(0.72),
+        color: context.palette.surface.withOpacity(0.72),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: TacticalPalette.hairline),
+        border: Border.all(color: context.palette.hairline),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -156,11 +156,11 @@ class _SquadTag extends StatelessWidget {
             width: 8,
             height: 8,
             decoration: BoxDecoration(
-              color: TacticalPalette.success,
+              color: context.palette.success,
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: TacticalPalette.success.withOpacity(0.7),
+                  color: context.palette.success.withOpacity(0.7),
                   blurRadius: 8,
                 ),
               ],
@@ -169,9 +169,9 @@ class _SquadTag extends StatelessWidget {
           const SizedBox(width: 8),
           Text(
             id,
-            style: GoogleFonts.jetBrainsMono(
+            style: GoogleFonts.plusJakartaSans(
               fontSize: 11,
-              color: TacticalPalette.mist,
+              color: context.palette.mist,
               letterSpacing: 1.2,
               fontWeight: FontWeight.w600,
             ),
@@ -229,7 +229,7 @@ class _HeroDossier extends StatelessWidget {
                         end: Alignment.bottomCenter,
                         colors: [
                           Colors.transparent,
-                          TacticalPalette.abyss.withOpacity(0.55),
+                          context.palette.abyss.withOpacity(0.55),
                         ],
                         stops: const [0.55, 1.0],
                       ),
@@ -246,16 +246,16 @@ class _HeroDossier extends StatelessWidget {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: TacticalPalette.abyss.withOpacity(0.7),
+                        color: context.palette.abyss.withOpacity(0.7),
                         border: Border.all(
-                            color: TacticalPalette.arcticSoft
+                            color: context.palette.arcticSoft
                                 .withOpacity(0.9)),
                       ),
                       child: Text(
                         'CLASSIFIED · FILE 021',
-                        style: GoogleFonts.jetBrainsMono(
+                        style: GoogleFonts.plusJakartaSans(
                           fontSize: 10,
-                          color: TacticalPalette.arcticSoft,
+                          color: context.palette.arcticSoft,
                           letterSpacing: 2,
                           fontWeight: FontWeight.w700,
                         ),
@@ -279,8 +279,8 @@ class _HeroDossier extends StatelessWidget {
                     left: 12,
                     child: Text(
                       'RECRUIT\nCLEARED',
-                      style: GoogleFonts.bigShouldersDisplay(
-                        color: TacticalPalette.chalk,
+                      style: GoogleFonts.plusJakartaSans(
+                        color: context.palette.chalk,
                         fontWeight: FontWeight.w900,
                         height: 0.9,
                         fontSize: 22,
@@ -303,7 +303,7 @@ class _CornerBrackets extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const color = TacticalPalette.arcticSoft;
+    final color = context.palette.arcticSoft;
     Widget corner({required Alignment align}) {
       final isTop = align.y < 0;
       final isLeft = align.x < 0;
@@ -372,9 +372,9 @@ class _EnlistedStamp extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
       decoration: BoxDecoration(
-        border: Border.all(color: TacticalPalette.arctic, width: 3),
+        border: Border.all(color: context.palette.arctic, width: 3),
         borderRadius: BorderRadius.circular(4),
-        color: TacticalPalette.arctic.withOpacity(0.12),
+        color: context.palette.arctic.withOpacity(0.12),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -382,9 +382,9 @@ class _EnlistedStamp extends StatelessWidget {
         children: [
           Text(
             'ENLISTED',
-            style: GoogleFonts.bigShouldersDisplay(
+            style: GoogleFonts.plusJakartaSans(
               fontWeight: FontWeight.w900,
-              color: TacticalPalette.arctic,
+              color: context.palette.arctic,
               fontSize: 26,
               letterSpacing: 3,
               height: 1,
@@ -393,9 +393,9 @@ class _EnlistedStamp extends StatelessWidget {
           const SizedBox(height: 2),
           Text(
             '21-DAY MISSION',
-            style: GoogleFonts.jetBrainsMono(
+            style: GoogleFonts.plusJakartaSans(
               fontSize: 9,
-              color: TacticalPalette.arctic,
+              color: context.palette.arctic,
               letterSpacing: 2,
               fontWeight: FontWeight.w700,
             ),
@@ -431,14 +431,14 @@ class _Title extends StatelessWidget {
                   Container(
                     width: 22,
                     height: 2,
-                    color: TacticalPalette.arcticSoft,
+                    color: context.palette.arcticSoft,
                   ),
                   const SizedBox(width: 8),
                   Text(
                     'BRIEFING · 21 DAYS',
-                    style: GoogleFonts.jetBrainsMono(
+                    style: GoogleFonts.plusJakartaSans(
                       fontSize: 11,
-                      color: TacticalPalette.arcticSoft,
+                      color: context.palette.arcticSoft,
                       letterSpacing: 2.5,
                       fontWeight: FontWeight.w700,
                     ),
@@ -447,15 +447,15 @@ class _Title extends StatelessWidget {
               ),
               const SizedBox(height: 6),
               ShaderMask(
-                shaderCallback: (bounds) => const LinearGradient(
+                shaderCallback: (bounds) => LinearGradient(
                   colors: [
-                    TacticalPalette.chalk,
-                    TacticalPalette.glacier,
+                    context.palette.chalk,
+                    context.palette.glacier,
                   ],
                 ).createShader(bounds),
                 child: Text(
                   'WELCOME TO\nTHE SQUAD',
-                  style: GoogleFonts.bigShouldersDisplay(
+                  style: GoogleFonts.plusJakartaSans(
                     fontWeight: FontWeight.w900,
                     color: Colors.white,
                     fontSize: 44,
@@ -469,7 +469,7 @@ class _Title extends StatelessWidget {
                 "You're locked in. Boots on. Your 21-day operation "
                 'starts on the next screen.',
                 style: TextStyle(
-                  color: TacticalPalette.mist,
+                  color: context.palette.mist,
                   fontSize: 14,
                   height: 1.35,
                 ),
@@ -542,9 +542,9 @@ class _ObjectiveCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(10, 12, 10, 12),
       decoration: BoxDecoration(
-        color: TacticalPalette.surface.withOpacity(0.85),
+        color: context.palette.surface.withOpacity(0.85),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: TacticalPalette.hairline),
+        border: Border.all(color: context.palette.hairline),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -555,8 +555,8 @@ class _ObjectiveCard extends StatelessWidget {
             children: [
               Text(
                 index,
-                style: GoogleFonts.jetBrainsMono(
-                  color: TacticalPalette.arcticSoft,
+                style: GoogleFonts.plusJakartaSans(
+                  color: context.palette.arcticSoft,
                   fontSize: 11,
                   letterSpacing: 1.5,
                   fontWeight: FontWeight.w700,
@@ -566,16 +566,16 @@ class _ObjectiveCard extends StatelessWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: TacticalPalette.arctic.withOpacity(0.18),
+                  color: context.palette.arctic.withOpacity(0.18),
                   borderRadius: BorderRadius.circular(4),
                   border: Border.all(
-                    color: TacticalPalette.arctic.withOpacity(0.4),
+                    color: context.palette.arctic.withOpacity(0.4),
                   ),
                 ),
                 child: Text(
                   rank,
-                  style: GoogleFonts.jetBrainsMono(
-                    color: TacticalPalette.glacier,
+                  style: GoogleFonts.plusJakartaSans(
+                    color: context.palette.glacier,
                     fontSize: 9,
                     letterSpacing: 1,
                     fontWeight: FontWeight.w700,
@@ -587,8 +587,8 @@ class _ObjectiveCard extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             title,
-            style: GoogleFonts.bigShouldersDisplay(
-              color: TacticalPalette.chalk,
+            style: GoogleFonts.plusJakartaSans(
+              color: context.palette.chalk,
               fontWeight: FontWeight.w900,
               fontSize: 16,
               letterSpacing: 1.1,
@@ -599,7 +599,7 @@ class _ObjectiveCard extends StatelessWidget {
           Text(
             body,
             style: TextStyle(
-              color: TacticalPalette.muted,
+              color: context.palette.muted,
               fontSize: 11,
               height: 1.3,
             ),
@@ -620,7 +620,7 @@ class _OathLine extends StatelessWidget {
       decoration: BoxDecoration(
         border: Border(
           left: BorderSide(
-            color: TacticalPalette.arctic.withOpacity(0.8),
+            color: context.palette.arctic.withOpacity(0.8),
             width: 3,
           ),
         ),
@@ -628,7 +628,7 @@ class _OathLine extends StatelessWidget {
       child: Text(
         '"Discipline over motivation. Reps over hype." — SQUAD OATH',
         style: TextStyle(
-          color: TacticalPalette.mist,
+          color: context.palette.mist,
           fontStyle: FontStyle.italic,
           fontSize: 12,
           height: 1.3,
@@ -659,42 +659,56 @@ class _DeployButton extends StatelessWidget {
               height: 62,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(16),
-                gradient: const LinearGradient(
+                gradient: LinearGradient(
                   colors: [
-                    TacticalPalette.arcticDeep,
-                    TacticalPalette.arctic,
+                    context.palette.arcticDeep,
+                    context.palette.arctic,
                   ],
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: TacticalPalette.arctic.withOpacity(0.55),
+                    color: context.palette.arctic.withOpacity(0.55),
                     blurRadius: glow,
                     spreadRadius: 0.5,
                   ),
                 ],
                 border: Border.all(
-                  color: TacticalPalette.glacier.withOpacity(0.6),
+                  color: context.palette.glacier.withOpacity(0.6),
                 ),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.chevron_right_rounded,
-                      color: TacticalPalette.chalk),
-                  const SizedBox(width: 4),
-                  Text(
-                    'DEPLOY — BEGIN MISSION',
-                    style: GoogleFonts.bigShouldersDisplay(
-                      color: TacticalPalette.chalk,
-                      fontWeight: FontWeight.w900,
-                      fontSize: 20,
-                      letterSpacing: 2.4,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.chevron_right_rounded,
+                        color: context.palette.chalk),
+                    const SizedBox(width: 4),
+                    // The label uses wide letter-spacing that pushes past
+                    // narrow phone widths (RenderFlex overflow). Flex + a
+                    // scale-down FittedBox lets the text shrink to fit
+                    // instead of clipping the button on small screens.
+                    Flexible(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          'DEPLOY — BEGIN MISSION',
+                          maxLines: 1,
+                          softWrap: false,
+                          style: GoogleFonts.plusJakartaSans(
+                            color: context.palette.chalk,
+                            fontWeight: FontWeight.w900,
+                            fontSize: 20,
+                            letterSpacing: 2.4,
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 4),
-                  const Icon(Icons.chevron_right_rounded,
-                      color: TacticalPalette.chalk),
-                ],
+                    const SizedBox(width: 4),
+                    Icon(Icons.chevron_right_rounded,
+                        color: context.palette.chalk),
+                  ],
+                ),
               ),
             ),
           ),
