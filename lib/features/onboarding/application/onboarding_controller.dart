@@ -55,6 +55,9 @@ class OnboardingController extends ChangeNotifier {
         final inputs = await _planInputsStore.load();
         if (inputs != null) {
           _answers['plan_inputs'] = inputs;
+          if (inputs.trainer != null) {
+            _answers['trainer'] = inputs.trainer;
+          }
           _answers['plan'] = generatePlan(inputs);
         }
       }
@@ -71,6 +74,9 @@ class OnboardingController extends ChangeNotifier {
   /// the plan is ready.
   Future<void> persistPlanInputs(PlanInputs inputs) {
     _answers['plan_inputs'] = inputs;
+    if (inputs.trainer != null) {
+      _answers['trainer'] = inputs.trainer;
+    }
     notifyListeners();
     return _planInputsStore.save(inputs);
   }

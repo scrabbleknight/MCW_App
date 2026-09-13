@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:military_calisthenics_women/core/theme/tactical_palette.dart';
+import 'package:military_calisthenics_women/features/home/presentation/mission_day_images.dart';
 import 'package:military_calisthenics_women/features/plan/domain/exercise.dart';
 import 'package:military_calisthenics_women/features/plan/domain/exercise_lookup.dart';
 import 'package:military_calisthenics_women/features/plan/domain/plan.dart';
@@ -13,9 +14,10 @@ import 'package:provider/provider.dart';
 /// sticky START button. Skeleton uses placeholder tiles for every exercise
 /// image so the layout is complete before the real thumbnails ship.
 class WorkoutDayScreen extends StatelessWidget {
-  const WorkoutDayScreen({super.key, required this.day});
+  const WorkoutDayScreen({super.key, required this.day, this.heroImageAsset});
 
   final PlanDay day;
+  final String? heroImageAsset;
 
   @override
   Widget build(BuildContext context) {
@@ -24,7 +26,9 @@ class WorkoutDayScreen extends StatelessWidget {
       body: CustomScrollView(
         physics: const ClampingScrollPhysics(),
         slivers: [
-          SliverToBoxAdapter(child: _Hero(day: day)),
+          SliverToBoxAdapter(
+            child: _Hero(day: day, imageAsset: heroImageAsset),
+          ),
           SliverPadding(
             padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
             sliver: SliverToBoxAdapter(
@@ -44,18 +48,9 @@ class WorkoutDayScreen extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(8, 4, 8, 20),
             sliver: SliverToBoxAdapter(child: _SummaryRow(day: day)),
           ),
-          _PhaseSection(
-            label: 'Warm up',
-            blocks: day.warmup,
-          ),
-          _PhaseSection(
-            label: 'Main',
-            blocks: day.main,
-          ),
-          _PhaseSection(
-            label: 'Cool down',
-            blocks: day.cooldown,
-          ),
+          _PhaseSection(label: 'Warm up', blocks: day.warmup),
+          _PhaseSection(label: 'Main', blocks: day.main),
+          _PhaseSection(label: 'Cool down', blocks: day.cooldown),
           const SliverToBoxAdapter(child: SizedBox(height: 100)),
         ],
       ),
@@ -65,9 +60,7 @@ class WorkoutDayScreen extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
           child: _StartButton(
             onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => CalibrationScreen(day: day),
-              ),
+              MaterialPageRoute(builder: (_) => CalibrationScreen(day: day)),
             ),
           ),
         ),
@@ -77,42 +70,33 @@ class WorkoutDayScreen extends StatelessWidget {
 }
 
 class _Hero extends StatelessWidget {
-  const _Hero({required this.day});
+  const _Hero({required this.day, required this.imageAsset});
 
   final PlanDay day;
+  final String? imageAsset;
 
   @override
   Widget build(BuildContext context) {
+    final asset = imageAsset ?? missionDayImageAsset(day);
+    final alignment = imageAsset == null
+        ? Alignment.center
+        : const Alignment(-0.72, 0);
     return SizedBox(
       height: 320,
       width: double.infinity,
       child: Stack(
         fit: StackFit.expand,
         children: [
-          // Placeholder blue-camo hero — swap for the real photo per day
-          // once workout thumbnails ship.
-          DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  context.palette.arcticDeep,
-                  context.palette.midnight,
-                ],
-              ),
-            ),
-          ),
-          Center(
-            child: Opacity(
-              opacity: 0.25,
-              child: Icon(
-                Icons.fitness_center_rounded,
-                color: context.palette.chalk,
-                size: 96,
-              ),
-            ),
-          ),
+          if (asset != null)
+            Image.asset(
+              asset,
+              fit: BoxFit.cover,
+              alignment: alignment,
+              errorBuilder: (_, __, ___) => const _HeroPlaceholder(),
+            )
+          else ...[
+            const _HeroPlaceholder(),
+          ],
           Positioned.fill(
             child: DecoratedBox(
               decoration: BoxDecoration(
@@ -135,7 +119,9 @@ class _Hero extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const _CircleButton(
-                      icon: Icons.chevron_left_rounded, back: true),
+                    icon: Icons.chevron_left_rounded,
+                    back: true,
+                  ),
                   _StarButton(day: day),
                 ],
               ),
@@ -143,6 +129,38 @@ class _Hero extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _HeroPlaceholder extends StatelessWidget {
+  const _HeroPlaceholder();
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [context.palette.arcticDeep, context.palette.midnight],
+            ),
+          ),
+        ),
+        Center(
+          child: Opacity(
+            opacity: 0.25,
+            child: Icon(
+              Icons.fitness_center_rounded,
+              color: context.palette.chalk,
+              size: 96,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -508,44 +526,53 @@ List<String> _musclesFor(String title, {required bool showBack}) {
       switch (token) {
         case 'Arms':
           out.addAll(
-              showBack ? const ['arms', 'shoulders'] : const ['arms', 'shoulders', 'chest']);
+            showBack
+                ? const ['arms', 'shoulders']
+                : const ['arms', 'shoulders', 'chest'],
+          );
         case 'Back':
-          out.addAll(showBack
-              ? const ['upper_back', 'lower_back']
-              : const ['shoulders']);
+          out.addAll(
+            showBack ? const ['upper_back', 'lower_back'] : const ['shoulders'],
+          );
         case 'Core':
-          out.addAll(showBack
-              ? const ['lower_back', 'obliques']
-              : const ['core', 'obliques']);
+          out.addAll(
+            showBack
+                ? const ['lower_back', 'obliques']
+                : const ['core', 'obliques'],
+          );
         case 'Glutes':
-          out.addAll(showBack
-              ? const ['glutes', 'hamstrings']
-              : const ['quads']);
+          out.addAll(
+            showBack ? const ['glutes', 'hamstrings'] : const ['quads'],
+          );
         case 'Legs':
-          out.addAll(showBack
-              ? const ['hamstrings', 'calves']
-              : const ['quads', 'inner_thighs', 'calves']);
+          out.addAll(
+            showBack
+                ? const ['hamstrings', 'calves']
+                : const ['quads', 'inner_thighs', 'calves'],
+          );
         case 'Full Body':
-          out.addAll(showBack
-              ? const [
-                  'upper_back',
-                  'shoulders',
-                  'arms',
-                  'lower_back',
-                  'glutes',
-                  'hamstrings',
-                  'calves',
-                ]
-              : const [
-                  'chest',
-                  'shoulders',
-                  'arms',
-                  'core',
-                  'obliques',
-                  'quads',
-                  'inner_thighs',
-                  'calves',
-                ]);
+          out.addAll(
+            showBack
+                ? const [
+                    'upper_back',
+                    'shoulders',
+                    'arms',
+                    'lower_back',
+                    'glutes',
+                    'hamstrings',
+                    'calves',
+                  ]
+                : const [
+                    'chest',
+                    'shoulders',
+                    'arms',
+                    'core',
+                    'obliques',
+                    'quads',
+                    'inner_thighs',
+                    'calves',
+                  ],
+          );
       }
     }
     return out.toList(growable: false);
@@ -646,7 +673,10 @@ class _ExerciseRow extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 10),
       child: Row(
         children: [
-          _ExerciseThumb(seed: block.exerciseId.hashCode),
+          _ExerciseThumb(
+            seed: block.exerciseId.hashCode,
+            imageUrl: ex?.thumbnailAsset,
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -663,10 +693,7 @@ class _ExerciseRow extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   _prescriptionLabel(block),
-                  style: TextStyle(
-                    color: context.palette.muted,
-                    fontSize: 12,
-                  ),
+                  style: TextStyle(color: context.palette.muted, fontSize: 12),
                 ),
               ],
             ),
@@ -677,17 +704,19 @@ class _ExerciseRow extends StatelessWidget {
   }
 
   static String _prescriptionLabel(PlanBlock block) {
-    final unit =
-        block.unit == ExerciseUnit.seconds ? '${block.amount}s' : '${block.amount} reps';
+    final unit = block.unit == ExerciseUnit.seconds
+        ? '${block.amount}s'
+        : '${block.amount} reps';
     if (block.sets <= 1) return unit;
     return '${block.sets} × $unit';
   }
 }
 
 class _ExerciseThumb extends StatelessWidget {
-  const _ExerciseThumb({required this.seed});
+  const _ExerciseThumb({required this.seed, required this.imageUrl});
 
   final int seed;
+  final String? imageUrl;
 
   @override
   Widget build(BuildContext context) {
@@ -699,22 +728,38 @@ class _ExerciseThumb extends StatelessWidget {
     final colors = variants[seed.abs() % variants.length];
     return ClipRRect(
       borderRadius: BorderRadius.circular(10),
-      child: Container(
+      child: SizedBox(
         width: 62,
         height: 62,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: colors,
-          ),
-        ),
-        child: Center(
-          child: Icon(
-            Icons.play_arrow_rounded,
-            color: context.palette.chalk,
-            size: 26,
-          ),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: colors,
+                ),
+              ),
+            ),
+            if (imageUrl != null)
+              Image.network(
+                imageUrl!,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+              ),
+            DecoratedBox(
+              decoration: BoxDecoration(color: Colors.black.withOpacity(0.18)),
+            ),
+            Center(
+              child: Icon(
+                Icons.play_arrow_rounded,
+                color: context.palette.chalk,
+                size: 26,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -730,7 +775,9 @@ class _StarButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final controller = context.watch<StarredWorkoutsController>();
     final key = StarredWorkoutsController.keyFor(
-        dayIndex: day.dayIndex, title: day.title);
+      dayIndex: day.dayIndex,
+      title: day.title,
+    );
     final starred = controller.isStarred(key);
     return Material(
       color: context.palette.surface.withOpacity(0.7),
@@ -770,10 +817,7 @@ class _StartButton extends StatelessWidget {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16),
               gradient: LinearGradient(
-                colors: [
-                  context.palette.arcticDeep,
-                  context.palette.arctic,
-                ],
+                colors: [context.palette.arcticDeep, context.palette.arctic],
               ),
               boxShadow: [
                 BoxShadow(

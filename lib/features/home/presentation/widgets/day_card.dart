@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:military_calisthenics_women/core/theme/tactical_palette.dart';
+import 'package:military_calisthenics_women/features/home/presentation/mission_day_images.dart';
 import 'package:military_calisthenics_women/features/plan/domain/plan.dart';
 
 /// One row of the mission timeline. Two states:
-///   * "active" — big hero card with placeholder photo, day title, mins/kcal,
+///   * "active" — big hero card with workout photo, day title, mins/kcal,
 ///     and a START TRAINING CTA (that's the tap target for the current day).
 ///   * "queued" — compact row with a small thumb, DAY N, mins/kcal.
-///
-/// Both states call [onTap] when pressed. Images are placeholder gradients
-/// until the real workout thumbnails ship.
+/// Both states call [onTap] when pressed.
 class DayCard extends StatelessWidget {
   const DayCard({
     super.key,
@@ -27,11 +26,7 @@ class DayCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (isActive) return _ActiveDayCard(day: day, onTap: onTap);
-    return _QueuedDayCard(
-      day: day,
-      onTap: onTap,
-      isCompleted: isCompleted,
-    );
+    return _QueuedDayCard(day: day, onTap: onTap, isCompleted: isCompleted);
   }
 }
 
@@ -69,6 +64,7 @@ class _ActiveDayCard extends StatelessWidget {
                     title: day.title,
                     minutes: day.estimatedMinutes,
                     calories: day.estimatedCalories,
+                    imageAsset: missionDayImageAsset(day),
                     height: 190,
                   ),
                   Padding(
@@ -93,7 +89,7 @@ class _ActiveDayCard extends StatelessWidget {
                             Padding(
                               padding: const EdgeInsets.only(bottom: 2),
                               child: Text(
-                                _weekdayLabel(day.dayIndex),
+                                _todayLabel(),
                                 style: TextStyle(
                                   color: context.palette.mist,
                                   fontSize: 14,
@@ -158,6 +154,7 @@ class _QueuedDayCard extends StatelessWidget {
                 title: day.title,
                 minutes: day.estimatedMinutes,
                 calories: day.estimatedCalories,
+                imageAsset: missionDayImageAsset(day),
                 compact: true,
                 isCompleted: isCompleted,
               ),
@@ -202,14 +199,14 @@ class _QueuedDayCard extends StatelessWidget {
   }
 }
 
-/// Blue-camo gradient tile that stands in for the workout thumbnail until
-/// the real photos land. Big variant is used on the active day card, the
-/// small `compact` variant is the leading thumb on queued day rows.
+/// Workout thumbnail. Big variant is used on the active day card, the small
+/// `compact` variant is the leading thumb on queued day rows.
 class _WorkoutPlaceholder extends StatelessWidget {
   const _WorkoutPlaceholder({
     required this.title,
     required this.minutes,
     required this.calories,
+    this.imageAsset,
     this.height,
     this.compact = false,
     this.isCompleted = false,
@@ -218,12 +215,14 @@ class _WorkoutPlaceholder extends StatelessWidget {
   final String title;
   final int minutes;
   final int calories;
+  final String? imageAsset;
   final double? height;
   final bool compact;
   final bool isCompleted;
 
   @override
   Widget build(BuildContext context) {
+    final thumbnail = _WorkoutThumbnail(title: title, imageAsset: imageAsset);
     if (compact) {
       return ClipRRect(
         borderRadius: BorderRadius.circular(10),
@@ -232,10 +231,7 @@ class _WorkoutPlaceholder extends StatelessWidget {
           height: 72,
           child: Stack(
             fit: StackFit.expand,
-            children: [
-              _PlaceholderBg(seed: title.hashCode),
-              if (isCompleted) const _DoneRibbon(),
-            ],
+            children: [thumbnail, if (isCompleted) const _DoneRibbon()],
           ),
         ),
       );
@@ -246,7 +242,23 @@ class _WorkoutPlaceholder extends StatelessWidget {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          _PlaceholderBg(seed: title.hashCode),
+          thumbnail,
+          if (imageAsset != null)
+            Positioned.fill(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.transparent,
+                      Colors.black.withOpacity(0.72),
+                    ],
+                    stops: const [0.42, 1],
+                  ),
+                ),
+              ),
+            ),
           Positioned(
             left: 16,
             right: 16,
@@ -257,69 +269,64 @@ class _WorkoutPlaceholder extends StatelessWidget {
                 Text(
                   title,
                   style: GoogleFonts.plusJakartaSans(
-                    color: context.palette.chalk,
+                    color: imageAsset == null
+                        ? context.palette.chalk
+                        : Colors.white,
                     fontWeight: FontWeight.w900,
                     fontSize: 28,
                     letterSpacing: 1.1,
                     height: 1,
-                    shadows: Theme.of(context).brightness == Brightness.dark
-                        ? const [
-                            Shadow(
-                              blurRadius: 10,
-                              color: Colors.black87,
-                              offset: Offset(0, 2),
-                            ),
-                          ]
-                        : null,
+                    shadows: const [
+                      Shadow(
+                        blurRadius: 12,
+                        color: Colors.black87,
+                        offset: Offset(0, 2),
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 6),
                 Text(
                   '$minutes Mins  ·  $calories Kcal',
                   style: TextStyle(
-                    color: context.palette.chalk.withOpacity(0.85),
+                    color: imageAsset == null
+                        ? context.palette.chalk.withOpacity(0.85)
+                        : Colors.white.withOpacity(0.92),
                     fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    shadows: Theme.of(context).brightness == Brightness.dark
-                        ? const [
-                            Shadow(
-                              blurRadius: 6,
-                              color: Colors.black87,
-                            ),
-                          ]
-                        : null,
+                    fontWeight: FontWeight.w800,
+                    shadows: const [
+                      Shadow(
+                        blurRadius: 8,
+                        color: Colors.black87,
+                        offset: Offset(0, 1),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
           ),
-          // Tiny "PLACEHOLDER" ribbon in the top-right so it's clear the
-          // photography is coming later — remove once real thumbs ship.
-          Positioned(
-            top: 8,
-            right: 8,
-            child: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(
-                color: context.palette.abyss.withOpacity(0.55),
-                borderRadius: BorderRadius.circular(4),
-                border:
-                    Border.all(color: context.palette.arcticSoft.withOpacity(0.6)),
-              ),
-              child: Text(
-                'PLACEHOLDER',
-                style: GoogleFonts.plusJakartaSans(
-                  color: context.palette.arcticSoft,
-                  fontSize: 8,
-                  letterSpacing: 1.4,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-          ),
         ],
       ),
+    );
+  }
+}
+
+class _WorkoutThumbnail extends StatelessWidget {
+  const _WorkoutThumbnail({required this.title, required this.imageAsset});
+
+  final String title;
+  final String? imageAsset;
+
+  @override
+  Widget build(BuildContext context) {
+    final asset = imageAsset;
+    if (asset == null) return _PlaceholderBg(seed: title.hashCode);
+    return Image.asset(
+      asset,
+      fit: BoxFit.cover,
+      alignment: Alignment.center,
+      errorBuilder: (_, __, ___) => _PlaceholderBg(seed: title.hashCode),
     );
   }
 }
@@ -342,7 +349,8 @@ class _PlaceholderBg extends StatelessWidget {
     final colors = variants[seed.abs() % variants.length];
     // Bright-blue thumbnails need a white dumbbell so it reads in light mode;
     // neutral surface tones keep the theme's default foreground.
-    final onBlue = colors.first == context.palette.arctic ||
+    final onBlue =
+        colors.first == context.palette.arctic ||
         colors.first == context.palette.arcticDeep;
     final iconColor = onBlue ? Colors.white : context.palette.chalk;
     return Stack(
@@ -403,10 +411,7 @@ class _StartTrainingButton extends StatelessWidget {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(14),
               gradient: LinearGradient(
-                colors: [
-                  context.palette.arcticDeep,
-                  context.palette.arctic,
-                ],
+                colors: [context.palette.arcticDeep, context.palette.arctic],
               ),
               border: Border.all(
                 color: context.palette.glacier.withOpacity(0.6),
@@ -438,16 +443,13 @@ class _DoneRibbon extends StatelessWidget {
       fit: StackFit.expand,
       children: [
         // Soften the underlying thumbnail so the badge reads clearly.
-        const DecoratedBox(
-          decoration: BoxDecoration(color: Color(0x66000000)),
-        ),
+        const DecoratedBox(decoration: BoxDecoration(color: Color(0x66000000))),
         Align(
           alignment: Alignment.bottomCenter,
           child: Padding(
             padding: const EdgeInsets.only(bottom: 6),
             child: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
                 color: context.palette.arctic,
                 borderRadius: BorderRadius.circular(4),
@@ -469,8 +471,8 @@ class _DoneRibbon extends StatelessWidget {
   }
 }
 
-String _weekdayLabel(int day) {
-  // Map day-of-mission → weekday abbreviation starting on a Monday.
+String _todayLabel() {
   const names = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-  return '${names[(day - 1) % 7]}.$day';
+  final today = DateTime.now();
+  return '${names[today.weekday - 1]}.${today.day}';
 }

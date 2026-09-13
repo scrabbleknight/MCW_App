@@ -52,13 +52,13 @@ class _PaywallStepState extends State<PaywallStep> {
 
   static const _weeklyPriceLabel = '£12.99/wk';
   static const _yearlyPriceLabel = '£79.99/yr';
+  static const _yearlyRenewalLabel = '£79.99 per year';
 
   /// Yearly plan advertises the free trial; weekly is a no-trial subscribe.
   String get _ctaLabel => switch (_selected) {
-        PaywallPlan.yearly =>
-          'START ${widget.trialDays} DAY FREE TRIAL 🙌',
-        PaywallPlan.weekly => 'GET STARTED',
-      };
+    PaywallPlan.yearly => 'START ${widget.trialDays} DAY FREE TRIAL 🙌',
+    PaywallPlan.weekly => 'GET STARTED',
+  };
 
   Future<void> _startPurchase() async {
     if (_purchasing || _restoring) return;
@@ -74,8 +74,7 @@ class _PaywallStepState extends State<PaywallStep> {
     if (!ok && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content:
-              Text("Couldn't complete the purchase. Please try again."),
+          content: Text("Couldn't complete the purchase. Please try again."),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -118,73 +117,62 @@ class _PaywallStepState extends State<PaywallStep> {
     final tight = screenH < 760;
     final gapLg = tight ? 12.0 : 20.0;
     final gapSm = tight ? 8.0 : 12.0;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Expanded(
-          child: SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _HeroSplit(onClose: widget.onClose),
-                SizedBox(height: gapLg),
-                _Header(),
-                SizedBox(height: gapLg),
-                _PlanCard(
-                  label: 'Yearly Plan',
-                  price: _yearlyPriceLabel,
-                  badge: 'SAVE 88%',
-                  plan: PaywallPlan.yearly,
-                  selected: _selected == PaywallPlan.yearly,
-                  onTap: () => setState(() => _selected = PaywallPlan.yearly),
-                ),
-                SizedBox(height: gapSm),
-                _PlanCard(
-                  label: 'Weekly Plan',
-                  price: _weeklyPriceLabel,
-                  plan: PaywallPlan.weekly,
-                  selected: _selected == PaywallPlan.weekly,
-                  onTap: () => setState(() => _selected = PaywallPlan.weekly),
-                ),
-                SizedBox(height: tight ? 12 : 24),
-              ],
-            ),
+    return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _HeroSplit(onClose: widget.onClose),
+          SizedBox(height: gapLg),
+          _Header(),
+          SizedBox(height: gapLg),
+          _PlanCard(
+            label: 'Yearly Plan',
+            price: _yearlyPriceLabel,
+            subtitle:
+                '${widget.trialDays}-day free trial, then $_yearlyRenewalLabel',
+            badge: 'SAVE 88%',
+            plan: PaywallPlan.yearly,
+            selected: _selected == PaywallPlan.yearly,
+            onTap: () => setState(() => _selected = PaywallPlan.yearly),
           ),
-        ),
-        SafeArea(
-          top: false,
-          child: Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (kDebugMode && widget.onDevSkip != null) ...[
-                  _DevSkipPill(onTap: widget.onDevSkip!),
-                  const SizedBox(height: 8),
-                ],
-                _PrimaryCta(
-                  label: _ctaLabel,
-                  onPressed: _purchasing ? null : _startPurchase,
-                  isBusy: _purchasing,
-                ),
-                if (widget.onRestore != null) ...[
-                  const SizedBox(height: 10),
-                  _RestoreCta(
-                    onPressed:
-                        _purchasing || _restoring ? null : _restore,
-                    isBusy: _restoring,
-                  ),
-                ],
-                const SizedBox(height: 10),
-                const _FooterLinks(),
-                const SizedBox(height: 10),
-                const _AppStoreBadge(),
-              ],
-            ),
+          SizedBox(height: gapSm),
+          _PlanCard(
+            label: 'Weekly Plan',
+            price: _weeklyPriceLabel,
+            plan: PaywallPlan.weekly,
+            selected: _selected == PaywallPlan.weekly,
+            onTap: () => setState(() => _selected = PaywallPlan.weekly),
           ),
-        ),
-      ],
+          const SizedBox(height: 14),
+          const _FooterLinks(),
+          const SizedBox(height: 10),
+          _TrialDisclosure(
+            trialDays: widget.trialDays,
+            yearlyRenewalLabel: _yearlyRenewalLabel,
+          ),
+          const SizedBox(height: 10),
+          const _AppStoreBadge(),
+          const SizedBox(height: 24),
+          if (kDebugMode && widget.onDevSkip != null) ...[
+            _DevSkipPill(onTap: widget.onDevSkip!),
+            const SizedBox(height: 8),
+          ],
+          _PrimaryCta(
+            label: _ctaLabel,
+            onPressed: _purchasing ? null : _startPurchase,
+            isBusy: _purchasing,
+          ),
+          if (widget.onRestore != null) ...[
+            const SizedBox(height: 10),
+            _RestoreCta(
+              onPressed: _purchasing || _restoring ? null : _restore,
+              isBusy: _restoring,
+            ),
+          ],
+          SizedBox(height: tight ? 12 : 24),
+        ],
+      ),
     );
   }
 }
@@ -213,19 +201,13 @@ class _HeroSplit extends StatelessWidget {
     return SizedBox(
       height: heroHeight,
       child: ClipRRect(
-        borderRadius: const BorderRadius.vertical(
-          bottom: Radius.circular(24),
-        ),
+        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(24)),
         child: Stack(
           children: [
             Row(
               children: [
-                Expanded(
-                  child: Image.asset(_beforeAsset, fit: BoxFit.cover),
-                ),
-                Expanded(
-                  child: Image.asset(_afterAsset, fit: BoxFit.cover),
-                ),
+                Expanded(child: Image.asset(_beforeAsset, fit: BoxFit.cover)),
+                Expanded(child: Image.asset(_afterAsset, fit: BoxFit.cover)),
               ],
             ),
             const Positioned(
@@ -251,8 +233,11 @@ class _HeroSplit extends StatelessWidget {
                     child: const SizedBox(
                       width: 36,
                       height: 36,
-                      child: Icon(Icons.close_rounded,
-                          color: Colors.white, size: 22),
+                      child: Icon(
+                        Icons.close_rounded,
+                        color: Colors.white,
+                        size: 22,
+                      ),
                     ),
                   ),
                 ),
@@ -315,8 +300,11 @@ class _Header extends StatelessWidget {
             5,
             (_) => const Padding(
               padding: EdgeInsets.symmetric(horizontal: 2),
-              child: Icon(Icons.star_rounded,
-                  color: Color(0xFFE7A83A), size: 26),
+              child: Icon(
+                Icons.star_rounded,
+                color: Color(0xFFE7A83A),
+                size: 26,
+              ),
             ),
           ),
         ),
@@ -336,6 +324,7 @@ class _PlanCard extends StatelessWidget {
     required this.plan,
     required this.selected,
     required this.onTap,
+    this.subtitle,
     this.badge,
   });
 
@@ -344,14 +333,16 @@ class _PlanCard extends StatelessWidget {
   final PaywallPlan plan;
   final bool selected;
   final VoidCallback onTap;
+  final String? subtitle;
   final String? badge;
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
-    final borderColor =
-        selected ? scheme.primary : scheme.onSurface.withValues(alpha: 0.35);
+    final borderColor = selected
+        ? scheme.primary
+        : scheme.onSurface.withValues(alpha: 0.35);
     return Stack(
       clipBehavior: Clip.none,
       children: [
@@ -374,14 +365,31 @@ class _PlanCard extends StatelessWidget {
               child: Row(
                 children: [
                   Expanded(
-                    child: Text(
-                      label,
-                      style: text.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w800,
-                        color: scheme.onSurface,
-                      ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          label,
+                          style: text.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w800,
+                            color: scheme.onSurface,
+                          ),
+                        ),
+                        if (subtitle != null) ...[
+                          const SizedBox(height: 3),
+                          Text(
+                            subtitle!,
+                            style: text.bodySmall?.copyWith(
+                              color: scheme.onSurface.withValues(alpha: 0.70),
+                              fontWeight: FontWeight.w600,
+                              height: 1.2,
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   ),
+                  const SizedBox(width: 12),
                   Text(
                     price,
                     style: text.titleMedium?.copyWith(
@@ -399,8 +407,7 @@ class _PlanCard extends StatelessWidget {
             right: 16,
             top: -12,
             child: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
               decoration: BoxDecoration(
                 color: scheme.primary,
                 borderRadius: BorderRadius.circular(999),
@@ -451,8 +458,7 @@ class _DevSkipPill extends StatelessWidget {
             customBorder: const StadiumBorder(),
             onTap: onTap,
             child: const Padding(
-              padding:
-                  EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+              padding: EdgeInsets.symmetric(horizontal: 14, vertical: 6),
               child: Text(
                 'DEV · SKIP PAYWALL',
                 style: TextStyle(
@@ -482,14 +488,17 @@ class _PrimaryCta extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final hasHandsEmoji = label.endsWith(' 🙌');
+    final textLabel = hasHandsEmoji
+        ? label.substring(0, label.length - ' 🙌'.length)
+        : label;
+
     return SizedBox(
       width: double.infinity,
       height: 56,
       child: FilledButton(
         onPressed: onPressed,
-        style: FilledButton.styleFrom(
-          shape: const StadiumBorder(),
-        ),
+        style: FilledButton.styleFrom(shape: const StadiumBorder()),
         child: isBusy
             ? const SizedBox(
                 width: 22,
@@ -499,13 +508,29 @@ class _PrimaryCta extends StatelessWidget {
                   color: Colors.white,
                 ),
               )
-            : Text(
-                label,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.4,
-                  fontSize: 16,
-                ),
+            : Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    textLabel,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.4,
+                      fontSize: 16,
+                    ),
+                  ),
+                  if (hasHandsEmoji) ...[
+                    const SizedBox(width: 6),
+                    Transform.translate(
+                      offset: const Offset(0, -2),
+                      child: const Text(
+                        '🙌',
+                        style: TextStyle(fontSize: 18, height: 1),
+                      ),
+                    ),
+                  ],
+                ],
               ),
       ),
     );
@@ -602,6 +627,53 @@ class _FooterLinks extends StatelessWidget {
   }
 }
 
+class _TrialDisclosure extends StatelessWidget {
+  const _TrialDisclosure({
+    required this.trialDays,
+    required this.yearlyRenewalLabel,
+  });
+
+  final int trialDays;
+  final String yearlyRenewalLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final text = Theme.of(context).textTheme;
+    final primaryStyle = text.bodyMedium?.copyWith(
+      color: scheme.onSurface.withValues(alpha: 0.78),
+      fontWeight: FontWeight.w700,
+      height: 1.25,
+    );
+    final secondaryStyle = text.bodySmall?.copyWith(
+      color: scheme.onSurface.withValues(alpha: 0.62),
+      fontWeight: FontWeight.w500,
+      height: 1.25,
+    );
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 18),
+      child: Column(
+        children: [
+          Text(
+            'Annual plan includes a $trialDays-day free trial, then '
+            '$yearlyRenewalLabel. Subscription auto-renews until cancelled.',
+            textAlign: TextAlign.center,
+            style: primaryStyle,
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Payment is charged to your Apple ID at confirmation of purchase. '
+            'Manage or cancel any time in your device Settings.',
+            textAlign: TextAlign.center,
+            style: secondaryStyle,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _AppStoreBadge extends StatelessWidget {
   const _AppStoreBadge();
 
@@ -616,13 +688,10 @@ class _AppStoreBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(999),
       ),
       child: Row(
-        mainAxisSize: MainAxisSize.min,
+        mainAxisSize: MainAxisSize.max,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.verified_user_rounded,
-            color: scheme.primary,
-            size: 16,
-          ),
+          Icon(Icons.verified_user_rounded, color: scheme.primary, size: 16),
           const SizedBox(width: 8),
           Text(
             'Secured with Apple Store',

@@ -1,14 +1,13 @@
 import 'package:military_calisthenics_women/features/plan/domain/exercise.dart';
 import 'package:military_calisthenics_women/features/plan/domain/plan.dart';
 
-/// What kind of screen [SessionStep] renders as. Warmups, cooldowns, and
-/// between-set rests all use the same "prep card" layout ([SessionStepKind.card]);
-/// main exercises use the immersive full-bleed player ([SessionStepKind.player]).
+/// What kind of screen [SessionStep] renders as. Prep cards are short
+/// countdowns before each exercise; player steps are the actual workout videos.
 enum SessionStepKind { card, player }
 
 /// One atomic step in a workout day's session. The session controller walks
-/// a flat list of these — each one owns its own countdown, label, and (for
-/// [SessionStepKind.card] steps) an optional "next exercise" preview.
+/// a flat list of these — each one owns its own countdown, label, and an
+/// optional exercise reference.
 class SessionStep {
   const SessionStep({
     required this.kind,
@@ -22,7 +21,7 @@ class SessionStep {
 
   final SessionStepKind kind;
 
-  /// Header shown above the countdown — "FIRST UP", "REST", "COOL DOWN", …
+  /// Header shown above the countdown — "FIRST UP", "NEXT UP", …
   final String label;
 
   final int seconds;
@@ -31,87 +30,74 @@ class SessionStep {
   final int stepNumber;
   final int totalSteps;
 
-  /// The exercise this step centres on. For a [SessionStepKind.card] warmup
-  /// or cooldown, this is the exercise the user is doing. For a rest card,
-  /// [nextBlock] carries the exercise coming next.
+  /// The exercise this step centres on. Prep cards use [nextBlock] for the
+  /// upcoming exercise; player steps use [block] for the active exercise.
   final PlanBlock? block;
   final PlanBlock? nextBlock;
 }
 
 /// Expands a [PlanDay] into the ordered list of steps that make up its
-/// session. Warmups → main (with rest cards between) → cooldowns. Each
-/// exercise gets one step; rests are inserted only between main exercises.
+/// session. Every exercise gets a 10-second prep card, then an immersive
+/// video player step. This applies to warmups, main exercises, and cooldowns.
 List<SessionStep> buildSessionSteps({
   required PlanDay day,
   required int restSeconds,
 }) {
   final steps = <SessionStep>[];
-  final exerciseSteps = day.warmup.length + day.main.length + day.cooldown.length;
+  final exerciseSteps =
+      day.warmup.length + day.main.length + day.cooldown.length;
   var stepNo = 0;
+  const prepSeconds = 10;
 
   int secondsFor(PlanBlock b) {
-    // Card steps run for the prescribed time when the block is timed, and
-    // fall back to a sensible default for rep-based work (long enough to
-    // finish the reps but not so long it feels padded).
-    return b.unit == ExerciseUnit.seconds ? b.amount : 30;
+    return b.unit == ExerciseUnit.seconds ? b.amount : 45;
   }
 
-  for (var i = 0; i < day.warmup.length; i++) {
-    final b = day.warmup[i];
+  void addExercise(PlanBlock b) {
     stepNo += 1;
-    steps.add(SessionStep(
-      kind: SessionStepKind.card,
-      label: i == 0 ? 'FIRST UP' : 'WARM UP',
-      seconds: secondsFor(b),
-      stepNumber: stepNo,
-      totalSteps: exerciseSteps,
-      block: b,
-    ));
+    steps
+      ..add(
+        SessionStep(
+          kind: SessionStepKind.card,
+          label: stepNo == 1 ? 'FIRST UP' : 'NEXT UP',
+          seconds: prepSeconds,
+          stepNumber: stepNo,
+          totalSteps: exerciseSteps,
+          nextBlock: b,
+        ),
+      )
+      ..add(
+        SessionStep(
+          kind: SessionStepKind.player,
+          label: b.unit == ExerciseUnit.seconds ? 'HOLD' : 'GO',
+          seconds: secondsFor(b),
+          stepNumber: stepNo,
+          totalSteps: exerciseSteps,
+          block: b,
+        ),
+      );
   }
 
-  // One rest card after every four main exercises — so a 12-exercise main
-  // block sees rests before exercises 5 / 9 (2 rests in a 12-set day) and
-  // scales up to 3 rests once the main block hits 16+ exercises. Change the
-  // divisor here (kept as [restEvery]) if the cadence needs tuning again.
-  const restEvery = 4;
-  for (var i = 0; i < day.main.length; i++) {
-    final b = day.main[i];
-    if (i > 0 && i % restEvery == 0) {
-      // Rest between blocks of main exercises — same card layout as warmups,
-      // but the preview shows the exercise that is about to start.
-      steps.add(SessionStep(
+  for (final b in day.warmup) {
+    addExercise(b);
+  }
+  for (final b in day.main) {
+    addExercise(b);
+  }
+  for (final b in day.cooldown) {
+    addExercise(b);
+  }
+
+  if (steps.isEmpty) {
+    steps.add(
+      SessionStep(
         kind: SessionStepKind.card,
         label: 'REST',
         seconds: restSeconds,
-        stepNumber: stepNo,
-        totalSteps: exerciseSteps,
-        nextBlock: b,
-      ));
-    }
-    stepNo += 1;
-    final seconds =
-        b.unit == ExerciseUnit.seconds ? b.amount : 45; // reps → 45s window
-    steps.add(SessionStep(
-      kind: SessionStepKind.player,
-      label: b.unit == ExerciseUnit.seconds ? 'HOLD' : 'GO',
-      seconds: seconds,
-      stepNumber: stepNo,
-      totalSteps: exerciseSteps,
-      block: b,
-    ));
-  }
-
-  for (var i = 0; i < day.cooldown.length; i++) {
-    final b = day.cooldown[i];
-    stepNo += 1;
-    steps.add(SessionStep(
-      kind: SessionStepKind.card,
-      label: i == 0 ? 'COOL DOWN' : 'COOL DOWN',
-      seconds: secondsFor(b),
-      stepNumber: stepNo,
-      totalSteps: exerciseSteps,
-      block: b,
-    ));
+        stepNumber: 0,
+        totalSteps: 0,
+      ),
+    );
   }
 
   return steps;

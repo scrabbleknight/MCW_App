@@ -72,7 +72,7 @@ class PlanDay {
   final bool isRest;
 
   /// The three phases of the session. Skeleton keeps them separate so the
-  /// workout-detail screen can render "Warm up · 2 Exercises", "Main · 12
+  /// workout-detail screen can render "Warm up · 2 Exercises", "Main · 7
   /// Exercises", "Cool down · 2 Exercises" straight off the model.
   final List<PlanBlock> warmup;
   final List<PlanBlock> main;
@@ -89,7 +89,7 @@ class PlanDay {
     for (final b in blocks) {
       s += b.estimatedSeconds;
     }
-    return (s / 60).ceil();
+    return (s / 60).round();
   }
 
   /// Estimated calorie burn — used on the day card. Rough MET-based figure
@@ -116,11 +116,16 @@ class PlanBlock {
   final int restSeconds;
   final PlanPhase phase;
 
-  /// Rough time cost per set: reps ~2.2s each, seconds 1:1, plus rest between
-  /// sets. Used for the day's total-time estimate on the preview cards.
+  /// Time cost of one block in the actual session flow: a 10s prep card,
+  /// then either the timed hold (seconds unit) or a fixed 45s player for
+  /// reps. Mirrors `buildSessionSteps` — sets and per-set rest don't apply
+  /// because each block runs once in-session, so folding them in would
+  /// inflate the day's preview time above what the user actually spends.
   int get estimatedSeconds {
-    final work = unit == ExerciseUnit.seconds ? amount : (amount * 2.2).round();
-    return sets * work + (sets - 1) * restSeconds;
+    const prepSeconds = 10;
+    const repsPlayerSeconds = 45;
+    final work = unit == ExerciseUnit.seconds ? amount : repsPlayerSeconds;
+    return prepSeconds + work;
   }
 }
 

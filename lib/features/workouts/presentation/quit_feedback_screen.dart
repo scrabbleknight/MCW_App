@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:military_calisthenics_women/core/theme/tactical_palette.dart';
 import 'package:military_calisthenics_women/features/onboarding/presentation/steps/trainer_pick_step.dart';
 import 'package:military_calisthenics_women/features/workouts/application/quit_feedback_service.dart';
 
@@ -38,18 +39,17 @@ class _QuitFeedbackScreenState extends State<QuitFeedbackScreen> {
   }
 
   String get _bubbleText => switch (widget.trainer) {
-        Trainer.hailey =>
-          "Hey, what's going on? Something not feeling right?",
-        Trainer.gemma =>
-          "Hey — bailing already? Tell me what's off and I'll fix it.",
-        Trainer.amy =>
-          "Talk to me. What's making you want to bounce?",
-      };
+    Trainer.hailey => "Hey, what's going on? Something not feeling right?",
+    Trainer.gemma =>
+      "Hey — bailing already? Tell me what's off and I'll fix it.",
+    Trainer.amy => "Talk to me. What's making you want to bounce?",
+  };
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return Scaffold(
-      backgroundColor: const Color(0xFF0B0F17),
+      backgroundColor: palette.abyss,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
@@ -59,11 +59,14 @@ class _QuitFeedbackScreenState extends State<QuitFeedbackScreen> {
               Align(
                 alignment: Alignment.centerLeft,
                 child: IconButton(
-                  onPressed: () => Navigator.of(context).pop(
-                    const QuitFeedbackResult(leave: false),
+                  onPressed: () => Navigator.of(
+                    context,
+                  ).pop(const QuitFeedbackResult(leave: false)),
+                  icon: Icon(
+                    Icons.close_rounded,
+                    color: palette.chalk,
+                    size: 28,
                   ),
-                  icon: const Icon(Icons.close_rounded,
-                      color: Colors.white, size: 28),
                 ),
               ),
               const SizedBox(height: 4),
@@ -76,7 +79,7 @@ class _QuitFeedbackScreenState extends State<QuitFeedbackScreen> {
                 'This helps us get to know you and find the perfect workout for you!',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.65),
+                  color: palette.mist,
                   fontSize: 14,
                   height: 1.4,
                 ),
@@ -95,9 +98,9 @@ class _QuitFeedbackScreenState extends State<QuitFeedbackScreen> {
                     child: _ActionButton(
                       label: 'BACK',
                       filled: false,
-                      onTap: () => Navigator.of(context).pop(
-                        const QuitFeedbackResult(leave: false),
-                      ),
+                      onTap: () => Navigator.of(
+                        context,
+                      ).pop(const QuitFeedbackResult(leave: false)),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -152,16 +155,14 @@ class _TrainerBubbleRow extends StatelessWidget {
               alignment: Alignment.centerLeft,
               errorBuilder: (_, __, ___) => const Icon(
                 Icons.person_rounded,
-                color: Colors.white,
+                color: Color(0xFF3B82F6),
                 size: 80,
               ),
             ),
           ),
         ),
         const SizedBox(width: 8),
-        Expanded(
-          child: _ChatBubble(text: bubbleText),
-        ),
+        Expanded(child: _ChatBubble(text: bubbleText)),
       ],
     );
   }
@@ -175,6 +176,7 @@ class _ChatBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
@@ -192,7 +194,7 @@ class _ChatBubble extends StatelessWidget {
       child: Text(
         text,
         style: GoogleFonts.plusJakartaSans(
-          color: Colors.white,
+          color: palette.chalk,
           fontSize: 16,
           fontWeight: FontWeight.w700,
           height: 1.3,
@@ -238,6 +240,7 @@ class _Chip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
@@ -249,16 +252,14 @@ class _Chip extends StatelessWidget {
               : Colors.transparent,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: selected
-                ? const Color(0xFF3B82F6)
-                : Colors.white.withValues(alpha: 0.25),
+            color: selected ? const Color(0xFF3B82F6) : palette.hairline,
             width: 1.2,
           ),
         ),
         child: Text(
           label,
           style: TextStyle(
-            color: Colors.white.withValues(alpha: selected ? 1.0 : 0.85),
+            color: selected ? palette.chalk : palette.mist,
             fontSize: 15,
             fontWeight: FontWeight.w600,
           ),
@@ -294,11 +295,12 @@ class _NoteFieldState extends State<_NoteField> {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     final len = widget.controller.text.length;
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.08),
+        color: palette.surfaceHigh,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -308,26 +310,20 @@ class _NoteFieldState extends State<_NoteField> {
             controller: widget.controller,
             maxLines: 4,
             maxLength: widget.maxChars,
-            style: const TextStyle(color: Colors.white, fontSize: 15),
+            style: TextStyle(color: palette.chalk, fontSize: 15),
             decoration: InputDecoration(
               isCollapsed: true,
               border: InputBorder.none,
               counterText: '',
               hintText: "We'd love your feedback to improve!",
-              hintStyle: TextStyle(
-                color: Colors.white.withValues(alpha: 0.45),
-                fontSize: 15,
-              ),
+              hintStyle: TextStyle(color: palette.muted, fontSize: 15),
             ),
           ),
           Align(
             alignment: Alignment.centerRight,
             child: Text(
               '$len/${widget.maxChars}',
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.55),
-                fontSize: 12,
-              ),
+              style: TextStyle(color: palette.muted, fontSize: 12),
             ),
           ),
         ],
@@ -350,14 +346,13 @@ class _ActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     final bg = filled
-        ? (enabled
-            ? const Color(0xFF2563EB)
-            : Colors.white.withValues(alpha: 0.10))
-        : Colors.white.withValues(alpha: 0.08);
+        ? (enabled ? const Color(0xFF2563EB) : palette.surfaceHigh)
+        : palette.surfaceHigh;
     final fg = filled
         ? Colors.white
-        : Colors.white.withValues(alpha: enabled ? 1.0 : 0.4);
+        : palette.chalk.withValues(alpha: enabled ? 1.0 : 0.4);
     return GestureDetector(
       onTap: enabled ? onTap : null,
       child: Container(

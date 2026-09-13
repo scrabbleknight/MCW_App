@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:military_calisthenics_women/core/theme/tactical_palette.dart';
 import 'package:military_calisthenics_women/features/auth/presentation/login_screen.dart';
@@ -9,6 +10,7 @@ import 'dart:io';
 import 'package:military_calisthenics_women/features/profile/application/body_progress_controller.dart';
 import 'package:military_calisthenics_women/features/profile/application/profile_avatar_controller.dart';
 import 'package:military_calisthenics_women/features/profile/presentation/workout_history_screen.dart';
+import 'package:military_calisthenics_women/features/progression/domain/rank.dart';
 import 'package:military_calisthenics_women/features/workouts/application/progress_controller.dart';
 import 'package:military_calisthenics_women/features/workouts/application/workout_history_controller.dart';
 
@@ -69,7 +71,8 @@ class _ProfileBodyState extends State<_ProfileBody> {
     final user = widget.user;
     final palette = context.palette;
     final progress = context.watch<ProgressController>();
-    final rank = rankFor(progress.stars, progress.completedDays.length);
+    final history = context.watch<WorkoutHistoryController>();
+    final rank = Rank.forWorkouts(history.entries.length);
     final loggedIn = user != null;
     final displayName = user?.displayName?.trim();
     final name = (displayName != null && displayName.isNotEmpty)
@@ -130,7 +133,7 @@ class _ProfileBodyState extends State<_ProfileBody> {
                 child: FilledButton.icon(
                   style: FilledButton.styleFrom(
                     backgroundColor: palette.arctic,
-                    foregroundColor: palette.chalk,
+                    foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
@@ -142,8 +145,7 @@ class _ProfileBodyState extends State<_ProfileBody> {
                   icon: const Icon(Icons.login_rounded),
                   label: const Text(
                     'Log in',
-                    style: TextStyle(
-                        fontSize: 15, fontWeight: FontWeight.w700),
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
                   ),
                 ),
               ),
@@ -212,7 +214,8 @@ class _ProfileBodyState extends State<_ProfileBody> {
           child: Padding(
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
             child: _CalendarCard(
-                completedDayCount: progress.completedDays.length),
+              completedDayCount: progress.completedDays.length,
+            ),
           ),
         ),
         SliverToBoxAdapter(
@@ -254,6 +257,46 @@ class _ProfileBodyState extends State<_ProfileBody> {
             child: _BodyProgressCard(),
           ),
         ),
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+            child: Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: palette.arctic,
+                      side: BorderSide(color: palette.hairline),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    onPressed: () => _simulateDemoData(context),
+                    icon: const Icon(Icons.auto_awesome_rounded, size: 18),
+                    label: const Text('Simulate demo data'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: palette.mist,
+                      side: BorderSide(color: palette.hairline),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    onPressed: () => _clearDemoData(context),
+                    icon: const Icon(Icons.restart_alt_rounded, size: 18),
+                    label: const Text('Clear demo data'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
         if (loggedIn)
           SliverToBoxAdapter(
             child: Padding(
@@ -278,18 +321,222 @@ class _ProfileBodyState extends State<_ProfileBody> {
     );
   }
 
+  Future<void> _simulateDemoData(BuildContext context) async {
+    final progress = context.read<ProgressController>();
+    final history = context.read<WorkoutHistoryController>();
+    final body = context.read<BodyProgressController>();
+    final messenger = ScaffoldMessenger.of(context);
+
+    // Mark the first 8 mission days complete so the star count / activation
+    // ring / rank progress light up on the profile header.
+    for (var d = 1; d <= 8; d++) {
+      await progress.markDayCompleted(d);
+    }
+    // The last markDayCompleted leaves a pending celebration flag — clear it
+    // so seeding doesn't pop the mission-complete modal on return to home.
+    await progress.clearPendingCelebration();
+
+    // Seed a realistic mix of sessions across the last ~18 days for the
+    // calendar dots and the workout-history list. Titles/minutes/kcal mirror
+    // what the real plan generator emits so nothing looks synthetic.
+    final now = DateTime.now();
+    DateTime dayAgo(int n, {int hour = 8, int minute = 30}) => DateTime(
+        now.year, now.month, now.day - n, hour, minute);
+    final samples = <WorkoutHistoryEntry>[
+      WorkoutHistoryEntry(
+        id: 'demo-1',
+        completedAt: dayAgo(0, hour: 7, minute: 45),
+        title: 'Total Body Tone',
+        minutes: 9,
+        calories: 68,
+        kind: WorkoutHistoryKind.mission,
+        accentIndex: 0,
+      ),
+      WorkoutHistoryEntry(
+        id: 'demo-2',
+        completedAt: dayAgo(1),
+        title: 'Lower + Glutes',
+        minutes: 13,
+        calories: 98,
+        kind: WorkoutHistoryKind.mission,
+        accentIndex: 1,
+      ),
+      WorkoutHistoryEntry(
+        id: 'demo-3',
+        completedAt: dayAgo(2, hour: 18),
+        title: 'Core Crusher',
+        minutes: 10,
+        calories: 75,
+        kind: WorkoutHistoryKind.training,
+        accentIndex: 2,
+      ),
+      WorkoutHistoryEntry(
+        id: 'demo-4',
+        completedAt: dayAgo(3),
+        title: 'Upper Sculpt',
+        minutes: 11,
+        calories: 82,
+        kind: WorkoutHistoryKind.mission,
+        accentIndex: 3,
+      ),
+      WorkoutHistoryEntry(
+        id: 'demo-5',
+        completedAt: dayAgo(4),
+        title: 'Combat Body Burn',
+        minutes: 14,
+        calories: 105,
+        kind: WorkoutHistoryKind.custom,
+        accentIndex: 0,
+      ),
+      WorkoutHistoryEntry(
+        id: 'demo-6',
+        completedAt: dayAgo(5),
+        title: 'Total Body Tone',
+        minutes: 9,
+        calories: 68,
+        kind: WorkoutHistoryKind.mission,
+        accentIndex: 0,
+      ),
+      WorkoutHistoryEntry(
+        id: 'demo-7',
+        completedAt: dayAgo(7),
+        title: 'Lower + Glutes',
+        minutes: 12,
+        calories: 90,
+        kind: WorkoutHistoryKind.mission,
+        accentIndex: 1,
+      ),
+      WorkoutHistoryEntry(
+        id: 'demo-8',
+        completedAt: dayAgo(8, hour: 19),
+        title: 'Gentle Recon',
+        minutes: 8,
+        calories: 55,
+        kind: WorkoutHistoryKind.training,
+        accentIndex: 2,
+      ),
+      WorkoutHistoryEntry(
+        id: 'demo-9',
+        completedAt: dayAgo(9),
+        title: 'Bootcamp Bulk',
+        minutes: 15,
+        calories: 112,
+        kind: WorkoutHistoryKind.custom,
+        accentIndex: 3,
+      ),
+      WorkoutHistoryEntry(
+        id: 'demo-10',
+        completedAt: dayAgo(10),
+        title: 'Total Body Tone',
+        minutes: 9,
+        calories: 68,
+        kind: WorkoutHistoryKind.mission,
+        accentIndex: 0,
+      ),
+      WorkoutHistoryEntry(
+        id: 'demo-11',
+        completedAt: dayAgo(12),
+        title: 'Foxtrot Fat Torch',
+        minutes: 13,
+        calories: 98,
+        kind: WorkoutHistoryKind.training,
+        accentIndex: 1,
+      ),
+      WorkoutHistoryEntry(
+        id: 'demo-12',
+        completedAt: dayAgo(14),
+        title: 'Upper Sculpt',
+        minutes: 11,
+        calories: 82,
+        kind: WorkoutHistoryKind.mission,
+        accentIndex: 2,
+      ),
+      WorkoutHistoryEntry(
+        id: 'demo-13',
+        completedAt: dayAgo(17),
+        title: 'Deck of Cards',
+        minutes: 12,
+        calories: 90,
+        kind: WorkoutHistoryKind.custom,
+        accentIndex: 3,
+      ),
+    ];
+    for (final e in samples) {
+      await history.record(e);
+    }
+
+    // Seed a mild downward weight trend across ~7 weeks so the Body Progress
+    // card has real numbers to render (weight, BMI, chart on See All).
+    if (body.heightCm == null) {
+      await body.setHeight(168);
+    }
+    if (body.goalKg == null) {
+      await body.setGoal(65);
+    }
+    final trend = <(int daysAgo, double kg)>[
+      (49, 74.8),
+      (42, 74.2),
+      (35, 73.6),
+      (28, 72.9),
+      (21, 72.1),
+      (14, 71.4),
+      (7, 70.7),
+      (0, 70.2),
+    ];
+    for (final (d, kg) in trend) {
+      await body.addEntry(
+        WeightEntry(
+          date: DateTime(now.year, now.month, now.day - d),
+          kg: kg,
+        ),
+      );
+    }
+
+    messenger.showSnackBar(
+      const SnackBar(
+        content: Text('Demo data seeded — check calendar & body progress.'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
+  Future<void> _clearDemoData(BuildContext context) async {
+    final progress = context.read<ProgressController>();
+    final history = context.read<WorkoutHistoryController>();
+    final body = context.read<BodyProgressController>();
+    final messenger = ScaffoldMessenger.of(context);
+
+    await history.clear();
+    for (final entry in List<WeightEntry>.from(body.entries)) {
+      await body.removeEntry(entry);
+    }
+    // ProgressController has no bulk-clear; unset each seeded day so the star
+    // count and calendar reset. Uses the same key path as markDayCompleted.
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('progress.completed_days');
+    await prefs.remove('progress.stars');
+    await prefs.remove('progress.pending_celebration_day');
+    // Reload from prefs so the in-memory state matches disk.
+    await progress.load();
+
+    messenger.showSnackBar(
+      const SnackBar(
+        content: Text('Demo data cleared.'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
   Future<void> _confirmSignOut(BuildContext context) async {
     final palette = context.palette;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogCtx) => AlertDialog(
         backgroundColor: palette.surface,
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
         title: Text(
           'Sign out?',
-          style:
-              TextStyle(color: palette.chalk, fontWeight: FontWeight.w800),
+          style: TextStyle(color: palette.chalk, fontWeight: FontWeight.w800),
         ),
         content: Text(
           "You'll need to sign in again to access your account and progress.",
@@ -398,11 +645,7 @@ class _AvatarBadge extends StatelessWidget {
                   border: Border.all(color: palette.abyss, width: 2),
                 ),
                 alignment: Alignment.center,
-                child: Icon(
-                  Icons.edit_rounded,
-                  size: 12,
-                  color: palette.chalk,
-                ),
+                child: Icon(Icons.edit_rounded, size: 12, color: Colors.white),
               ),
             ),
           ],
@@ -414,8 +657,9 @@ class _AvatarBadge extends StatelessWidget {
 
 Future<void> _showRenameDialog(BuildContext context, User user) async {
   final palette = context.palette;
-  final controller =
-      TextEditingController(text: user.displayName?.trim() ?? '');
+  final controller = TextEditingController(
+    text: user.displayName?.trim() ?? '',
+  );
   await showDialog<void>(
     context: context,
     builder: (dialogCtx) {
@@ -461,7 +705,7 @@ Future<void> _showRenameDialog(BuildContext context, User user) async {
           FilledButton(
             style: FilledButton.styleFrom(
               backgroundColor: palette.arctic,
-              foregroundColor: palette.chalk,
+              foregroundColor: Colors.white,
             ),
             onPressed: () async {
               final name = controller.text.trim();
@@ -480,8 +724,10 @@ Future<void> _showRenameDialog(BuildContext context, User user) async {
   );
 }
 
-Future<void> _showAvatarSheet(BuildContext context,
-    {required bool hasCustom}) async {
+Future<void> _showAvatarSheet(
+  BuildContext context, {
+  required bool hasCustom,
+}) async {
   final palette = context.palette;
   final controller = context.read<ProfileAvatarController>();
   await showModalBottomSheet<void>(
@@ -510,7 +756,9 @@ Future<void> _showAvatarSheet(BuildContext context,
               title: Text(
                 'Choose from gallery',
                 style: TextStyle(
-                    color: palette.chalk, fontWeight: FontWeight.w600),
+                  color: palette.chalk,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
               onTap: () {
                 Navigator.of(sheetCtx).pop();
@@ -523,7 +771,9 @@ Future<void> _showAvatarSheet(BuildContext context,
                 title: Text(
                   'Remove photo',
                   style: TextStyle(
-                      color: palette.danger, fontWeight: FontWeight.w600),
+                    color: palette.danger,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 subtitle: Text(
                   'Restore default avatar',
@@ -543,8 +793,11 @@ Future<void> _showAvatarSheet(BuildContext context,
 }
 
 class _StatsRow extends StatelessWidget {
-  const _StatsRow(
-      {required this.days, required this.stars, required this.rank});
+  const _StatsRow({
+    required this.days,
+    required this.stars,
+    required this.rank,
+  });
 
   final int days;
   final int stars;
@@ -556,11 +809,20 @@ class _StatsRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Row(
         children: [
-          Expanded(child: _StatTile(label: days == 1 ? 'Day' : 'Days', value: '$days')),
+          Expanded(
+            child: _StatTile(label: days == 1 ? 'Day' : 'Days', value: '$days'),
+          ),
           const SizedBox(width: 10),
-          Expanded(child: _StatTile(label: stars == 1 ? 'Star' : 'Stars', value: '$stars')),
+          Expanded(
+            child: _StatTile(
+              label: stars == 1 ? 'Star' : 'Stars',
+              value: '$stars',
+            ),
+          ),
           const SizedBox(width: 10),
-          Expanded(child: _StatTile(label: 'Rank', value: rank.label)),
+          Expanded(
+            child: _StatTile(label: 'Rank', value: rank.label),
+          ),
         ],
       ),
     );
@@ -620,8 +882,10 @@ class _AchievementStrip extends StatelessWidget {
     // Show the three ranks around the user's current one for a preview.
     final index = Rank.values.indexOf(currentRank);
     final start = (index - 1).clamp(0, Rank.values.length - 3);
-    final preview =
-        Rank.values.sublist(start, (start + 3).clamp(0, Rank.values.length));
+    final preview = Rank.values.sublist(
+      start,
+      (start + 3).clamp(0, Rank.values.length),
+    );
 
     return Container(
       height: 150,
@@ -676,10 +940,12 @@ class AchievementsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
-    final unlocked =
-        Rank.values.where((r) => r.index <= currentRank.index).toList();
-    final locked =
-        Rank.values.where((r) => r.index > currentRank.index).toList();
+    final unlocked = Rank.values
+        .where((r) => r.index <= currentRank.index)
+        .toList();
+    final locked = Rank.values
+        .where((r) => r.index > currentRank.index)
+        .toList();
 
     return Scaffold(
       backgroundColor: palette.abyss,
@@ -701,9 +967,7 @@ class AchievementsScreen extends StatelessWidget {
         top: false,
         child: CustomScrollView(
           slivers: [
-            SliverToBoxAdapter(
-              child: _FeaturedBadge(rank: currentRank),
-            ),
+            SliverToBoxAdapter(child: _FeaturedBadge(rank: currentRank)),
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
@@ -758,10 +1022,7 @@ class _FeaturedBadge extends StatelessWidget {
         gradient: RadialGradient(
           radius: 0.9,
           center: Alignment.center,
-          colors: [
-            palette.arcticDeep.withOpacity(0.45),
-            palette.abyss,
-          ],
+          colors: [palette.arcticDeep.withOpacity(0.45), palette.abyss],
         ),
         border: Border.all(color: palette.hairline),
       ),
@@ -782,8 +1043,10 @@ class _FeaturedBadge extends StatelessWidget {
               ),
               Container(
                 margin: const EdgeInsets.only(bottom: 24),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 10,
+                ),
                 decoration: BoxDecoration(
                   color: palette.midnight,
                   borderRadius: BorderRadius.circular(30),
@@ -792,8 +1055,11 @@ class _FeaturedBadge extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.military_tech_rounded,
-                        color: palette.warning, size: 18),
+                    Icon(
+                      Icons.military_tech_rounded,
+                      color: palette.warning,
+                      size: 18,
+                    ),
                     const SizedBox(width: 8),
                     Text(
                       rank.label.toUpperCase(),
@@ -805,8 +1071,11 @@ class _FeaturedBadge extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    Icon(Icons.military_tech_rounded,
-                        color: palette.warning, size: 18),
+                    Icon(
+                      Icons.military_tech_rounded,
+                      color: palette.warning,
+                      size: 18,
+                    ),
                   ],
                 ),
               ),
@@ -904,34 +1173,7 @@ class _BadgeCard extends StatelessWidget {
   }
 }
 
-// -----------------------------------------------------------------------------
-// Rank model
-// -----------------------------------------------------------------------------
-
-enum Rank {
-  recruit('Recruit', 'assets/branding/recruit_badge.png', 0),
-  private('Private', 'assets/branding/private_badge.png', 3),
-  corporal('Corporal', 'assets/branding/corporal_badge.png', 8),
-  sergeant('Sergeant', 'assets/branding/sergeant_badge.png', 16),
-  lieutenant('Lieutenant', 'assets/branding/lieutenant_badge.png', 28),
-  captain('Captain', 'assets/branding/captain_badge.png', 42),
-  general('General', 'assets/branding/general_badge.png', 60);
-
-  const Rank(this.label, this.asset, this.starThreshold);
-
-  final String label;
-  final String asset;
-  final int starThreshold;
-}
-
-Rank rankFor(int stars, int days) {
-  final score = stars + days;
-  Rank current = Rank.recruit;
-  for (final r in Rank.values) {
-    if (score >= r.starThreshold) current = r;
-  }
-  return current;
-}
+// Rank model — see lib/features/progression/domain/rank.dart
 
 // -----------------------------------------------------------------------------
 // Calendar card
@@ -989,10 +1231,14 @@ class _CalendarCardState extends State<_CalendarCard> {
               ),
               const Spacer(),
               _RoundIconButton(
-                  icon: Icons.chevron_left_rounded, onTap: () => _shift(-1)),
+                icon: Icons.chevron_left_rounded,
+                onTap: () => _shift(-1),
+              ),
               const SizedBox(width: 8),
               _RoundIconButton(
-                  icon: Icons.chevron_right_rounded, onTap: () => _shift(1)),
+                icon: Icons.chevron_right_rounded,
+                onTap: () => _shift(1),
+              ),
             ],
           ),
           const SizedBox(height: 14),
@@ -1018,7 +1264,7 @@ class _CalendarCardState extends State<_CalendarCard> {
             child: FilledButton(
               style: FilledButton.styleFrom(
                 backgroundColor: context.palette.arctic,
-                foregroundColor: context.palette.chalk,
+                foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -1095,16 +1341,18 @@ class _CalendarGrid extends StatelessWidget {
     final cells = <Widget>[];
     const labels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
     for (final l in labels) {
-      cells.add(Center(
-        child: Text(
-          l,
-          style: TextStyle(
-            color: palette.muted,
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
+      cells.add(
+        Center(
+          child: Text(
+            l,
+            style: TextStyle(
+              color: palette.muted,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
-      ));
+      );
     }
     for (var i = 0; i < leadingBlanks; i++) {
       cells.add(const SizedBox.shrink());
@@ -1146,16 +1394,18 @@ class _CalendarCell extends StatelessWidget {
     final palette = context.palette;
     final accent = palette.arctic;
     final decoration = switch (highlight) {
-      _CellHighlight.filled =>
-        BoxDecoration(color: accent, shape: BoxShape.circle),
+      _CellHighlight.filled => BoxDecoration(
+        color: accent,
+        shape: BoxShape.circle,
+      ),
       _CellHighlight.outlined => BoxDecoration(
-          shape: BoxShape.circle,
-          border: Border.all(color: accent, width: 1.5),
-        ),
+        shape: BoxShape.circle,
+        border: Border.all(color: accent, width: 1.5),
+      ),
       _CellHighlight.none => const BoxDecoration(),
     };
     final color = switch (highlight) {
-      _CellHighlight.filled => palette.chalk,
+      _CellHighlight.filled => Colors.white,
       _CellHighlight.outlined => accent,
       _CellHighlight.none => palette.mist,
     };
@@ -1180,8 +1430,18 @@ class _CalendarCell extends StatelessWidget {
 
 String _monthName(int m) {
   const names = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
   ];
   return names[m - 1];
 }
@@ -1217,12 +1477,14 @@ class _BodyProgressCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Weight',
-                        style: TextStyle(
-                          color: palette.mist,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                        )),
+                    Text(
+                      'Weight',
+                      style: TextStyle(
+                        color: palette.mist,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                     const SizedBox(height: 4),
                     Text(
                       weight == null
@@ -1240,9 +1502,11 @@ class _BodyProgressCard extends StatelessWidget {
                       child: FilledButton.icon(
                         style: FilledButton.styleFrom(
                           backgroundColor: palette.arctic,
-                          foregroundColor: palette.chalk,
+                          foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 6),
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
                           minimumSize: const Size(0, 32),
                           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                           visualDensity: VisualDensity.compact,
@@ -1256,9 +1520,13 @@ class _BodyProgressCard extends StatelessWidget {
                           ),
                         ),
                         icon: const Icon(Icons.add_rounded, size: 16),
-                        label: const Text('Add weight',
-                            style: TextStyle(
-                                fontSize: 13, fontWeight: FontWeight.w700)),
+                        label: const Text(
+                          'Add weight',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
                       ),
                     ),
                   ],
@@ -1291,12 +1559,14 @@ class _BmiBlock extends StatelessWidget {
       children: [
         Row(
           children: [
-            Text('BMI',
-                style: TextStyle(
-                  color: palette.mist,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                )),
+            Text(
+              'BMI',
+              style: TextStyle(
+                color: palette.mist,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
             const Spacer(),
             Tooltip(
               message: 'BMI Metrics/Formula from CDC',
@@ -1342,46 +1612,48 @@ class _BmiBar extends StatelessWidget {
     if (bmi != null) {
       t = ((bmi! - 15) / (40 - 15)).clamp(0.0, 1.0);
     }
-    return LayoutBuilder(builder: (context, c) {
-      final w = c.maxWidth;
-      return SizedBox(
-        height: 14,
-        child: Stack(
-          children: [
-            Positioned.fill(
-              child: Row(
-                children: [
-                  Expanded(child: _seg(palette.arctic)),
-                  const SizedBox(width: 2),
-                  Expanded(child: _seg(palette.success)),
-                  const SizedBox(width: 2),
-                  Expanded(child: _seg(palette.warning)),
-                  const SizedBox(width: 2),
-                  Expanded(child: _seg(palette.danger)),
-                ],
+    return LayoutBuilder(
+      builder: (context, c) {
+        final w = c.maxWidth;
+        return SizedBox(
+          height: 14,
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: Row(
+                  children: [
+                    Expanded(child: _seg(palette.arctic)),
+                    const SizedBox(width: 2),
+                    Expanded(child: _seg(palette.success)),
+                    const SizedBox(width: 2),
+                    Expanded(child: _seg(palette.warning)),
+                    const SizedBox(width: 2),
+                    Expanded(child: _seg(palette.danger)),
+                  ],
+                ),
               ),
-            ),
-            if (t != null)
-              Positioned(
-                left: (w * t) - 6,
-                top: -4,
-                child: Icon(Icons.arrow_drop_down,
-                    color: palette.chalk, size: 20),
-              ),
-          ],
-        ),
-      );
-    });
+              if (t != null)
+                Positioned(
+                  left: (w * t) - 6,
+                  top: -4,
+                  child: Icon(
+                    Icons.arrow_drop_down,
+                    color: palette.chalk,
+                    size: 20,
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   Widget _seg(Color c) => Container(
-        height: 4,
-        margin: const EdgeInsets.only(top: 6),
-        decoration: BoxDecoration(
-          color: c,
-          borderRadius: BorderRadius.circular(2),
-        ),
-      );
+    height: 4,
+    margin: const EdgeInsets.only(top: 6),
+    decoration: BoxDecoration(color: c, borderRadius: BorderRadius.circular(2)),
+  );
 }
 
 String _bmiLabel(double bmi) {
@@ -1413,8 +1685,7 @@ class _WeightTimeline extends StatelessWidget {
     final start = earliest?.kg;
     final current = latest?.kg;
     final goal = controller.goalKg;
-    final delta =
-        (start == null || current == null) ? 0.0 : (current - start);
+    final delta = (start == null || current == null) ? 0.0 : (current - start);
     final deltaText = delta == 0
         ? '0.0 kg since start'
         : '${delta > 0 ? '+' : ''}${delta.toStringAsFixed(1)} kg since start';
@@ -1430,18 +1701,22 @@ class _WeightTimeline extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('Timeline',
-                style: TextStyle(
-                  color: palette.chalk,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w800,
-                )),
-            Text(deltaText,
-                style: TextStyle(
-                  color: palette.mist,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                )),
+            Text(
+              'Timeline',
+              style: TextStyle(
+                color: palette.chalk,
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            Text(
+              deltaText,
+              style: TextStyle(
+                color: palette.mist,
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 12),
@@ -1479,16 +1754,18 @@ class _WeightTimeline extends StatelessWidget {
                 borderRadius: BorderRadius.circular(4),
               ),
             ),
-            LayoutBuilder(builder: (context, c) {
-              return Container(
-                height: 6,
-                width: c.maxWidth * t,
-                decoration: BoxDecoration(
-                  color: palette.arctic,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-              );
-            }),
+            LayoutBuilder(
+              builder: (context, c) {
+                return Container(
+                  height: 6,
+                  width: c.maxWidth * t,
+                  decoration: BoxDecoration(
+                    color: palette.arctic,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                );
+              },
+            ),
           ],
         ),
         const SizedBox(height: 8),
@@ -1518,17 +1795,31 @@ class _WeightTimeline extends StatelessWidget {
   }
 }
 
-String _dateShort(DateTime d) =>
-    '${_monthName(d.month)} ${d.day}, ${d.year}';
+String _dateShort(DateTime d) => '${_monthName(d.month)} ${d.day}, ${d.year}';
 
 String _dateLong(DateTime d) {
   const weekdays = [
-    'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday',
-    'Saturday', 'Sunday',
+    'Monday',
+    'Tuesday',
+    'Wednesday',
+    'Thursday',
+    'Friday',
+    'Saturday',
+    'Sunday',
   ];
   const months = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December',
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
   ];
   return '${weekdays[d.weekday - 1]}, ${months[d.month - 1]} ${d.day}, ${d.year}';
 }
@@ -1555,18 +1846,21 @@ Future<void> _showAddWeightSheet(BuildContext context) async {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('Add weight',
-                style: TextStyle(
-                  color: palette.chalk,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                )),
+            Text(
+              'Add weight',
+              style: TextStyle(
+                color: palette.chalk,
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
             const SizedBox(height: 16),
             TextField(
               controller: controller,
               autofocus: true,
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               style: TextStyle(color: palette.chalk, fontSize: 16),
               decoration: InputDecoration(
                 suffixText: 'kg',
@@ -1583,19 +1877,21 @@ Future<void> _showAddWeightSheet(BuildContext context) async {
             FilledButton(
               style: FilledButton.styleFrom(
                 backgroundColor: palette.arctic,
-                foregroundColor: palette.chalk,
+                foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 14),
               ),
               onPressed: () async {
                 final kg = double.tryParse(controller.text.trim());
                 if (kg == null || kg <= 0) return;
                 await sheetCtx.read<BodyProgressController>().addEntry(
-                      WeightEntry(date: DateTime.now(), kg: kg),
-                    );
+                  WeightEntry(date: DateTime.now(), kg: kg),
+                );
                 if (sheetCtx.mounted) Navigator.of(sheetCtx).pop();
               },
-              child: const Text('Save',
-                  style: TextStyle(fontWeight: FontWeight.w800)),
+              child: const Text(
+                'Save',
+                style: TextStyle(fontWeight: FontWeight.w800),
+              ),
             ),
           ],
         ),
@@ -1607,8 +1903,9 @@ Future<void> _showAddWeightSheet(BuildContext context) async {
 Future<void> _showGoalSheet(BuildContext context) async {
   final palette = context.palette;
   final body = context.read<BodyProgressController>();
-  final controller =
-      TextEditingController(text: body.goalKg?.toStringAsFixed(0) ?? '');
+  final controller = TextEditingController(
+    text: body.goalKg?.toStringAsFixed(0) ?? '',
+  );
   await showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
@@ -1628,18 +1925,21 @@ Future<void> _showGoalSheet(BuildContext context) async {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('Goal weight',
-                style: TextStyle(
-                  color: palette.chalk,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                )),
+            Text(
+              'Goal weight',
+              style: TextStyle(
+                color: palette.chalk,
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
             const SizedBox(height: 16),
             TextField(
               controller: controller,
               autofocus: true,
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               style: TextStyle(color: palette.chalk, fontSize: 16),
               decoration: InputDecoration(
                 suffixText: 'kg',
@@ -1656,7 +1956,7 @@ Future<void> _showGoalSheet(BuildContext context) async {
             FilledButton(
               style: FilledButton.styleFrom(
                 backgroundColor: palette.arctic,
-                foregroundColor: palette.chalk,
+                foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 14),
               ),
               onPressed: () async {
@@ -1665,8 +1965,10 @@ Future<void> _showGoalSheet(BuildContext context) async {
                 await body.setGoal(kg);
                 if (sheetCtx.mounted) Navigator.of(sheetCtx).pop();
               },
-              child: const Text('Save',
-                  style: TextStyle(fontWeight: FontWeight.w800)),
+              child: const Text(
+                'Save',
+                style: TextStyle(fontWeight: FontWeight.w800),
+              ),
             ),
           ],
         ),
@@ -1689,8 +1991,7 @@ class WeightEntriesScreen extends StatelessWidget {
     final entries = body.entries;
     final start = body.earliest?.kg;
     final current = body.latest?.kg;
-    final change =
-        (start == null || current == null) ? 0.0 : current - start;
+    final change = (start == null || current == null) ? 0.0 : current - start;
 
     return Scaffold(
       backgroundColor: palette.abyss,
@@ -1723,7 +2024,9 @@ class WeightEntriesScreen extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                 child: Container(
                   padding: const EdgeInsets.symmetric(
-                      vertical: 20, horizontal: 12),
+                    vertical: 20,
+                    horizontal: 12,
+                  ),
                   decoration: BoxDecoration(
                     color: palette.surface,
                     borderRadius: BorderRadius.circular(16),
@@ -1734,8 +2037,7 @@ class WeightEntriesScreen extends StatelessWidget {
                       Expanded(
                         child: _MetricCol(
                           label: 'STARTING',
-                          value:
-                              start == null ? '—' : start.toStringAsFixed(0),
+                          value: start == null ? '—' : start.toStringAsFixed(0),
                         ),
                       ),
                       Expanded(
@@ -1752,8 +2054,8 @@ class WeightEntriesScreen extends StatelessWidget {
                           value: current == null || start == null
                               ? '—'
                               : (change == 0
-                                  ? '0'
-                                  : '${change > 0 ? '+' : ''}${change.toStringAsFixed(0)}'),
+                                    ? '0'
+                                    : '${change > 0 ? '+' : ''}${change.toStringAsFixed(0)}'),
                         ),
                       ),
                     ],
@@ -1783,10 +2085,11 @@ class WeightEntriesScreen extends StatelessWidget {
               SliverList.separated(
                 itemCount: entries.length,
                 separatorBuilder: (_, __) => Divider(
-                    color: palette.hairline,
-                    height: 1,
-                    indent: 20,
-                    endIndent: 20),
+                  color: palette.hairline,
+                  height: 1,
+                  indent: 20,
+                  endIndent: 20,
+                ),
                 itemBuilder: (context, i) {
                   final e = entries[i];
                   return Dismissible(
@@ -1797,12 +2100,13 @@ class WeightEntriesScreen extends StatelessWidget {
                       color: palette.danger,
                       alignment: Alignment.centerRight,
                       padding: const EdgeInsets.only(right: 24),
-                      child:
-                          Icon(Icons.delete_outline, color: palette.chalk),
+                      child: Icon(Icons.delete_outline, color: palette.chalk),
                     ),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 20, vertical: 14),
+                        horizontal: 20,
+                        vertical: 14,
+                      ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -1846,20 +2150,24 @@ class _MetricCol extends StatelessWidget {
     final palette = context.palette;
     return Column(
       children: [
-        Text(value,
-            style: TextStyle(
-              color: palette.chalk,
-              fontSize: 28,
-              fontWeight: FontWeight.w800,
-            )),
+        Text(
+          value,
+          style: TextStyle(
+            color: palette.chalk,
+            fontSize: 28,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
         const SizedBox(height: 4),
-        Text(label,
-            style: TextStyle(
-              color: palette.muted,
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 1.2,
-            )),
+        Text(
+          label,
+          style: TextStyle(
+            color: palette.muted,
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 1.2,
+          ),
+        ),
       ],
     );
   }

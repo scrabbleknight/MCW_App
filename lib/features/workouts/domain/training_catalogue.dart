@@ -1,13 +1,10 @@
-import 'package:military_calisthenics_women/features/plan/domain/exercise.dart';
+import 'package:military_calisthenics_women/features/plan/domain/exercise_lookup.dart';
 import 'package:military_calisthenics_women/features/plan/domain/plan.dart';
 
-/// Composes a [PlanDay] for a Training-tab routine by drawing from curated
-/// per-category pools. Each routine gets 2 warmup + 12 main + 2 cooldown
-/// blocks — a rotating window over the pool keeps every routine in a
-/// category distinct without hand-authoring 400 rows.
-///
-/// The `dayIndex` we assign is synthetic (10 000 + hash) so the starred-
-/// workouts controller keys these separately from the 21-day mission days.
+/// Builds one of the 25 Training-tab routines exclusively from the finished,
+/// media-backed MVP exercise library. Warm-ups and cool-downs are paired to
+/// the named routine, while every main block is curated rather than selected
+/// from a generic category-wide window.
 PlanDay buildTrainingDay({
   required TrainingCategoryKey category,
   required int slot,
@@ -15,59 +12,85 @@ PlanDay buildTrainingDay({
   required int minutes,
   required int kcal,
 }) {
-  final warmup = _pick(_warmupPool, slot * 2, 2)
-      .map((id) => PlanBlock(
-            exerciseId: id,
-            sets: 1,
-            amount: 45,
-            unit: ExerciseUnit.seconds,
-            restSeconds: 10,
-            phase: PlanPhase.warmup,
-          ))
-      .toList(growable: false);
+  final prescription = _prescriptionFor(category, slot);
+  final mainSets = switch (minutes) {
+    <= 12 => 2,
+    <= 18 => 3,
+    _ => 4,
+  };
 
-  final mainIds = _pick(_mainPools[category]!, slot * 2, 12);
-  final main = <PlanBlock>[
-    for (final id in mainIds)
-      PlanBlock(
-        exerciseId: id,
-        sets: 3,
-        amount: _defaultAmountForMain(id),
-        unit: _unitForMain(id),
-        restSeconds: 20,
-        phase: PlanPhase.main,
-      ),
-  ];
-
-  final cooldown = _pick(_cooldownPool, slot * 2, 2)
-      .map((id) => PlanBlock(
-            exerciseId: id,
-            sets: 1,
-            amount: 45,
-            unit: ExerciseUnit.seconds,
-            restSeconds: 5,
-            phase: PlanPhase.cooldown,
-          ))
-      .toList(growable: false);
-
-  final synthIndex = trainingDayKey(category, slot);
   return PlanDay(
-    dayIndex: synthIndex,
+    dayIndex: trainingDayKey(category, slot),
     title: name,
-    warmup: warmup,
-    main: main,
-    cooldown: cooldown,
+    warmup: prescription.warmup
+        .map((id) => _block(id, PlanPhase.warmup, sets: 1))
+        .toList(growable: false),
+    main: prescription.main
+        .map((id) => _block(id, PlanPhase.main, sets: mainSets))
+        .toList(growable: false),
+    cooldown: prescription.cooldown
+        .map((id) => _block(id, PlanPhase.cooldown, sets: 1))
+        .toList(growable: false),
   );
 }
 
+PlanBlock _block(String id, PlanPhase phase, {required int sets}) {
+  final exercise = findExercise(id);
+  if (exercise == null) {
+    throw StateError('Training prescription references unknown exercise: $id');
+  }
+
+  return PlanBlock(
+    exerciseId: id,
+    sets: sets,
+    amount: exercise.baseAmount,
+    unit: exercise.unit,
+    restSeconds: phase == PlanPhase.main ? 20 : 5,
+    phase: phase,
+  );
+}
+
+_TrainingPrescription _prescriptionFor(TrainingCategoryKey category, int slot) {
+  final main = _mainRoutines[category]?[slot];
+  final warmups = _phasePair(_warmupPools[category], slot);
+  final cooldowns = _phasePair(_cooldownPools[category], slot);
+
+  if (main == null || warmups == null || cooldowns == null) {
+    throw RangeError(
+      'No training prescription for ${category.name} slot $slot',
+    );
+  }
+
+  return _TrainingPrescription(
+    warmup: warmups,
+    main: main,
+    cooldown: cooldowns,
+  );
+}
+
+List<String>? _phasePair(List<String>? pool, int slot) {
+  if (pool == null || slot < 0 || slot >= 5 || pool.length != 10) return null;
+  return pool.sublist(slot * 2, slot * 2 + 2);
+}
+
+class _TrainingPrescription {
+  const _TrainingPrescription({
+    required this.warmup,
+    required this.main,
+    required this.cooldown,
+  });
+
+  final List<String> warmup;
+  final List<String> main;
+  final List<String> cooldown;
+}
+
 /// Stable synthetic day index for a training routine. Kept above the 21-day
-/// mission range so [TrainingProgressController] and the mission
-/// [ProgressController] can't ever collide on a key.
+/// mission range so Training and mission progress cannot collide.
 int trainingDayKey(TrainingCategoryKey category, int slot) =>
     10000 + category.index * 100 + slot;
 
-/// Which category this routine belongs to — used to select the right main-
-/// exercise pool. Order matches [TrainingScreen._categories].
+/// Order matches the Training screen categories.
 enum TrainingCategoryKey {
   trending,
   combatConditioning,
@@ -76,241 +99,370 @@ enum TrainingCategoryKey {
   lowImpactOps,
 }
 
-/// Rotating slice of [pool] starting at [start], wrapping around and never
-/// repeating within the returned list. Deterministic per (start, count).
-List<String> _pick(List<String> pool, int start, int count) {
-  final out = <String>[];
-  for (var i = 0; i < count; i++) {
-    out.add(pool[(start + i) % pool.length]);
-  }
-  return out;
-}
-
-/// Reps for rep-based main exercises, seconds for hold/cardio-based ones.
-int _defaultAmountForMain(String id) => _unitForMain(id) == ExerciseUnit.seconds ? 40 : 12;
-
-/// Seconds for holds/planks/cardio bursts; reps for everything else.
-ExerciseUnit _unitForMain(String id) {
-  const secondBased = {
-    'stand_wall_sit',
-    'squat_hold',
-    'prone_forearm_plank',
-    'prone_plank_shoulder_tap',
-    'prone_plank_hip_dip',
-    'prone_up_down_plank',
-    'main_high_plank',
-    'main_dynamic_plank',
-    'main_pushup_hold',
-    'main_wall_hold_pulses',
-    'main_reverse_plank',
-    'main_dead_bug_holds',
-    'main_low_impact_climber',
-    'main_seated_twist_reach',
-    'sup_hollow_hold',
-    'sup_flutter_kick',
-    'sup_scissor',
-    'bear_hold',
-    'side_plank',
-    'side_plank_hip_dip',
-    'stand_high_knees',
-    'stand_jumping_jacks',
-    'stand_skater_hops',
-    'stand_shadow_box',
-    'stand_cross_punches',
-    'full_mountain_climber',
-    'full_slow_climber',
-    'full_cross_climber',
-    'full_butt_kicks',
-    'full_star_jump',
-    'full_inchworm',
-    'main_speed_skater',
-    'main_knee_drive',
-    'main_squat_thrust',
-  };
-  return secondBased.contains(id) ? ExerciseUnit.seconds : ExerciseUnit.reps;
-}
-
-// ---------------------------------------------------------------------------
-// Shared warmup / cooldown pools — every routine draws from these so the
-// prep and recovery phases feel consistent across the whole Training tab.
-// ---------------------------------------------------------------------------
-
-const List<String> _warmupPool = [
-  'wu_neck_rolls',
-  'wu_shoulder_rolls',
-  'wu_side_bends',
-  'wu_leg_swings_front',
-  'wu_leg_swings_side',
-  'wu_ankle_circles',
-  'wu_wrist_circles',
-  'wu_hip_openers',
-  'wu_world_greatest',
-  'wu_downdog_pedals',
-  'wu_thoracic_rotation',
-  'wu_scap_pushup',
-  'wu_glute_activation',
-  'wu_toe_touch_reach',
-  'wu_cross_toe_touch',
-  'wu_arm_swings',
-  'wu_knee_hug_walk',
-  'wu_shadow_jab',
-];
-
-const List<String> _cooldownPool = [
-  'cd_child_pose',
-  'cd_seated_forward_fold',
-  'cd_butterfly',
-  'cd_pigeon',
-  'cd_supine_twist',
-  'cd_hamstring_stretch',
-  'cd_quad_stretch',
-  'cd_hip_flexor',
-  'cd_figure_four',
-  'cd_cobra_hold',
-  'cd_downdog_hold',
-  'cd_thread_needle_hold',
-  'cd_cat_cow_slow',
-  'cd_box_breath',
-  'cd_chest_opener',
-  'cd_calf_stretch',
-  'cd_neck_stretch',
-  'cd_savasana',
-];
-
-// ---------------------------------------------------------------------------
-// Per-category main pools. Each has at least 20 IDs so five routines can
-// each grab a distinct 12-block slice via the rotation window.
-// ---------------------------------------------------------------------------
-
-const Map<TrainingCategoryKey, List<String>> _mainPools = {
+// Each ten-entry phase pool is ordered as five relevant pairs—one pair for
+// each routine card in that category.
+const _warmupPools = <TrainingCategoryKey, List<String>>{
   TrainingCategoryKey.trending: [
-    'stand_high_knees',
-    'stand_jumping_jacks',
-    'squat_bodyweight',
-    'squat_jump',
-    'lunge_forward',
-    'prone_pushup',
-    'sup_crunch',
-    'sup_bicycle_crunch',
-    'full_burpee',
-    'full_mountain_climber',
-    'full_star_jump',
-    'main_squat_kick',
-    'main_speed_skater',
-    'main_squat_press',
-    'stand_shadow_box',
-    'main_knee_drive',
-    'sup_russian_twist',
-    'main_pushup_reach',
-    'lunge_jumping',
-    'main_dynamic_plank',
-    'full_half_burpee',
-    'sup_flutter_kick',
-    'sup_v_up',
-    'prone_forearm_plank',
+    'wu_cross_toe_touch',
+    'wu_high_knees_arm_drive',
+    'wu_arm_cross_with_steps',
+    'wu_overhead_press_wide_steps',
+    'wu_squat_reach_jacks',
+    'wu_skaters_double_steps',
+    'wu_wide_step_twist',
+    'wu_clapping_steps',
+    'wu_wide_toe_touches',
+    'wu_big_arm_circles',
   ],
   TrainingCategoryKey.combatConditioning: [
-    'full_burpee',
-    'full_half_burpee',
-    'full_mountain_climber',
-    'full_star_jump',
-    'full_butt_kicks',
-    'full_cross_climber',
-    'stand_high_knees',
-    'stand_jumping_jacks',
-    'stand_skater_hops',
-    'squat_jump',
-    'lunge_jumping',
-    'main_squat_thrust',
-    'main_knee_drive',
-    'main_speed_skater',
-    'stand_cross_punches',
-    'stand_front_kick',
-    'stand_side_kick',
-    'stand_rear_kick',
-    'main_squat_kick',
-    'main_low_impact_climber',
-    'main_squat_pulse_hold',
-    'stand_shadow_box',
-    'full_inchworm',
-    'main_pushup_shoulder_tap',
+    'wu_high_knees_arm_drive',
+    'wu_standing_core_brace_march',
+    'wu_squat_reach_jacks',
+    'wu_skaters_double_steps',
+    'wu_overhead_press_wide_steps',
+    'wu_clapping_steps',
+    'wu_walking_side_high_knee',
+    'wu_wide_step_twist',
+    'wu_side_to_side_squat_hold',
+    'wu_up_straight_punches',
   ],
   TrainingCategoryKey.battleReadyStrength: [
-    'squat_bodyweight',
-    'squat_sumo',
-    'squat_hold',
-    'squat_pulse',
-    'lunge_forward',
-    'lunge_reverse',
-    'lunge_lateral',
-    'lunge_curtsy',
-    'prone_pushup',
-    'prone_wide_pushup',
-    'prone_diamond_pushup',
-    'prone_knee_pushup',
-    'sup_glute_bridge',
-    'sup_hip_thrust',
-    'sup_single_leg_bridge',
-    'prone_superman',
-    'prone_forearm_plank',
-    'main_pushup_reach',
-    'main_negative_pushup',
-    'main_deadlift_reach',
-    'main_glute_kickback',
-    'main_frog_pump',
-    'main_reverse_lunge_kick',
-    'main_wall_hold_pulses',
+    'wu_squat_to_stand',
+    'wu_leg_swing_front_back_right',
+    'wu_leg_swing_front_back_left',
+    'wu_toe_touch_side_lunges',
+    'wu_arm_swings',
+    'wu_front_to_side_arm_raises',
+    'wu_standing_scapular_retraction',
+    'wu_shoulder_circles',
+    'wu_bent_over_wing_flys',
+    'wu_chest_claps_calf_raises',
   ],
   TrainingCategoryKey.reconRecovery: [
-    'wu_world_greatest',
-    'wu_hip_openers',
-    'wu_thoracic_rotation',
-    'wu_downdog_pedals',
-    'knee_cat_cow',
-    'knee_thread_needle',
-    'knee_bird_dog',
-    'prone_cobra',
-    'prone_ytw',
+    'wu_standing_trunk_rotation',
+    'wu_reach_and_twists',
+    'wu_leg_swing_front_back_right',
+    'wu_leg_swing_front_back_left',
+    'wu_wide_toe_touches',
+    'wu_wide_stance_3_point_reach',
+    'wu_alternate_leg_reaches',
+    'stand_hip_circles',
     'prone_swimmers',
-    'cd_pigeon',
-    'cd_hamstring_stretch',
-    'cd_hip_flexor',
-    'cd_figure_four',
-    'cd_supine_twist',
-    'cd_thread_needle_hold',
-    'cd_downdog_hold',
-    'cd_seated_forward_fold',
-    'cd_butterfly',
-    'cd_cobra_hold',
-    'cd_chest_opener',
-    'cd_cat_cow_slow',
-    'wu_glute_activation',
-    'sup_dead_bug',
+    'stand_arm_circles',
   ],
   TrainingCategoryKey.lowImpactOps: [
-    'stand_march',
+    'wu_standing_core_brace_march',
+    'wu_arm_swings',
+    'wu_side_step_arm_rainbows',
+    'wu_standing_scapular_retraction',
     'stand_arm_circles',
-    'stand_wall_pushup',
-    'stand_wall_sit',
-    'stand_y_raise',
-    'stand_torso_rotation',
-    'stand_windmill',
-    'stand_toe_touches',
-    'stand_hip_circles',
-    'stand_halo',
-    'stand_bear_hug_stretch',
-    'stand_tricep_ext',
-    'knee_bird_dog',
-    'knee_cat_cow',
-    'knee_fire_hydrant',
-    'knee_donkey_kick',
-    'sup_glute_bridge',
-    'sup_dead_bug',
-    'sup_leg_raise',
-    'sup_flutter_kick',
-    'main_wall_hold_pulses',
-    'main_dead_bug_holds',
-    'main_seated_twist_reach',
-    'main_low_impact_climber',
+    'wu_shoulder_circles',
+    'wu_walking_side_high_knee',
+    'wu_reach_and_twists',
+    'wu_small_arm_circles',
+    'wu_big_arm_circles',
   ],
+};
+
+const _cooldownPools = <TrainingCategoryKey, List<String>>{
+  TrainingCategoryKey.trending: [
+    'cd_worlds_greatest_left',
+    'cd_worlds_greatest_right',
+    'cd_happy_baby',
+    'cd_belly_breathing',
+    'cd_wide_forward_fold',
+    'cd_chest_opener',
+    'cd_knee_rolls',
+    'cd_back_stretch_standing',
+    'cd_lateral_knee_drops',
+    'cd_squat_twists',
+  ],
+  TrainingCategoryKey.combatConditioning: [
+    'cd_figure_four_right',
+    'cd_belly_breathing',
+    'cd_wide_forward_fold',
+    'cd_back_stretch_standing',
+    'cd_seated_butterfly_stretch',
+    'cd_knee_rolls',
+    'cd_worlds_greatest_left',
+    'cd_worlds_greatest_right',
+    'cd_seated_glute_left',
+    'cd_seated_glute_right',
+  ],
+  TrainingCategoryKey.battleReadyStrength: [
+    'cd_worlds_greatest_left',
+    'cd_worlds_greatest_right',
+    'cd_seated_glute_left',
+    'cd_seated_glute_right',
+    'cd_overhead_triceps_left',
+    'cd_overhead_triceps_right',
+    'cd_supine_spinal_twist_left',
+    'cd_supine_spinal_twist_right',
+    'cd_anterior_shoulder_stretch',
+    'cd_chest_opener',
+  ],
+  TrainingCategoryKey.reconRecovery: [
+    'cd_seated_glute_left',
+    'cd_seated_glute_right',
+    'cd_anterior_shoulder_stretch',
+    'cd_chest_opener',
+    'cd_worlds_greatest_left',
+    'cd_worlds_greatest_right',
+    'cd_frog_stretch',
+    'cd_happy_baby',
+    'cd_knee_rolls',
+    'cd_belly_breathing',
+  ],
+  TrainingCategoryKey.lowImpactOps: [
+    'cd_seated_butterfly_stretch',
+    'cd_happy_baby',
+    'cd_wide_forward_fold',
+    'cd_belly_breathing',
+    'cd_overhead_triceps_left',
+    'cd_overhead_triceps_right',
+    'cd_supine_spinal_twist_left',
+    'cd_supine_spinal_twist_right',
+    'prone_cobra',
+    'cd_back_stretch_standing',
+  ],
+};
+
+// Seven media-backed main movements per routine. Left/right movements remain
+// paired, and the recovery/low-impact prescriptions deliberately avoid jumps.
+const _mainRoutines = <TrainingCategoryKey, Map<int, List<String>>>{
+  TrainingCategoryKey.trending: {
+    0: [
+      'squat_bodyweight',
+      'prone_pushup',
+      'main_squat_into_abductors',
+      'main_bicycle_kicks',
+      'main_hip_thrusts',
+      'main_standing_arm_punches',
+      'main_speed_skater',
+    ],
+    1: [
+      'main_standing_arm_punches',
+      'main_lateral_lunge_left',
+      'main_lateral_lunge_right',
+      'knee_bird_dog',
+      'main_knee_plank_hold',
+      'sup_glute_bridge',
+      'main_standing_oblique_crunch',
+    ],
+    2: [
+      'main_squat_heel_tap_jump',
+      'main_plank_jacks',
+      'main_frog_jumps',
+      'main_speed_skater',
+      'main_mountain_climber',
+      'main_switch_kicks',
+      'main_flutter_clap',
+    ],
+    3: [
+      'main_diamond_pushup',
+      'squat_bodyweight',
+      'main_alternating_lunges',
+      'main_crunched_leg_drop',
+      'main_ab_crunch_leg_extension',
+      'main_donkey_kick_left',
+      'main_donkey_kick_right',
+    ],
+    4: [
+      'main_standing_arm_punches',
+      'main_squat_to_knee_up',
+      'main_knee_pushup',
+      'main_standing_glute_kickback_left',
+      'main_standing_glute_kickback_right',
+      'main_bent_knee_dead_bug',
+      'main_standing_calf_raise',
+    ],
+  },
+  TrainingCategoryKey.combatConditioning: {
+    0: [
+      'main_standing_arm_punches',
+      'main_lateral_lunge_left',
+      'main_lateral_lunge_right',
+      'knee_bird_dog',
+      'main_knee_pushup',
+      'sup_glute_bridge',
+      'main_mountain_climber',
+    ],
+    1: [
+      'main_speed_skater',
+      'main_squat_heel_tap_jump',
+      'main_bicycle_kicks',
+      'main_mountain_climber',
+      'main_leg_scissors',
+      'main_plank_jacks',
+      'main_flutter_clap',
+    ],
+    2: [
+      'main_diamond_pushup',
+      'main_pike_pushup',
+      'main_frog_jumps',
+      'main_plank_jacks',
+      'main_squat_into_abductors',
+      'main_crab_reach',
+      'main_lying_opposite_leg_arm_lifts',
+    ],
+    3: [
+      'main_standing_arm_punches',
+      'main_squat_to_knee_up',
+      'main_switch_kicks',
+      'main_mountain_climber',
+      'main_alternating_lunges',
+      'main_knee_pushup',
+      'main_bent_knee_dead_bug',
+    ],
+    4: [
+      'main_speed_skater',
+      'main_frog_jumps',
+      'prone_pushup',
+      'main_plank_shoulder_tap',
+      'main_alternating_side_lunges',
+      'main_bicycle_kicks',
+      'main_hip_thrusts',
+    ],
+  },
+  TrainingCategoryKey.battleReadyStrength: {
+    0: [
+      'squat_bodyweight',
+      'prone_pushup',
+      'main_alternating_lunges',
+      'main_hip_thrusts',
+      'main_plank_shoulder_tap',
+      'main_prone_w_activation',
+      'sup_russian_twist',
+    ],
+    1: [
+      'main_diamond_pushup',
+      'main_pike_pushup',
+      'main_static_lunge_hold_left',
+      'main_static_lunge_hold_right',
+      'main_hip_thrusts',
+      'main_bridge_walk',
+      'main_single_leg_v_ups',
+    ],
+    2: [
+      'squat_bodyweight',
+      'main_lateral_lunge_left',
+      'main_lateral_lunge_right',
+      'main_standing_triceps_kickback',
+      'main_self_resisted_biceps_curl_left',
+      'main_self_resisted_biceps_curl_right',
+      'sup_glute_bridge',
+    ],
+    3: [
+      'main_mountain_climber',
+      'main_plank_hold',
+      'main_bent_knee_dead_bug',
+      'main_bent_knee_leg_raise',
+      'main_extended_knee_in_outs',
+      'main_bicycle_kicks',
+      'sup_dead_bug',
+    ],
+    4: [
+      'prone_pushup',
+      'main_knee_pushup',
+      'main_diamond_pushup',
+      'main_pike_pushup',
+      'main_scapular_pushup',
+      'main_plank_shoulder_tap',
+      'main_standing_triceps_kickback',
+    ],
+  },
+  TrainingCategoryKey.reconRecovery: {
+    0: [
+      'sup_glute_bridge',
+      'main_standing_glute_kickback_left',
+      'main_standing_glute_kickback_right',
+      'main_fire_hydrant_left',
+      'main_fire_hydrant_right',
+      'main_standing_calf_raise',
+      'main_knee_bend_kicks',
+    ],
+    1: [
+      'main_prone_cobra',
+      'main_scapular_pushup',
+      'main_prone_w_activation',
+      'main_standing_triceps_kickback',
+      'main_self_resisted_biceps_curl_left',
+      'main_self_resisted_biceps_curl_right',
+      'main_seated_twist_arm_opening',
+    ],
+    2: [
+      'knee_bird_dog',
+      'main_bent_knee_dead_bug',
+      'main_standing_oblique_crunch',
+      'main_seated_knee_tuck',
+      'main_side_lunge_and_reach',
+      'main_lying_opposite_leg_arm_lifts',
+      'sup_dead_bug',
+    ],
+    3: [
+      'main_hip_thrusts',
+      'main_crab_reach',
+      'main_bridge_walk',
+      'main_squat_into_abductors',
+      'main_side_lunge_and_reach',
+      'main_donkey_kick_left',
+      'main_donkey_kick_right',
+    ],
+    4: [
+      'main_knee_plank_hold',
+      'main_bent_knee_dead_bug',
+      'main_bent_knee_leg_raise',
+      'main_heel_touches',
+      'main_opposite_arm_leg_extensions',
+      'main_sit_up_single_leg_knee_in',
+      'sup_glute_bridge',
+    ],
+  },
+  TrainingCategoryKey.lowImpactOps: {
+    0: [
+      'main_standing_triceps_kickback',
+      'knee_bird_dog',
+      'main_knee_plank_hold',
+      'main_prone_cobra',
+      'sup_glute_bridge',
+      'main_standing_glute_kickback_left',
+      'main_standing_glute_kickback_right',
+    ],
+    1: [
+      'main_standing_arm_punches',
+      'main_self_resisted_biceps_curl_left',
+      'main_self_resisted_biceps_curl_right',
+      'main_standing_oblique_crunch',
+      'main_standing_glute_kickback_left',
+      'main_standing_glute_kickback_right',
+      'main_standing_calf_raise',
+    ],
+    2: [
+      'main_standing_arm_punches',
+      'main_standing_triceps_kickback',
+      'main_self_resisted_biceps_curl_left',
+      'main_self_resisted_biceps_curl_right',
+      'main_standing_oblique_crunch',
+      'main_standing_glute_kickback_left',
+      'main_standing_glute_kickback_right',
+    ],
+    3: [
+      'main_knee_pushup',
+      'knee_bird_dog',
+      'main_bent_knee_dead_bug',
+      'main_seated_knee_tuck',
+      'sup_glute_bridge',
+      'main_fire_hydrant_left',
+      'main_fire_hydrant_right',
+    ],
+    4: [
+      'main_knee_plank_hold',
+      'main_plank_shoulder_tap',
+      'knee_bird_dog',
+      'main_hip_thrusts',
+      'main_crab_reach',
+      'main_lying_opposite_leg_arm_lifts',
+      'sup_dead_bug',
+    ],
+  },
 };

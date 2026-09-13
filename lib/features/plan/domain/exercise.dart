@@ -15,9 +15,11 @@ class Exercise {
     this.secondary = const {},
     this.highImpact = false,
     this.needsBand = false,
-    this.videoAsset,
-    this.thumbnailAsset,
-  });
+    this.muxPlaybackId,
+    String? videoAsset,
+    String? thumbnailAsset,
+  }) : _videoAsset = videoAsset,
+       _thumbnailAsset = thumbnailAsset;
 
   final String id;
   final String name;
@@ -58,9 +60,23 @@ class Exercise {
   /// One-line coaching cue. Kept short so it fits on the workout card.
   final String cues;
 
-  /// Optional demo asset — populated once real video files ship.
-  final String? videoAsset;
-  final String? thumbnailAsset;
+  /// Optional Mux playback id. When present, the standard stream and
+  /// thumbnail URLs are derived so callers cannot accidentally mismatch them.
+  final String? muxPlaybackId;
+  final String? _videoAsset;
+  final String? _thumbnailAsset;
+
+  String? get videoAsset =>
+      _videoAsset ??
+      (muxPlaybackId == null
+          ? null
+          : 'https://stream.mux.com/$muxPlaybackId.m3u8');
+
+  String? get thumbnailAsset =>
+      _thumbnailAsset ??
+      (muxPlaybackId == null
+          ? null
+          : 'https://image.mux.com/$muxPlaybackId/thumbnail.jpg');
 }
 
 enum ExercisePosition {

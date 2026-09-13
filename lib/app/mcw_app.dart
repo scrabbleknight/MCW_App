@@ -17,6 +17,7 @@ import 'package:military_calisthenics_women/features/health/application/health_c
 import 'package:military_calisthenics_women/features/reminders/application/reminder_controller.dart';
 import 'package:military_calisthenics_women/features/profile/application/body_progress_controller.dart';
 import 'package:military_calisthenics_women/features/profile/application/profile_avatar_controller.dart';
+import 'package:military_calisthenics_women/features/progression/application/rank_progress_controller.dart';
 import 'package:military_calisthenics_women/features/workouts/application/progress_controller.dart';
 import 'package:military_calisthenics_women/features/workouts/application/starred_workouts_controller.dart';
 import 'package:military_calisthenics_women/features/workouts/application/training_progress_controller.dart';
@@ -54,6 +55,8 @@ class McwApp extends StatelessWidget {
             create: (_) => BodyProgressController()..load()),
         ChangeNotifierProvider(
             create: (_) => ProfileAvatarController()..load()),
+        ChangeNotifierProvider(
+            create: (_) => RankProgressController()..load()),
       ],
       child: Builder(
         builder: (context) {

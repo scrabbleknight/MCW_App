@@ -41,7 +41,8 @@ class _EditPlanScreenState extends State<EditPlanScreen> {
     final controller = context.read<OnboardingController>();
     _inputs =
         controller.answerFor<PlanInputs>('plan_inputs') ?? const PlanInputs();
-    _zones = controller.answerFor<Set<TargetZone>>('target_zones') ??
+    _zones =
+        controller.answerFor<Set<TargetZone>>('target_zones') ??
         <TargetZone>{TargetZone.fullBody};
   }
 
@@ -62,6 +63,9 @@ class _EditPlanScreenState extends State<EditPlanScreen> {
   Future<void> _save() async {
     final controller = context.read<OnboardingController>();
     controller.setAnswer('plan_inputs', _inputs);
+    if (_inputs.trainer != null) {
+      controller.setAnswer('trainer', _inputs.trainer);
+    }
     controller.setAnswer('target_zones', _zones);
     controller.setAnswer('plan', generatePlan(_inputs));
     await controller.persistPlanInputs(_inputs);
@@ -98,7 +102,9 @@ class _EditPlanScreenState extends State<EditPlanScreen> {
     // into the progress store here when it lands.
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
-      ..showSnackBar(const SnackBar(content: Text('Plan restarted from Day 1')));
+      ..showSnackBar(
+        const SnackBar(content: Text('Plan restarted from Day 1')),
+      );
   }
 
   @override
@@ -165,7 +171,7 @@ class _EditPlanScreenState extends State<EditPlanScreen> {
           ),
           const SizedBox(height: 28),
           Text(
-            'Lead',
+            'Trainer',
             style: TextStyle(
               color: context.palette.chalk,
               fontWeight: FontWeight.w800,
@@ -196,9 +202,7 @@ class _EditPlanScreenState extends State<EditPlanScreen> {
                 value: '',
                 onTap: () => _openUrl(
                   context,
-                  Uri.parse(
-                    'https://apps.apple.com/account/subscriptions',
-                  ),
+                  Uri.parse('https://apps.apple.com/account/subscriptions'),
                 ),
               ),
               _SettingsRow(
@@ -214,7 +218,7 @@ class _EditPlanScreenState extends State<EditPlanScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 4),
             child: Text(
               "Use this to restore an existing subscription. "
-              "Make sure you're logged into the same iTunes account.",
+              "Make sure you're logged into the same iCloud account.",
               style: TextStyle(
                 color: context.palette.muted,
                 fontSize: 12,
@@ -274,9 +278,7 @@ class _EditPlanScreenState extends State<EditPlanScreen> {
                     ? 'On'
                     : 'Off',
                 onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => const AppleHealthScreen(),
-                  ),
+                  MaterialPageRoute(builder: (_) => const AppleHealthScreen()),
                 ),
                 isLast: true,
               ),
@@ -330,10 +332,7 @@ class _EditPlanScreenState extends State<EditPlanScreen> {
           Center(
             child: Text(
               'Version: 1.0.0 (1)',
-              style: TextStyle(
-                color: context.palette.muted,
-                fontSize: 12,
-              ),
+              style: TextStyle(color: context.palette.muted, fontSize: 12),
             ),
           ),
         ],
@@ -384,8 +383,10 @@ class _EditPlanScreenState extends State<EditPlanScreen> {
                 'English',
                 style: TextStyle(color: sheetCtx.palette.chalk),
               ),
-              trailing: Icon(Icons.check_rounded,
-                  color: sheetCtx.palette.arctic),
+              trailing: Icon(
+                Icons.check_rounded,
+                color: sheetCtx.palette.arctic,
+              ),
               onTap: () => Navigator.of(sheetCtx).pop(),
             ),
           ],
@@ -400,12 +401,10 @@ class _EditPlanScreenState extends State<EditPlanScreen> {
       context: context,
       builder: (dialogCtx) => AlertDialog(
         backgroundColor: palette.surface,
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
         title: Text(
           'Delete your account?',
-          style:
-              TextStyle(color: palette.chalk, fontWeight: FontWeight.w800),
+          style: TextStyle(color: palette.chalk, fontWeight: FontWeight.w800),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -429,14 +428,16 @@ class _EditPlanScreenState extends State<EditPlanScreen> {
                 'be cancelled automatically. To stop future charges, open '
                 'the iPhone Settings app → tap your name → Subscriptions, '
                 'then cancel this app.',
-                style:
-                    TextStyle(color: palette.chalk, fontSize: 12, height: 1.4),
+                style: TextStyle(
+                  color: palette.chalk,
+                  fontSize: 12,
+                  height: 1.4,
+                ),
               ),
             ),
           ],
         ),
-        actionsPadding:
-            const EdgeInsets.fromLTRB(24, 0, 24, 20),
+        actionsPadding: const EdgeInsets.fromLTRB(24, 0, 24, 20),
         actions: [
           Column(
             mainAxisSize: MainAxisSize.min,
@@ -486,18 +487,23 @@ class _EditPlanScreenState extends State<EditPlanScreen> {
         if (!context.mounted) return;
         ScaffoldMessenger.of(context)
           ..hideCurrentSnackBar()
-          ..showSnackBar(const SnackBar(
-            content: Text(
-              'For security, please log in again and then delete your account.',
+          ..showSnackBar(
+            const SnackBar(
+              content: Text(
+                'For security, please log in again and then delete your account.',
+              ),
             ),
-          ));
+          );
       case DeleteAccountKind.failed:
         ScaffoldMessenger.of(context)
           ..hideCurrentSnackBar()
-          ..showSnackBar(SnackBar(
-            content: Text(
-                "Couldn't delete account: ${result.message ?? 'unknown error'}"),
-          ));
+          ..showSnackBar(
+            SnackBar(
+              content: Text(
+                "Couldn't delete account: ${result.message ?? 'unknown error'}",
+              ),
+            ),
+          );
     }
   }
 
@@ -560,9 +566,8 @@ class _EditPlanScreenState extends State<EditPlanScreen> {
   Future<void> _pickTrainer() async {
     final v = await Navigator.of(context).push<Trainer>(
       MaterialPageRoute(
-        builder: (_) => TrainerPickerScreen(
-          initial: _inputs.trainer ?? Trainer.hailey,
-        ),
+        builder: (_) =>
+            TrainerPickerScreen(initial: _inputs.trainer ?? Trainer.hailey),
       ),
     );
     if (v != null) _update(_inputs.copyWith(trainer: v));
@@ -570,9 +575,7 @@ class _EditPlanScreenState extends State<EditPlanScreen> {
 
   Future<void> _pickZones() async {
     final result = await Navigator.of(context).push<Set<TargetZone>>(
-      MaterialPageRoute(
-        builder: (_) => TargetZonesEditScreen(initial: _zones),
-      ),
+      MaterialPageRoute(builder: (_) => TargetZonesEditScreen(initial: _zones)),
     );
     if (result != null) _setZones(result);
   }
@@ -583,47 +586,47 @@ class _EditPlanScreenState extends State<EditPlanScreen> {
 // ---------------------------------------------------------------------------
 
 String _goalLabel(FitnessGoal? g) => switch (g) {
-      FitnessGoal.loseWeight => 'Lose weight',
-      FitnessGoal.maintainAndFit => 'Maintain weight and get fit',
-      FitnessGoal.buildStrength => 'Build muscles and strength',
-      FitnessGoal.recomp => 'Gain muscle and lose weight',
-      null => 'Not set',
-    };
+  FitnessGoal.loseWeight => 'Lose weight',
+  FitnessGoal.maintainAndFit => 'Maintain weight and get fit',
+  FitnessGoal.buildStrength => 'Build muscles and strength',
+  FitnessGoal.recomp => 'Gain muscle and lose weight',
+  null => 'Not set',
+};
 
 String _levelLabel(FitnessLevel? l) => switch (l) {
-      FitnessLevel.newbie => 'Newbie',
-      FitnessLevel.beginner => 'Beginner',
-      FitnessLevel.intermediate => 'Intermediate',
-      FitnessLevel.advanced => 'Advanced',
-      null => 'Not set',
-    };
+  FitnessLevel.newbie => 'Newbie',
+  FitnessLevel.beginner => 'Beginner',
+  FitnessLevel.intermediate => 'Intermediate',
+  FitnessLevel.advanced => 'Advanced',
+  null => 'Not set',
+};
 
 String _durationLabel(WorkoutDuration? d) => switch (d) {
-      WorkoutDuration.under10 => 'Under 10 minutes',
-      WorkoutDuration.tenToFifteen => '10-15 minutes',
-      WorkoutDuration.fifteenToTwenty => '15-20 minutes',
-      WorkoutDuration.twentyToThirty => '20-30 minutes',
-      null => 'Not set',
-    };
+  WorkoutDuration.under10 => 'Under 10 minutes',
+  WorkoutDuration.tenToFifteen => '10-15 minutes',
+  WorkoutDuration.fifteenToTwenty => '15-20 minutes',
+  WorkoutDuration.twentyToThirty => '20-30 minutes',
+  null => 'Not set',
+};
 
 String _preferenceLabel(WorkoutPreference? p) => switch (p) {
-      WorkoutPreference.noPreferences => 'No Preferences',
-      WorkoutPreference.allStanding => 'All Standing',
-      WorkoutPreference.noSquat => 'No Squat',
-      WorkoutPreference.noJumping => 'No Jumping',
-      WorkoutPreference.noProne => 'No Prone',
-      WorkoutPreference.noKneeling => 'No Kneeling',
-      null => 'Not set',
-    };
+  WorkoutPreference.noPreferences => 'No Preferences',
+  WorkoutPreference.allStanding => 'All Standing',
+  WorkoutPreference.noSquat => 'No Squat',
+  WorkoutPreference.noJumping => 'No Jumping',
+  WorkoutPreference.noProne => 'No Prone',
+  WorkoutPreference.noKneeling => 'No Kneeling',
+  null => 'Not set',
+};
 
 String _zoneLabel(TargetZone z) => switch (z) {
-      TargetZone.fullBody => 'Fullbody',
-      TargetZone.back => 'Back',
-      TargetZone.arms => 'Arms',
-      TargetZone.belly => 'Belly',
-      TargetZone.butt => 'Butt',
-      TargetZone.legs => 'Legs',
-    };
+  TargetZone.fullBody => 'Fullbody',
+  TargetZone.back => 'Back',
+  TargetZone.arms => 'Arms',
+  TargetZone.belly => 'Belly',
+  TargetZone.butt => 'Butt',
+  TargetZone.legs => 'Legs',
+};
 
 String _reminderSummary(ReminderController r) {
   if (!r.enabled) return 'Off';
@@ -859,10 +862,7 @@ class _TrainerCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              Icon(
-                Icons.chevron_right_rounded,
-                color: context.palette.muted,
-              ),
+              Icon(Icons.chevron_right_rounded, color: context.palette.muted),
             ],
           ),
         ),
@@ -944,10 +944,7 @@ class _TargetZonesEditScreenState extends State<TargetZonesEditScreen> {
             const SizedBox(height: 10),
             Text(
               'Choose all that apply',
-              style: TextStyle(
-                color: context.palette.muted,
-                fontSize: 15,
-              ),
+              style: TextStyle(color: context.palette.muted, fontSize: 15),
             ),
             const SizedBox(height: 16),
             Expanded(
@@ -960,9 +957,11 @@ class _TargetZonesEditScreenState extends State<TargetZonesEditScreen> {
                   final stackHeight = constraints.maxHeight;
                   final totalPillsHeight =
                       _zoneOrder.length * pillHeight +
-                          (_zoneOrder.length - 1) * pillGap;
-                  final pillsTop = ((stackHeight - totalPillsHeight) / 2)
-                      .clamp(0.0, double.infinity);
+                      (_zoneOrder.length - 1) * pillGap;
+                  final pillsTop = ((stackHeight - totalPillsHeight) / 2).clamp(
+                    0.0,
+                    double.infinity,
+                  );
 
                   return Stack(
                     children: [
@@ -1022,7 +1021,6 @@ class _TargetZonesEditScreenState extends State<TargetZonesEditScreen> {
   }
 }
 
-
 class _VoiceGuidanceCard extends StatelessWidget {
   const _VoiceGuidanceCard();
 
@@ -1075,8 +1073,11 @@ class _VoiceGuidanceCard extends StatelessWidget {
                   const SizedBox(height: 14),
                   Row(
                     children: [
-                      Icon(Icons.volume_off_rounded,
-                          size: 20, color: context.palette.muted),
+                      Icon(
+                        Icons.volume_off_rounded,
+                        size: 20,
+                        color: context.palette.muted,
+                      ),
                       Expanded(
                         child: SliderTheme(
                           data: SliderTheme.of(context).copyWith(
@@ -1084,10 +1085,12 @@ class _VoiceGuidanceCard extends StatelessWidget {
                             activeTrackColor: context.palette.arctic,
                             inactiveTrackColor: context.palette.hairline,
                             thumbColor: Colors.white,
-                            overlayColor:
-                                context.palette.arctic.withOpacity(0.15),
+                            overlayColor: context.palette.arctic.withOpacity(
+                              0.15,
+                            ),
                             thumbShape: const RoundSliderThumbShape(
-                                enabledThumbRadius: 10),
+                              enabledThumbRadius: 10,
+                            ),
                           ),
                           child: Slider(
                             value: sounds.voiceVolume,
@@ -1095,8 +1098,11 @@ class _VoiceGuidanceCard extends StatelessWidget {
                           ),
                         ),
                       ),
-                      Icon(Icons.volume_up_rounded,
-                          size: 20, color: context.palette.muted),
+                      Icon(
+                        Icons.volume_up_rounded,
+                        size: 20,
+                        color: context.palette.muted,
+                      ),
                     ],
                   ),
                 ],
@@ -1256,8 +1262,11 @@ class _ZonePill extends StatelessWidget {
                   ),
                 ),
                 child: selected
-                    ? const Icon(Icons.check_rounded,
-                        color: Colors.white, size: 16)
+                    ? const Icon(
+                        Icons.check_rounded,
+                        color: Colors.white,
+                        size: 16,
+                      )
                     : null,
               ),
             ],
@@ -1357,8 +1366,7 @@ class _DangerRow extends StatelessWidget {
                 ),
               ),
             ),
-            Icon(Icons.chevron_right_rounded,
-                size: 18, color: palette.danger),
+            Icon(Icons.chevron_right_rounded, size: 18, color: palette.danger),
           ],
         ),
       ),

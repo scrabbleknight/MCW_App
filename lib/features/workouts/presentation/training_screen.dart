@@ -17,55 +17,205 @@ class TrainingScreen extends StatelessWidget {
       title: 'Trending',
       key: TrainingCategoryKey.trending,
       routines: [
-        _Routine(name: 'Summer Ready Burn', level: 'Intermediate', minutes: 14, kcal: 138),
-        _Routine(name: 'Sunrise Assault', level: 'Beginner', minutes: 10, kcal: 92),
-        _Routine(name: 'HIIT Blackout', level: 'Advanced', minutes: 18, kcal: 210),
-        _Routine(name: 'Deck of Cards', level: 'Intermediate', minutes: 20, kcal: 185),
-        _Routine(name: 'Quick Deploy', level: 'Beginner', minutes: 8, kcal: 74),
+        _Routine(
+          name: 'Summer Ready Burn',
+          level: 'Intermediate',
+          minutes: 14,
+          kcal: 138,
+          imageAsset: 'assets/branding/summer_ready_burn.png',
+        ),
+        _Routine(
+          name: 'Sunrise Assault',
+          level: 'Beginner',
+          minutes: 10,
+          kcal: 92,
+          imageAsset: 'assets/branding/sunrise_assault.png',
+        ),
+        _Routine(
+          name: 'HIIT Blackout',
+          level: 'Advanced',
+          minutes: 18,
+          kcal: 210,
+          imageAsset: 'assets/branding/hiit_blackout.png',
+        ),
+        _Routine(
+          name: 'Deck of Cards',
+          level: 'Intermediate',
+          minutes: 20,
+          kcal: 185,
+          imageAsset: 'assets/branding/deck_of_cards.png',
+        ),
+        _Routine(
+          name: 'Quick Deploy',
+          level: 'Beginner',
+          minutes: 8,
+          kcal: 74,
+          imageAsset: 'assets/branding/quick_deploy.png',
+        ),
       ],
     ),
     _TrainingCategory(
       title: 'Combat Conditioning',
       key: TrainingCategoryKey.combatConditioning,
       routines: [
-        _Routine(name: 'Full Body Drill', level: 'Beginner', minutes: 9, kcal: 101),
-        _Routine(name: 'Foxtrot Fat Torch', level: 'Intermediate', minutes: 15, kcal: 160),
-        _Routine(name: 'Zero Gear Grinder', level: 'Advanced', minutes: 22, kcal: 240),
-        _Routine(name: 'Rapid Reveille', level: 'Beginner', minutes: 12, kcal: 118),
-        _Routine(name: 'Bunker Blast', level: 'Intermediate', minutes: 16, kcal: 172),
+        _Routine(
+          name: 'Full Body Drill',
+          level: 'Beginner',
+          minutes: 9,
+          kcal: 101,
+          imageAsset: 'assets/branding/full_body_drill.png',
+        ),
+        _Routine(
+          name: 'Foxtrot Fat Torch',
+          level: 'Intermediate',
+          minutes: 15,
+          kcal: 160,
+          imageAsset: 'assets/branding/foxtrot_fat_torch.png',
+        ),
+        _Routine(
+          name: 'Zero Gear Grinder',
+          level: 'Advanced',
+          minutes: 22,
+          kcal: 240,
+          imageAsset: 'assets/branding/zero_gear_grinder.png',
+        ),
+        _Routine(
+          name: 'Rapid Reveille',
+          level: 'Beginner',
+          minutes: 12,
+          kcal: 118,
+          imageAsset: 'assets/branding/rapid_reveille.png',
+        ),
+        _Routine(
+          name: 'Bunker Blast',
+          level: 'Intermediate',
+          minutes: 16,
+          kcal: 172,
+          imageAsset: 'assets/branding/bunker_blast.png',
+        ),
       ],
     ),
     _TrainingCategory(
       title: 'Battle-Ready Strength',
       key: TrainingCategoryKey.battleReadyStrength,
       routines: [
-        _Routine(name: 'Combat Body Burn', level: 'Intermediate', minutes: 11, kcal: 117),
-        _Routine(name: 'Iron Squad Sculpt', level: 'Advanced', minutes: 20, kcal: 205),
-        _Routine(name: 'Bootcamp Bulk', level: 'Intermediate', minutes: 18, kcal: 190),
-        _Routine(name: 'Steel Core Run', level: 'Beginner', minutes: 10, kcal: 96),
-        _Routine(name: 'Trench Push', level: 'Advanced', minutes: 24, kcal: 260),
+        _Routine(
+          name: 'Combat Body Burn',
+          level: 'Intermediate',
+          minutes: 11,
+          kcal: 117,
+          imageAsset: 'assets/branding/combat_body_burn.png',
+        ),
+        _Routine(
+          name: 'Iron Squad Sculpt',
+          level: 'Advanced',
+          minutes: 20,
+          kcal: 205,
+          imageAsset: 'assets/branding/iron_squad_sculpt.png',
+        ),
+        _Routine(
+          name: 'Bootcamp Bulk',
+          level: 'Intermediate',
+          minutes: 18,
+          kcal: 190,
+          imageAsset: 'assets/branding/bootcamp_bulk.png',
+        ),
+        _Routine(
+          name: 'Steel Core Run',
+          level: 'Beginner',
+          minutes: 10,
+          kcal: 96,
+          imageAsset: 'assets/branding/steel_core_run.png',
+        ),
+        _Routine(
+          name: 'Trench Push',
+          level: 'Advanced',
+          minutes: 24,
+          kcal: 260,
+          imageAsset: 'assets/branding/trench_push.png',
+        ),
       ],
     ),
     _TrainingCategory(
       title: 'Recon Recovery',
       key: TrainingCategoryKey.reconRecovery,
       routines: [
-        _Routine(name: 'Lower Body Reset', level: 'Beginner', minutes: 12, kcal: 120),
-        _Routine(name: 'Upper Body Unlock', level: 'Beginner', minutes: 10, kcal: 88),
-        _Routine(name: 'Silent March Stretch', level: 'Beginner', minutes: 14, kcal: 110),
-        _Routine(name: 'Hip Sweep Flow', level: 'Intermediate', minutes: 16, kcal: 135),
-        _Routine(name: 'Cooldown Perimeter', level: 'Beginner', minutes: 8, kcal: 60),
+        _Routine(
+          name: 'Lower Body Reset',
+          level: 'Beginner',
+          minutes: 12,
+          kcal: 120,
+          imageAsset: 'assets/branding/lower_body_reset.png',
+        ),
+        _Routine(
+          name: 'Upper Body Unlock',
+          level: 'Beginner',
+          minutes: 10,
+          kcal: 88,
+          imageAsset: 'assets/branding/upper_body_unlock.png',
+        ),
+        _Routine(
+          name: 'Silent March Stretch',
+          level: 'Beginner',
+          minutes: 14,
+          kcal: 110,
+          imageAsset: 'assets/branding/silent_march_stretch.png',
+        ),
+        _Routine(
+          name: 'Hip Sweep Flow',
+          level: 'Intermediate',
+          minutes: 16,
+          kcal: 135,
+          imageAsset: 'assets/branding/hip_sweep_flow.png',
+        ),
+        _Routine(
+          name: 'Cooldown Perimeter',
+          level: 'Beginner',
+          minutes: 8,
+          kcal: 60,
+          imageAsset: 'assets/branding/cooldown_perimeter.png',
+        ),
       ],
     ),
     _TrainingCategory(
       title: 'Low-Impact Ops',
       key: TrainingCategoryKey.lowImpactOps,
       routines: [
-        _Routine(name: 'Knee-Safe Patrol', level: 'Beginner', minutes: 12, kcal: 100),
-        _Routine(name: 'Silent Steps', level: 'Beginner', minutes: 10, kcal: 82),
-        _Routine(name: 'Standing Stealth', level: 'Beginner', minutes: 14, kcal: 118),
-        _Routine(name: 'Gentle Recon', level: 'Beginner', minutes: 16, kcal: 130),
-        _Routine(name: 'Ground Guard', level: 'Intermediate', minutes: 18, kcal: 152),
+        _Routine(
+          name: 'Knee-Safe Patrol',
+          level: 'Beginner',
+          minutes: 12,
+          kcal: 100,
+          imageAsset: 'assets/branding/knee_safe_patrol.png',
+        ),
+        _Routine(
+          name: 'Silent Steps',
+          level: 'Beginner',
+          minutes: 10,
+          kcal: 82,
+          imageAsset: 'assets/branding/silent_steps.png',
+        ),
+        _Routine(
+          name: 'Standing Stealth',
+          level: 'Beginner',
+          minutes: 14,
+          kcal: 118,
+          imageAsset: 'assets/branding/standing_stealth.png',
+        ),
+        _Routine(
+          name: 'Gentle Recon',
+          level: 'Beginner',
+          minutes: 16,
+          kcal: 130,
+          imageAsset: 'assets/branding/gentle_recon.png',
+        ),
+        _Routine(
+          name: 'Ground Guard',
+          level: 'Intermediate',
+          minutes: 18,
+          kcal: 152,
+          imageAsset: 'assets/branding/ground_guard.png',
+        ),
       ],
     ),
   ];
@@ -92,10 +242,7 @@ class TrainingScreen extends StatelessWidget {
         ),
         for (var i = 0; i < _categories.length; i++)
           SliverToBoxAdapter(
-            child: _CategorySection(
-              category: _categories[i],
-              accentIndex: i,
-            ),
+            child: _CategorySection(category: _categories[i], accentIndex: i),
           ),
         const SliverToBoxAdapter(child: SizedBox(height: 24)),
       ],
@@ -120,11 +267,13 @@ class _Routine {
     required this.level,
     required this.minutes,
     required this.kcal,
+    this.imageAsset,
   });
   final String name;
   final String level;
   final int minutes;
   final int kcal;
+  final String? imageAsset;
 }
 
 class _CategorySection extends StatelessWidget {
@@ -166,7 +315,9 @@ class _CategorySection extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 6, vertical: 4),
+                      horizontal: 6,
+                      vertical: 4,
+                    ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -178,8 +329,11 @@ class _CategorySection extends StatelessWidget {
                             fontWeight: FontWeight.w500,
                           ),
                         ),
-                        Icon(Icons.chevron_right_rounded,
-                            color: context.palette.muted, size: 20),
+                        Icon(
+                          Icons.chevron_right_rounded,
+                          color: context.palette.muted,
+                          size: 20,
+                        ),
                       ],
                     ),
                   ),
@@ -235,15 +389,18 @@ class _RoutineCard extends StatelessWidget {
       kcal: routine.kcal,
     );
     Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => WorkoutDayScreen(day: day)),
+      MaterialPageRoute(
+        builder: (_) =>
+            WorkoutDayScreen(day: day, heroImageAsset: routine.imageAsset),
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final percent = context
-        .watch<TrainingProgressController>()
-        .percentFor(trainingDayKey(categoryKey, slot));
+    final percent = context.watch<TrainingProgressController>().percentFor(
+      trainingDayKey(categoryKey, slot),
+    );
     final inProgress = percent > 0 && percent < 100;
     return ClipRRect(
       borderRadius: BorderRadius.circular(20),
@@ -253,7 +410,11 @@ class _RoutineCard extends StatelessWidget {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            _PlaceholderImage(accentIndex: accentIndex, slot: slot),
+            _RoutineImage(
+              imageAsset: routine.imageAsset,
+              accentIndex: accentIndex,
+              slot: slot,
+            ),
             // Bottom gradient scrim so the title/chips stay legible.
             const DecoratedBox(
               decoration: BoxDecoration(
@@ -286,7 +447,10 @@ class _RoutineCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 10),
                   if (inProgress)
-                    _ContinueBar(percent: percent, onContinue: () => _open(context))
+                    _ContinueBar(
+                      percent: percent,
+                      onContinue: () => _open(context),
+                    )
                   else
                     Wrap(
                       spacing: 8,
@@ -433,8 +597,11 @@ class _TrainingCategoryScreen extends StatelessWidget {
                 children: [
                   IconButton(
                     onPressed: () => Navigator.of(context).maybePop(),
-                    icon: Icon(Icons.chevron_left_rounded,
-                        color: context.palette.chalk, size: 28),
+                    icon: Icon(
+                      Icons.chevron_left_rounded,
+                      color: context.palette.chalk,
+                      size: 28,
+                    ),
                   ),
                   Expanded(
                     child: Center(
@@ -475,11 +642,14 @@ class _TrainingCategoryScreen extends StatelessWidget {
   }
 }
 
-/// Placeholder image — a deterministic gradient tinted by (category, slot)
-/// with a subtle silhouette icon. Swap for real photography later.
-class _PlaceholderImage extends StatelessWidget {
-  const _PlaceholderImage({required this.accentIndex, required this.slot});
+class _RoutineImage extends StatelessWidget {
+  const _RoutineImage({
+    required this.imageAsset,
+    required this.accentIndex,
+    required this.slot,
+  });
 
+  final String? imageAsset;
   final int accentIndex;
   final int slot;
 
@@ -501,6 +671,15 @@ class _PlaceholderImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final asset = imageAsset;
+    if (asset != null) {
+      return Image.asset(
+        asset,
+        fit: BoxFit.cover,
+        alignment: const Alignment(-0.72, 0),
+      );
+    }
+
     final colors = _palettes[accentIndex % _palettes.length];
     final icon = _icons[accentIndex % _icons.length];
     // Slot nudges the gradient angle so cards in one row don't look identical.
@@ -518,11 +697,7 @@ class _PlaceholderImage extends StatelessWidget {
           Positioned(
             right: -20,
             top: -10,
-            child: Icon(
-              icon,
-              size: 180,
-              color: Colors.white.withOpacity(0.08),
-            ),
+            child: Icon(icon, size: 180, color: Colors.white.withOpacity(0.08)),
           ),
         ],
       ),

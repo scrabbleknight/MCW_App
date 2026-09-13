@@ -15,8 +15,10 @@ import 'package:military_calisthenics_women/features/plan/application/plan_gener
 import 'package:military_calisthenics_women/features/plan/domain/plan.dart';
 import 'package:military_calisthenics_women/features/plan/presentation/edit_plan_screen.dart';
 import 'package:military_calisthenics_women/features/profile/presentation/profile_screen.dart';
+import 'package:military_calisthenics_women/features/progression/domain/rank.dart';
 import 'package:military_calisthenics_women/features/workouts/application/progress_controller.dart';
 import 'package:military_calisthenics_women/features/workouts/application/starred_workouts_controller.dart';
+import 'package:military_calisthenics_women/features/workouts/application/workout_history_controller.dart';
 import 'package:military_calisthenics_women/features/workouts/presentation/mission_complete_modal.dart';
 import 'package:military_calisthenics_women/features/workouts/presentation/training_screen.dart';
 import 'package:provider/provider.dart';
@@ -34,6 +36,11 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _navIndex = 0;
+  // Day index this instance has already scheduled a celebration for. Prevents
+  // a double-modal when session_screen also fires one directly for the same
+  // completion — its clearPendingCelebration runs after our postFrame reads
+  // the flag, so without this guard we'd stack a second modal on top.
+  int? _celebrationScheduledFor;
 
   /// Which day the user is currently on. Advances as they complete days —
   /// the next uncompleted day (capped at 21) is the active card.
@@ -52,8 +59,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
     // If a workout just finished, surface the celebration modal once the
     // frame is on-screen. Guarded so it fires at most once per pending day.
-    if (progress.pendingCelebrationDay != null) {
+    if (progress.pendingCelebrationDay != null &&
+        progress.pendingCelebrationDay != _celebrationScheduledFor) {
       final day = progress.pendingCelebrationDay!;
+      _celebrationScheduledFor = day;
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         if (!mounted) return;
         await MissionCompleteModal.show(
@@ -85,7 +94,7 @@ class _HomeScreenState extends State<HomeScreen> {
       floatingActionButton: _navIndex == 2
           ? FloatingActionButton(
               backgroundColor: context.palette.arctic,
-              foregroundColor: context.palette.chalk,
+              foregroundColor: Colors.white,
               onPressed: () => Navigator.of(context).push(
                 MaterialPageRoute(
                   builder: (_) => const CustomFilterScreen(),
@@ -168,6 +177,11 @@ class _MissionBodyState extends State<_MissionBody> {
       (s) => s.dayIndices.contains(activeDay),
       orElse: () => plan.stages.first,
     );
+    // Squad Status uses the shared rank ladder driven by total completed
+    // workouts — so the badge on home always agrees with the profile card,
+    // the achievements grid, and the "Rank Unlocked" celebration.
+    final workoutCount = context.watch<WorkoutHistoryController>().entries.length;
+    final currentRank = Rank.forWorkouts(workoutCount);
     return Column(
       children: [
         Padding(
@@ -177,11 +191,11 @@ class _MissionBodyState extends State<_MissionBody> {
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
           child: SquadStatusCard(
-            rank: _rankForDay(activeDay),
+            rank: currentRank.label.toUpperCase(),
             stageIndex: activeStage.index,
             totalStages: plan.stages.length,
-            starsEarned: _starsForDay(activeDay),
-            starsTotal: 7,
+            starsEarned: currentRank.index + 1,
+            starsTotal: Rank.values.length,
           ),
         ),
         Expanded(
@@ -254,30 +268,6 @@ class _MissionBodyState extends State<_MissionBody> {
     }
     slivers.add(const SliverToBoxAdapter(child: SizedBox(height: 24)));
     return slivers;
-  }
-
-  static String _rankForDay(int day) {
-    // 21-day mission split across all seven ranks, ~3 days per promotion.
-    // Extra days at the top so a full completion crowns the user General.
-    if (day >= 21) return 'GENERAL';
-    if (day >= 18) return 'CAPTAIN';
-    if (day >= 15) return 'LIEUTENANT';
-    if (day >= 12) return 'SERGEANT';
-    if (day >= 9) return 'CORPORAL';
-    if (day >= 5) return 'PRIVATE';
-    return 'RECRUIT';
-  }
-
-  static int _starsForDay(int day) {
-    // One gold star per rank tier reached. Ramp mirrors [_rankForDay] so the
-    // star count and the badge always agree — Recruit=1 … General=7.
-    if (day >= 21) return 7;
-    if (day >= 18) return 6;
-    if (day >= 15) return 5;
-    if (day >= 12) return 4;
-    if (day >= 9) return 3;
-    if (day >= 5) return 2;
-    return 1;
   }
 
   static double _stageProgress(PlanStage stage, int activeDay) {

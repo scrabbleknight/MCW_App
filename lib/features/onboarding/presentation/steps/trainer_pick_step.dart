@@ -6,31 +6,31 @@ enum Trainer { hailey, gemma, amy }
 extension TrainerAssets on Trainer {
   /// Full-body character cutout for hero placements.
   String get cutoutAsset => switch (this) {
-        Trainer.hailey => 'assets/branding/hailey_cutout_1.png',
-        Trainer.gemma => 'assets/branding/gemma_cutout_1.png',
-        Trainer.amy => 'assets/branding/amy_cutout_1.png',
-      };
+    Trainer.hailey => 'assets/branding/hailey_cutout_1.png',
+    Trainer.gemma => 'assets/branding/gemma_cutout_1.png',
+    Trainer.amy => 'assets/branding/amy_cutout_1.png',
+  };
 
   /// Portrait used inside the trainer-pick cards.
   String get portraitAsset => switch (this) {
-        Trainer.hailey => 'assets/branding/hailey_trainer_1.png',
-        Trainer.gemma => 'assets/branding/gemma_trainer_2.png',
-        Trainer.amy => 'assets/branding/amy_trainer_3.png',
-      };
+    Trainer.hailey => 'assets/branding/hailey_trainer_1.png',
+    Trainer.gemma => 'assets/branding/gemma_trainer_2.png',
+    Trainer.amy => 'assets/branding/amy_trainer_3.png',
+  };
 
   /// Head-and-shoulders portrait used for the small circular avatar chip on
   /// downstream screens (chat rows, headers).
   String get avatarAsset => switch (this) {
-        Trainer.hailey => 'assets/branding/hailey_cutout_2.png',
-        Trainer.gemma => 'assets/branding/gemma_cutout_2.png',
-        Trainer.amy => 'assets/branding/amy_cutout_2.png',
-      };
+    Trainer.hailey => 'assets/branding/hailey_cutout_2.png',
+    Trainer.gemma => 'assets/branding/gemma_cutout_2.png',
+    Trainer.amy => 'assets/branding/amy_cutout_2.png',
+  };
 
   String get displayName => switch (this) {
-        Trainer.hailey => 'Hailey',
-        Trainer.gemma => 'Gemma',
-        Trainer.amy => 'Amy',
-      };
+    Trainer.hailey => 'Hailey',
+    Trainer.gemma => 'Gemma',
+    Trainer.amy => 'Amy',
+  };
 }
 
 /// One trainer's card content. Kept as a value type so the roster is a plain
@@ -86,10 +86,7 @@ class _TrainerPickStepState extends State<TrainerPickStep> {
         ? 0
         : _roster.indexWhere((c) => c.value == widget.initial);
     if (_index < 0) _index = 0;
-    _controller = PageController(
-      initialPage: _index,
-      viewportFraction: 0.82,
-    );
+    _controller = PageController(initialPage: _index, viewportFraction: 0.82);
   }
 
   @override
@@ -125,7 +122,7 @@ class _TrainerPickStepState extends State<TrainerPickStep> {
         ),
         const SizedBox(height: 10),
         Text(
-          'Pick Your Lead For Your Military Calisthenics Mission.',
+          'Pick Your Trainer For Your Military Calisthenics Mission.',
           textAlign: TextAlign.center,
           style: text.bodyMedium?.copyWith(
             color: scheme.onSurface.withValues(alpha: 0.85),
@@ -138,15 +135,13 @@ class _TrainerPickStepState extends State<TrainerPickStep> {
             itemCount: _roster.length,
             physics: const BouncingScrollPhysics(),
             onPageChanged: (i) => setState(() => _index = i),
-            itemBuilder: (context, i) => _TrainerCardView(
-              card: _roster[i],
-              active: i == _index,
-            ),
+            itemBuilder: (context, i) =>
+                _TrainerCardView(card: _roster[i], active: i == _index),
           ),
         ),
         const SizedBox(height: 10),
         Text(
-          'You can switch your lead later 💪',
+          'You can switch your trainer later 💪',
           textAlign: TextAlign.center,
           style: text.bodyMedium?.copyWith(
             color: scheme.onSurface.withValues(alpha: 0.65),
@@ -226,4 +221,3 @@ class _TrainerCardView extends StatelessWidget {
     );
   }
 }
-
