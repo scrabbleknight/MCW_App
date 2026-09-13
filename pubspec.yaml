@@ -45,13 +45,13 @@ dev_dependencies:
   flutter_native_splash: ^2.4.1
 
 flutter_launcher_icons:
-  android: "launcher_icon"
+  android: true
   ios: true
-  image_path_ios: "assets/branding/mcw_icon.png"
-  image_path_android: "assets/branding/mcw_icon.png"
+  image_path_ios: "assets/branding/app_icon.png"
+  image_path_android: "assets/branding/app_icon.png"
   remove_alpha_ios: true
-  adaptive_icon_background: "#0A0A0A"
-  adaptive_icon_foreground: "assets/branding/mcw_foreground.png"
+  adaptive_icon_background: "#0752A3"
+  adaptive_icon_foreground: "assets/branding/app_icon.png"
   adaptive_icon_foreground_inset: 12
 
 flutter_native_splash:

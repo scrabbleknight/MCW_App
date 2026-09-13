@@ -1,5 +1,7 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:military_calisthenics_women/core/onboarding_kit/onboarding_kit.dart';
 import 'package:military_calisthenics_women/core/theme/tactical_palette.dart';
 
@@ -65,6 +67,11 @@ class WelcomeStep extends StatelessWidget {
                 decoration: TextDecoration.underline,
                 decorationColor: context.palette.arcticSoft,
               ),
+              recognizer: TapGestureRecognizer()
+                ..onTap = () => launchUrl(
+                      Uri.parse('https://deepblue.org.uk/privacy-policy'),
+                      mode: LaunchMode.externalApplication,
+                    ),
             ),
             const TextSpan(text: ' and '),
             TextSpan(
@@ -74,6 +81,11 @@ class WelcomeStep extends StatelessWidget {
                 decoration: TextDecoration.underline,
                 decorationColor: context.palette.arcticSoft,
               ),
+              recognizer: TapGestureRecognizer()
+                ..onTap = () => launchUrl(
+                      Uri.parse('https://deepblue.org.uk/terms-of-use'),
+                      mode: LaunchMode.externalApplication,
+                    ),
             ),
           ],
         ),

@@ -21,7 +21,6 @@ import 'package:military_calisthenics_women/features/workouts/application/workou
 import 'package:military_calisthenics_women/features/workouts/application/workout_settings_controller.dart';
 import 'package:military_calisthenics_women/features/workouts/domain/session_step.dart';
 import 'package:military_calisthenics_women/features/workouts/presentation/difficulty_adjust_screen.dart';
-import 'package:military_calisthenics_women/features/workouts/presentation/mission_complete_modal.dart';
 import 'package:military_calisthenics_women/features/workouts/presentation/quit_feedback_screen.dart';
 import 'package:military_calisthenics_women/features/workouts/presentation/session_complete_screen.dart';
 import 'package:provider/provider.dart';

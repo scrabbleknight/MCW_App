@@ -157,12 +157,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         return false;
       },
       onRestore: purchases.restore,
-      // Debug-only bypass — the pill renders only in `kDebugMode`, so
-      // release builds skip past this callback even though it's wired.
-      onDevSkip: () {
-        controller.setAnswer('paywall_plan', PaywallPlan.yearly);
-        _next();
-      },
     );
   }
 

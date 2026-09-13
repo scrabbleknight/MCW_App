@@ -1,7 +1,7 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 /// Final onboarding step — a hard paywall. Presents two plans (weekly and
 /// annual, with a free-trial CTA) and gates the app until the user picks.
@@ -13,7 +13,6 @@ class PaywallStep extends StatefulWidget {
     required this.onPurchase,
     this.onClose,
     this.onRestore,
-    this.onDevSkip,
     this.trialDays = 3,
   });
 
@@ -33,11 +32,6 @@ class PaywallStep extends StatefulWidget {
   /// the account is already subscribed). The paywall auto-advances in
   /// that case; `false` shows a "nothing to restore" SnackBar instead.
   final Future<bool> Function()? onRestore;
-
-  /// Debug-only bypass: when provided AND the build is in debug mode, a
-  /// small "DEV SKIP" pill appears above the CTA and advances the flow as
-  /// if a purchase succeeded. Release builds ignore this callback entirely.
-  final VoidCallback? onDevSkip;
 
   final int trialDays;
 
@@ -154,10 +148,6 @@ class _PaywallStepState extends State<PaywallStep> {
           const SizedBox(height: 10),
           const _AppStoreBadge(),
           const SizedBox(height: 24),
-          if (kDebugMode && widget.onDevSkip != null) ...[
-            _DevSkipPill(onTap: widget.onDevSkip!),
-            const SizedBox(height: 8),
-          ],
           _PrimaryCta(
             label: _ctaLabel,
             onPressed: _purchasing ? null : _startPurchase,
@@ -432,50 +422,6 @@ class _PlanCard extends StatelessWidget {
 // Primary CTA + footer bits
 // ============================================================================
 
-/// Small orange-tinted pill that only ships in debug builds — lets you skip
-/// past the paywall in the simulator without going through the App Store.
-/// Guarded by [kDebugMode] at the callsite so this never lands in a release
-/// build even if a wiring mistake left [PaywallStep.onDevSkip] set.
-class _DevSkipPill extends StatelessWidget {
-  const _DevSkipPill({required this.onTap});
-
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Align(
-      alignment: Alignment.centerRight,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 4),
-        child: Material(
-          color: const Color(0xFFE07B39).withValues(alpha: 0.20),
-          shape: StadiumBorder(
-            side: BorderSide(
-              color: const Color(0xFFE07B39).withValues(alpha: 0.7),
-            ),
-          ),
-          child: InkWell(
-            customBorder: const StadiumBorder(),
-            onTap: onTap,
-            child: const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-              child: Text(
-                'DEV · SKIP PAYWALL',
-                style: TextStyle(
-                  color: Color(0xFFE07B39),
-                  fontWeight: FontWeight.w800,
-                  fontSize: 11,
-                  letterSpacing: 1.2,
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _PrimaryCta extends StatelessWidget {
   const _PrimaryCta({
     required this.label,
@@ -608,9 +554,19 @@ class _FooterLinks extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        _linkButton('Terms', linkStyle, () {}),
+        _linkButton('Terms', linkStyle, () {
+          launchUrl(
+            Uri.parse('https://deepblue.org.uk/terms-of-use'),
+            mode: LaunchMode.externalApplication,
+          );
+        }),
         const SizedBox(width: 20),
-        _linkButton('Privacy', linkStyle, () {}),
+        _linkButton('Privacy', linkStyle, () {
+          launchUrl(
+            Uri.parse('https://deepblue.org.uk/privacy-policy'),
+            mode: LaunchMode.externalApplication,
+          );
+        }),
       ],
     );
   }

@@ -1,6 +1,8 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:military_calisthenics_women/core/onboarding_kit/onboarding_kit.dart';
 import 'package:military_calisthenics_women/features/onboarding/presentation/steps/current_weight_step.dart';
 import 'package:military_calisthenics_women/features/onboarding/presentation/steps/goal_step.dart';
@@ -119,9 +121,25 @@ class _TermsLine extends StatelessWidget {
         style: baseStyle,
         children: [
           const TextSpan(text: 'By continuing you agree to the '),
-          TextSpan(text: 'Privacy Policy', style: linkStyle),
+          TextSpan(
+            text: 'Privacy Policy',
+            style: linkStyle,
+            recognizer: TapGestureRecognizer()
+              ..onTap = () => launchUrl(
+                    Uri.parse('https://deepblue.org.uk/privacy-policy'),
+                    mode: LaunchMode.externalApplication,
+                  ),
+          ),
           const TextSpan(text: ' and '),
-          TextSpan(text: 'Terms of Use', style: linkStyle),
+          TextSpan(
+            text: 'Terms of Use',
+            style: linkStyle,
+            recognizer: TapGestureRecognizer()
+              ..onTap = () => launchUrl(
+                    Uri.parse('https://deepblue.org.uk/terms-of-use'),
+                    mode: LaunchMode.externalApplication,
+                  ),
+          ),
         ],
       ),
     );
