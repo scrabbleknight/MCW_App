@@ -39,31 +39,9 @@ class _ProfileBody extends StatefulWidget {
 }
 
 class _ProfileBodyState extends State<_ProfileBody> {
-  String? _promptedForUid;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _maybePromptForName();
-  }
-
-  @override
-  void didUpdateWidget(covariant _ProfileBody oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    _maybePromptForName();
-  }
-
-  void _maybePromptForName() {
-    final u = widget.user;
-    if (u == null) return;
-    final name = u.displayName?.trim() ?? '';
-    if (name.isNotEmpty) return;
-    if (_promptedForUid == u.uid) return;
-    _promptedForUid = u.uid;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _showRenameDialog(context, u);
-    });
-  }
+  // No automatic name prompt: Sign in with Apple already supplies a name when
+  // the user chooses to share one, and App Store guideline 4 forbids asking
+  // again afterwards. Renaming stays available on tap (see the header below).
 
   @override
   Widget build(BuildContext context) {

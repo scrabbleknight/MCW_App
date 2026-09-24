@@ -40,7 +40,7 @@ class AppleHealthScreen extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    'Connect to the Health App',
+                    'Apple Health',
                     style: TextStyle(
                       color: context.palette.chalk,
                       fontWeight: FontWeight.w700,
@@ -67,7 +67,7 @@ class AppleHealthScreen extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4),
             child: Text(
-              'Why connect to the Health App?',
+              'What this setting does',
               style: TextStyle(
                 color: context.palette.muted,
                 fontSize: 14,
@@ -86,22 +86,22 @@ class AppleHealthScreen extends StatelessWidget {
                 _Reason(
                   icon: Icons.bolt_rounded,
                   text:
-                      'Sync your workout data to the Health app where they will '
-                      'appear as part of your daily activity.',
+                      'When this is on, completed workouts are written to the '
+                      'Health app as part of your daily activity.',
                 ),
                 Divider(height: 1, color: context.palette.hairline),
                 _Reason(
                   icon: Icons.local_fire_department_rounded,
                   text:
-                      'Keep track of your workout time, weight changes, and '
+                      'The data shared is workout time, weight changes, and '
                       'calories burned.',
                 ),
                 Divider(height: 1, color: context.palette.hairline),
                 _Reason(
                   icon: Icons.favorite_rounded,
                   text:
-                      'Tracking your workouts will help you achieve your '
-                      'fitness goals faster.',
+                      'This setting is optional. Every other part of the app '
+                      'works with it off, and you can change it at any time.',
                 ),
               ],
             ),
