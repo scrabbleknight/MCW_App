@@ -113,6 +113,8 @@ PlanDay? buildCustomWorkoutDay({
 
   final pool = exerciseCatalogue
       .where((e) =>
+          // Only exercises with a demo video, matching the plan generator.
+          e.videoAsset != null &&
           wantedPositions.contains(e.position) &&
           hitsAreas(e) &&
           _levelFits(e.difficulty, level))
