@@ -45,9 +45,9 @@ class _PaywallStepState extends State<PaywallStep> {
   bool _restoring = false;
   bool _purchasing = false;
 
-  static const _weeklyPriceLabel = '£12.99/wk';
-  static const _yearlyPriceLabel = '£79.99/yr';
-  static const _yearlyRenewalLabel = '£79.99 per year';
+  static const _weeklyPriceLabel = '£6.99/wk';
+  static const _yearlyPriceLabel = '£59.99/yr';
+  static const _yearlyRenewalLabel = '£59.99 per year';
 
   /// Yearly plan advertises the free trial; weekly is a no-trial subscribe.
   String get _ctaLabel => switch (_selected) {
@@ -129,7 +129,7 @@ class _PaywallStepState extends State<PaywallStep> {
             price: _yearlyPriceLabel,
             subtitle:
                 '${widget.trialDays}-day free trial, then $_yearlyRenewalLabel',
-            badge: 'SAVE 88%',
+            badge: 'SAVE 83%',
             plan: PaywallPlan.yearly,
             selected: _selected == PaywallPlan.yearly,
             onTap: () => setState(() => _selected = PaywallPlan.yearly),
