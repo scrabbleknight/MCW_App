@@ -133,6 +133,28 @@ class PurchaseController extends ChangeNotifier {
 
   ProductDetails? productFor(PaywallPlan plan) => _products[_idFor(plan)];
 
+  /// What [plan] renews at, as the store formats it for this user: their
+  /// currency, with tax included wherever the store shows it that way. Null
+  /// until the store has returned the product.
+  PlanPrice? priceFor(PaywallPlan plan) {
+    final product = _products[_idFor(plan)];
+    if (product == null) return null;
+    if (product is GooglePlayProductDetails) {
+      // Play reports an offer's first pricing phase as its price, which is
+      // "Free" for a trial. The last phase is the recurring price.
+      final offers = product.productDetails.subscriptionOfferDetails;
+      final index = product.subscriptionIndex;
+      if (offers != null && index != null) {
+        final phase = offers[index].pricingPhases.last;
+        return (
+          formatted: phase.formattedPrice,
+          amount: phase.priceAmountMicros / 1000000,
+        );
+      }
+    }
+    return (formatted: product.price, amount: product.rawPrice);
+  }
+
   Future<void> load() async {
     try {
       _storeAvailable = await _iap.isAvailable();

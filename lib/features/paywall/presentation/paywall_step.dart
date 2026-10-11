@@ -14,6 +14,8 @@ class PaywallStep extends StatefulWidget {
     required this.onPurchase,
     this.onClose,
     this.onRestore,
+    this.weeklyPrice,
+    this.yearlyPrice,
     this.trialDays = 3,
   });
 
@@ -34,6 +36,12 @@ class PaywallStep extends StatefulWidget {
   /// that case; `false` shows a "nothing to restore" SnackBar instead.
   final Future<bool> Function()? onRestore;
 
+  /// Store prices for each plan. Until both arrive the paywall shows the UK
+  /// prices, so it never mixes a store price with a fallback in another
+  /// currency.
+  final PlanPrice? weeklyPrice;
+  final PlanPrice? yearlyPrice;
+
   final int trialDays;
 
   @override
@@ -45,9 +53,31 @@ class _PaywallStepState extends State<PaywallStep> {
   bool _restoring = false;
   bool _purchasing = false;
 
-  static const _weeklyPriceLabel = '£6.99/wk';
-  static const _yearlyPriceLabel = '£59.99/yr';
-  static const _yearlyRenewalLabel = '£59.99 per year';
+  // Shown until the store answers, or when it can't be reached. These match
+  // the UK prices in App Store Connect and Play Console.
+  static const PlanPrice _fallbackWeekly = (formatted: '£6.99', amount: 6.99);
+  static const PlanPrice _fallbackYearly = (
+    formatted: '£59.99',
+    amount: 59.99,
+  );
+
+  bool get _hasStorePrices =>
+      widget.weeklyPrice != null && widget.yearlyPrice != null;
+  PlanPrice get _weekly =>
+      _hasStorePrices ? widget.weeklyPrice! : _fallbackWeekly;
+  PlanPrice get _yearly =>
+      _hasStorePrices ? widget.yearlyPrice! : _fallbackYearly;
+
+  String get _yearlyRenewalLabel => '${_yearly.formatted} per year';
+
+  /// How much cheaper a year on the annual plan is than 52 weeks of the
+  /// weekly plan, rounded down so the badge never overstates it.
+  String? get _savingsBadge {
+    final weeklyForAYear = _weekly.amount * 52;
+    if (weeklyForAYear <= 0) return null;
+    final percent = ((1 - _yearly.amount / weeklyForAYear) * 100).floor();
+    return percent > 0 ? 'SAVE $percent%' : null;
+  }
 
   /// Yearly plan advertises the free trial; weekly is a no-trial subscribe.
   String get _ctaLabel => switch (_selected) {
@@ -126,10 +156,10 @@ class _PaywallStepState extends State<PaywallStep> {
           SizedBox(height: gapLg),
           _PlanCard(
             label: 'Yearly Plan',
-            price: _yearlyPriceLabel,
+            price: '${_yearly.formatted}/yr',
             subtitle:
                 '${widget.trialDays}-day free trial, then $_yearlyRenewalLabel',
-            badge: 'SAVE 83%',
+            badge: _savingsBadge,
             plan: PaywallPlan.yearly,
             selected: _selected == PaywallPlan.yearly,
             onTap: () => setState(() => _selected = PaywallPlan.yearly),
@@ -137,7 +167,7 @@ class _PaywallStepState extends State<PaywallStep> {
           SizedBox(height: gapSm),
           _PlanCard(
             label: 'Weekly Plan',
-            price: _weeklyPriceLabel,
+            price: '${_weekly.formatted}/wk',
             plan: PaywallPlan.weekly,
             selected: _selected == PaywallPlan.weekly,
             onTap: () => setState(() => _selected = PaywallPlan.weekly),
@@ -172,6 +202,10 @@ class _PaywallStepState extends State<PaywallStep> {
 }
 
 enum PaywallPlan { weekly, yearly }
+
+/// A plan's price: [formatted] for display (currency symbol included) and
+/// [amount] in that currency for working out savings.
+typedef PlanPrice = ({String formatted, double amount});
 
 // ============================================================================
 // Hero split image

@@ -213,6 +213,8 @@ class _SubscriptionGateState extends State<_SubscriptionGate>
                 onPurchase: (plan) async =>
                     await purchases.purchase(plan) == PurchaseOutcome.success,
                 onRestore: purchases.restore,
+                weeklyPrice: purchases.priceFor(PaywallPlan.weekly),
+                yearlyPrice: purchases.priceFor(PaywallPlan.yearly),
               ),
             ),
           ),
