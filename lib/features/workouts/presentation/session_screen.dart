@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:military_calisthenics_women/core/promo/cross_promo.dart';
 import 'package:military_calisthenics_women/core/theme/tactical_palette.dart';
 import 'package:military_calisthenics_women/features/health/application/health_controller.dart';
 import 'package:military_calisthenics_women/features/onboarding/application/onboarding_controller.dart';
@@ -144,6 +145,11 @@ class _SessionScreenState extends State<SessionScreen>
     final trainingCtrl = context.read<TrainingProgressController>();
     final historyCtrl = context.read<WorkoutHistoryController>();
     final rankCtrl = context.read<RankProgressController>();
+    final day2WasDone = progressCtrl.isDayCompleted(2);
+    final showPromo = CrossPromo.shouldShowAfterSession(
+      day2WasDone: day2WasDone,
+      completesDay2: widget.day.dayIndex == 2 && !day2WasDone,
+    );
     final onboarding = context.read<OnboardingController>();
     final planInputs = onboarding.answerFor<PlanInputs>('plan_inputs');
     final trainer =
@@ -237,6 +243,10 @@ class _SessionScreenState extends State<SessionScreen>
         await RankUnlockedModal.show(rootNav.context, rank: unlockedRank);
         await rankCtrl.acknowledge(unlockedRank);
       });
+    }
+    // Waits for the celebration modals above to be closed first.
+    if (await showPromo) {
+      unawaited(CrossPromo.showWhenIdle(rootNav, _cycleSyncAd));
     }
   }
 
@@ -1364,3 +1374,11 @@ class _BottomControlBar extends StatelessWidget {
     );
   }
 }
+
+const _cycleSyncAd = CrossPromoAd(
+  id: 'cyclesync',
+  imageAsset: 'assets/branding/promo_cyclesync_ad.jpg',
+  appStoreId: '6812469234',
+  semanticLabel:
+      'Picked for you: CycleSync Period Fitness. Start Your Journey.',
+);
