@@ -16,6 +16,7 @@ class PaywallStep extends StatefulWidget {
     this.onRestore,
     this.weeklyPrice,
     this.yearlyPrice,
+    this.yearlyHasTrial = true,
     this.trialDays = 3,
   });
 
@@ -41,6 +42,10 @@ class PaywallStep extends StatefulWidget {
   /// currency.
   final PlanPrice? weeklyPrice;
   final PlanPrice? yearlyPrice;
+
+  /// False when the store says this user has already had the yearly free
+  /// trial, so the paywall stops promising one.
+  final bool yearlyHasTrial;
 
   final int trialDays;
 
@@ -79,11 +84,12 @@ class _PaywallStepState extends State<PaywallStep> {
     return percent > 0 ? 'SAVE $percent%' : null;
   }
 
-  /// Yearly plan advertises the free trial; weekly is a no-trial subscribe.
-  String get _ctaLabel => switch (_selected) {
-    PaywallPlan.yearly => 'START ${widget.trialDays} DAY FREE TRIAL 🙌',
-    PaywallPlan.weekly => 'GET STARTED',
-  };
+  /// Yearly plan advertises the free trial when the user can get one;
+  /// otherwise both plans are a straight subscribe.
+  String get _ctaLabel =>
+      _selected == PaywallPlan.yearly && widget.yearlyHasTrial
+      ? 'START ${widget.trialDays} DAY FREE TRIAL 🙌'
+      : 'GET STARTED';
 
   Future<void> _startPurchase() async {
     if (_purchasing || _restoring) return;
@@ -157,8 +163,10 @@ class _PaywallStepState extends State<PaywallStep> {
           _PlanCard(
             label: 'Yearly Plan',
             price: '${_yearly.formatted}/yr',
-            subtitle:
-                '${widget.trialDays}-day free trial, then $_yearlyRenewalLabel',
+            subtitle: widget.yearlyHasTrial
+                ? '${widget.trialDays}-day free trial, then '
+                      '$_yearlyRenewalLabel'
+                : 'Billed yearly',
             badge: _savingsBadge,
             plan: PaywallPlan.yearly,
             selected: _selected == PaywallPlan.yearly,
@@ -176,7 +184,7 @@ class _PaywallStepState extends State<PaywallStep> {
           const _FooterLinks(),
           const SizedBox(height: 10),
           _TrialDisclosure(
-            trialDays: widget.trialDays,
+            trialDays: widget.yearlyHasTrial ? widget.trialDays : null,
             yearlyRenewalLabel: _yearlyRenewalLabel,
           ),
           const SizedBox(height: 10),
@@ -627,7 +635,8 @@ class _TrialDisclosure extends StatelessWidget {
     required this.yearlyRenewalLabel,
   });
 
-  final int trialDays;
+  /// Null when the user can't get the free trial.
+  final int? trialDays;
   final String yearlyRenewalLabel;
 
   @override
@@ -650,8 +659,12 @@ class _TrialDisclosure extends StatelessWidget {
       child: Column(
         children: [
           Text(
-            'Annual plan includes a $trialDays-day free trial, then '
-            '$yearlyRenewalLabel. Subscription auto-renews until cancelled.',
+            trialDays != null
+                ? 'Annual plan includes a $trialDays-day free trial, then '
+                      '$yearlyRenewalLabel. Subscription auto-renews until '
+                      'cancelled.'
+                : 'Annual plan renews at $yearlyRenewalLabel. Subscription '
+                      'auto-renews until cancelled.',
             textAlign: TextAlign.center,
             style: primaryStyle,
           ),

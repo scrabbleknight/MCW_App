@@ -147,17 +147,19 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   Widget _paywall(OnboardingController controller) {
     final purchases = context.read<PurchaseController>();
-    // Rebuild when the store's prices arrive, but not on every purchase
-    // state change.
-    final (weeklyPrice, yearlyPrice) = context.select(
+    // Rebuild when the store's prices and trial eligibility arrive, but not
+    // on every purchase state change.
+    final (weeklyPrice, yearlyPrice, yearlyHasTrial) = context.select(
       (PurchaseController p) => (
         p.priceFor(PaywallPlan.weekly),
         p.priceFor(PaywallPlan.yearly),
+        p.hasFreeTrial(PaywallPlan.yearly),
       ),
     );
     return PaywallStep(
       weeklyPrice: weeklyPrice,
       yearlyPrice: yearlyPrice,
+      yearlyHasTrial: yearlyHasTrial,
       onPurchase: (plan) async {
         final outcome = await purchases.purchase(plan);
         if (outcome == PurchaseOutcome.success) {

@@ -215,6 +215,7 @@ class _SubscriptionGateState extends State<_SubscriptionGate>
                 onRestore: purchases.restore,
                 weeklyPrice: purchases.priceFor(PaywallPlan.weekly),
                 yearlyPrice: purchases.priceFor(PaywallPlan.yearly),
+                yearlyHasTrial: purchases.hasFreeTrial(PaywallPlan.yearly),
               ),
             ),
           ),

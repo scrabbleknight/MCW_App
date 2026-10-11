@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:in_app_purchase_android/in_app_purchase_android.dart';
+import 'package:in_app_purchase_storekit/store_kit_2_wrappers.dart';
 import 'package:military_calisthenics_women/core/dev/dev_access.dart';
 import 'package:military_calisthenics_women/core/dev/review_access.dart';
 import 'package:military_calisthenics_women/core/platform/store_platform.dart';
@@ -37,6 +38,10 @@ class PurchaseController extends ChangeNotifier {
   /// Play only: the offer to buy for each product. A free-trial offer when
   /// Play says the user is eligible for one, otherwise the base plan.
   final Map<String, String> _playOfferTokens = {};
+
+  /// Products whose free trial this user can still get. Play only returns
+  /// trial offers to eligible users; on iOS StoreKit 2 is asked directly.
+  final Set<String> _trialEligible = {};
   bool _storeAvailable = false;
   bool _loaded = false;
   final Completer<void> _ready = Completer<void>();
@@ -155,6 +160,15 @@ class PurchaseController extends ChangeNotifier {
     return (formatted: product.price, amount: product.rawPrice);
   }
 
+  /// Whether buying [plan] starts with a free trial for this user. Before the
+  /// store has returned the product, assume the trial the stores are set up
+  /// with: the yearly plan has one, the weekly plan doesn't.
+  bool hasFreeTrial(PaywallPlan plan) {
+    final id = _idFor(plan);
+    if (!_products.containsKey(id)) return plan == PaywallPlan.yearly;
+    return _trialEligible.contains(id);
+  }
+
   Future<void> load() async {
     try {
       _storeAvailable = await _iap.isAvailable();
@@ -172,6 +186,7 @@ class PurchaseController extends ChangeNotifier {
             _products[p.id] = p;
           }
         }
+        if (!StorePlatform.isAndroid) await _checkAppStoreTrial();
         if (response.notFoundIDs.isNotEmpty) {
           debugPrint(
             'PurchaseController: products not found — ${response.notFoundIDs}',
@@ -354,6 +369,22 @@ class PurchaseController extends ChangeNotifier {
     }
     if (hasFreeTrial) {
       _playOfferTokens[details.id] = offer.offerIdToken;
+      _trialEligible.add(details.id);
+    }
+  }
+
+  /// Apple shows the introductory offer only to users who haven't had one in
+  /// the subscription group. If the check fails, assume they can, which is
+  /// how the paywall behaved before this check existed.
+  Future<void> _checkAppStoreTrial() async {
+    if (!_products.containsKey(_yearlyId)) return;
+    try {
+      if (await SK2Product.isIntroductoryOfferEligible(_yearlyId)) {
+        _trialEligible.add(_yearlyId);
+      }
+    } catch (error) {
+      debugPrint('PurchaseController: trial eligibility check failed — $error');
+      _trialEligible.add(_yearlyId);
     }
   }
 
