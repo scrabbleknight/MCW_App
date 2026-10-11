@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:military_calisthenics_women/core/onboarding_kit/onboarding_kit.dart';
+import 'package:military_calisthenics_women/features/reminders/application/reminder_controller.dart';
 import 'package:military_calisthenics_women/features/auth/presentation/login_screen.dart';
 import 'package:military_calisthenics_women/features/onboarding/application/onboarding_controller.dart';
 import 'package:military_calisthenics_women/features/onboarding/application/plan_recommendation.dart';
@@ -523,6 +524,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         child: GetNotifiedStep(
           onDecided: (granted) {
             controller.setAnswer('notifications_granted', granted);
+            if (granted) {
+              unawaited(context.read<ReminderController>().enableFromOnboarding());
+            }
             _next();
           },
         ),

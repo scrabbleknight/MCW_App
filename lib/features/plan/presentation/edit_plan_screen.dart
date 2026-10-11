@@ -1,9 +1,16 @@
+import 'dart:async';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:military_calisthenics_women/app/bootstrap_app.dart';
+import 'package:military_calisthenics_women/core/notifications/workout_reminders.dart';
+import 'package:military_calisthenics_women/core/platform/store_platform.dart';
+import 'package:military_calisthenics_women/core/storage/local_data.dart';
 import 'package:military_calisthenics_women/core/theme/tactical_palette.dart';
 import 'package:military_calisthenics_women/features/auth/application/auth_service.dart';
 import 'package:military_calisthenics_women/features/onboarding/application/onboarding_controller.dart';
+import 'package:military_calisthenics_women/features/paywall/application/purchase_controller.dart';
 import 'package:military_calisthenics_women/features/onboarding/presentation/steps/fitness_level_step.dart';
 import 'package:military_calisthenics_women/features/onboarding/presentation/steps/goal_step.dart';
 import 'package:military_calisthenics_women/features/onboarding/presentation/steps/target_zones_step.dart';
@@ -16,6 +23,7 @@ import 'package:military_calisthenics_women/features/health/application/health_c
 import 'package:military_calisthenics_women/features/health/presentation/apple_health_screen.dart';
 import 'package:military_calisthenics_women/features/reminders/application/reminder_controller.dart';
 import 'package:military_calisthenics_women/features/reminders/presentation/workout_reminder_screen.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -200,10 +208,8 @@ class _EditPlanScreenState extends State<EditPlanScreen> {
               _SettingsRow(
                 label: 'Manage Subscription',
                 value: '',
-                onTap: () => _openUrl(
-                  context,
-                  Uri.parse('https://apps.apple.com/account/subscriptions'),
-                ),
+                onTap: () =>
+                    _openUrl(context, StorePlatform.manageSubscriptionsUri),
               ),
               _SettingsRow(
                 label: 'Restore Subscription',
@@ -218,7 +224,8 @@ class _EditPlanScreenState extends State<EditPlanScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 4),
             child: Text(
               "Use this to restore an existing subscription. "
-              "Make sure you're logged into the same iCloud account.",
+              "Make sure you're logged into the same "
+              "${StorePlatform.billingAccountName}.",
               style: TextStyle(
                 color: context.palette.muted,
                 fontSize: 12,
@@ -232,12 +239,7 @@ class _EditPlanScreenState extends State<EditPlanScreen> {
               _SettingsRow(
                 label: 'Rate Us!',
                 value: '',
-                onTap: () => _openUrl(
-                  context,
-                  Uri.parse(
-                    'https://apps.apple.com/app/id6809903076?action=write-review',
-                  ),
-                ),
+                onTap: () => _openUrl(context, StorePlatform.writeReviewUri),
               ),
               _SettingsRow(
                 label: 'Contact Us',
@@ -273,7 +275,7 @@ class _EditPlanScreenState extends State<EditPlanScreen> {
           _SettingsCard(
             children: [
               _SettingsRow(
-                label: 'Apple Health',
+                label: StorePlatform.healthAppName,
                 value: context.watch<HealthController>().connected
                     ? 'On'
                     : 'Off',
@@ -330,9 +332,17 @@ class _EditPlanScreenState extends State<EditPlanScreen> {
           if (FirebaseAuth.instance.currentUser != null)
             const SizedBox(height: 20),
           Center(
-            child: Text(
-              'Version: 1.0.0 (1)',
-              style: TextStyle(color: context.palette.muted, fontSize: 12),
+            child: FutureBuilder<PackageInfo>(
+              future: PackageInfo.fromPlatform(),
+              builder: (context, snapshot) {
+                final info = snapshot.data;
+                return Text(
+                  info == null
+                      ? ''
+                      : 'Version: ${info.version} (${info.buildNumber})',
+                  style: TextStyle(color: context.palette.muted, fontSize: 12),
+                );
+              },
             ),
           ),
         ],
@@ -349,11 +359,19 @@ class _EditPlanScreenState extends State<EditPlanScreen> {
     }
   }
 
-  void _restoreSubscription(BuildContext context) {
+  Future<void> _restoreSubscription(BuildContext context) async {
+    final restored = await context.read<PurchaseController>().restore();
+    if (!context.mounted) return;
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(
-        const SnackBar(content: Text('No previous subscription found')),
+        SnackBar(
+          content: Text(
+            restored
+                ? 'Your subscription is active.'
+                : 'No previous subscription found',
+          ),
+        ),
       );
   }
 
@@ -424,10 +442,7 @@ class _EditPlanScreenState extends State<EditPlanScreen> {
                 border: Border.all(color: palette.hairline),
               ),
               child: Text(
-                "Your App Store subscription is billed by Apple and won't "
-                'be cancelled automatically. To stop future charges, open '
-                'the iPhone Settings app → tap your name → Subscriptions, '
-                'then cancel this app.',
+                StorePlatform.cancelSubscriptionInstructions,
                 style: TextStyle(
                   color: palette.chalk,
                   fontSize: 12,
@@ -473,11 +488,34 @@ class _EditPlanScreenState extends State<EditPlanScreen> {
       ),
     );
     if (confirmed != true || !context.mounted) return;
+    final navigator = Navigator.of(context);
+    final shownAt = DateTime.now();
+    // Stays up through the deletion and the wipe, so the user can see
+    // something is happening.
+    unawaited(
+      showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => const _DeletingAccountDialog(),
+      ),
+    );
     final result = await AuthService().deleteCurrentAccount();
+    if (result.kind == DeleteAccountKind.success) {
+      // Nothing of the deleted account stays on the phone; the restart
+      // reloads every controller and lands on the welcome screen.
+      await WorkoutReminders.instance.cancelAll();
+      await LocalData.eraseAll();
+      // Keep the spinner on screen long enough to read, even when the
+      // deletion itself is instant.
+      final shown = DateTime.now().difference(shownAt);
+      const minimum = Duration(milliseconds: 1500);
+      if (shown < minimum) await Future<void>.delayed(minimum - shown);
+    }
+    navigator.popUntil((r) => r is! DialogRoute);
     if (!context.mounted) return;
     switch (result.kind) {
       case DeleteAccountKind.success:
-        Navigator.of(context).popUntil((r) => r.isFirst);
+        BootstrapApp.restart(context);
       case DeleteAccountKind.cancelled:
         break;
       case DeleteAccountKind.notSignedIn:
@@ -973,7 +1011,7 @@ class _TargetZonesEditScreenState extends State<TargetZonesEditScreen> {
                           child: Padding(
                             padding: const EdgeInsets.only(right: 4, bottom: 0),
                             child: Image.asset(
-                              'assets/branding/onboarding_hero_16 Background Removed.png',
+                              'assets/branding/onboarding_hero_16 Background Removed.webp',
                               fit: BoxFit.contain,
                               alignment: Alignment.bottomRight,
                             ),
@@ -1367,6 +1405,52 @@ class _DangerRow extends StatelessWidget {
               ),
             ),
             Icon(Icons.chevron_right_rounded, size: 18, color: palette.danger),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DeletingAccountDialog extends StatelessWidget {
+  const _DeletingAccountDialog();
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    return PopScope(
+      canPop: false,
+      child: AlertDialog(
+        backgroundColor: palette.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 8),
+            SizedBox(
+              width: 36,
+              height: 36,
+              child: CircularProgressIndicator(
+                strokeWidth: 3,
+                color: palette.danger,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'Your account is being deleted',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: palette.chalk,
+                fontWeight: FontWeight.w800,
+                fontSize: 17,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Erasing your data from this phone…',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: palette.mist, fontSize: 13, height: 1.4),
+            ),
           ],
         ),
       ),

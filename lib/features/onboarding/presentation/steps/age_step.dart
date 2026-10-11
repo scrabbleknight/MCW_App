@@ -26,32 +26,32 @@ class AgeStep extends StatelessWidget {
         PortraitOption(
           value: AgeBand.under18,
           label: '<18',
-          imageAsset: 'assets/branding/profile1.png',
+          imageAsset: 'assets/branding/profile1.webp',
         ),
         PortraitOption(
           value: AgeBand.from18to24,
           label: '18~24',
-          imageAsset: 'assets/branding/profile2.png',
+          imageAsset: 'assets/branding/profile2.webp',
         ),
         PortraitOption(
           value: AgeBand.from25to34,
           label: '25~34',
-          imageAsset: 'assets/branding/profile3.png',
+          imageAsset: 'assets/branding/profile3.webp',
         ),
         PortraitOption(
           value: AgeBand.from35to44,
           label: '35~44',
-          imageAsset: 'assets/branding/profile4.png',
+          imageAsset: 'assets/branding/profile4.webp',
         ),
         PortraitOption(
           value: AgeBand.from45to54,
           label: '45~54',
-          imageAsset: 'assets/branding/profile5.png',
+          imageAsset: 'assets/branding/profile5.webp',
         ),
         PortraitOption(
           value: AgeBand.over55,
           label: '55+',
-          imageAsset: 'assets/branding/profile6.png',
+          imageAsset: 'assets/branding/profile6.webp',
         ),
       ],
     );

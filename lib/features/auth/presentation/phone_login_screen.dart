@@ -8,17 +8,9 @@ import 'package:military_calisthenics_women/features/auth/application/auth_servi
 /// Two-step phone login: enter number → enter SMS code. Returns the final
 /// [LoginResult] via Navigator.pop when the flow is done or cancelled.
 class PhoneLoginScreen extends StatefulWidget {
-  const PhoneLoginScreen({
-    super.key,
-    required this.authService,
-    this.signUp = false,
-  });
+  const PhoneLoginScreen({super.key, required this.authService});
 
   final AuthService authService;
-
-  /// When true, treat this flow as sign-up: existing accounts are rejected,
-  /// new numbers create an account. Defaults to log-in.
-  final bool signUp;
 
   @override
   State<PhoneLoginScreen> createState() => _PhoneLoginScreenState();
@@ -42,7 +34,9 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
   Future<void> _sendCode() async {
     final raw = _phoneController.text.trim();
     if (raw.isEmpty) {
-      setState(() => _error = 'Enter your phone number, including country code.');
+      setState(
+        () => _error = 'Enter your phone number, including country code.',
+      );
       return;
     }
     final phone = raw.startsWith('+') ? raw : '+$raw';
@@ -52,8 +46,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
       _error = null;
     });
     try {
-      final challenge = await widget.authService
-          .sendPhoneCode(phone, signUp: widget.signUp);
+      final challenge = await widget.authService.sendPhoneCode(phone);
       if (!mounted) return;
       if (challenge.wasAutoVerified && challenge.autoResult != null) {
         Navigator.of(context).pop(challenge.autoResult);
@@ -62,7 +55,9 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
       setState(() => _verificationId = challenge.verificationId);
     } catch (error) {
       if (!mounted) return;
-      setState(() => _error = "Couldn't send code — check the number and try again.");
+      setState(
+        () => _error = "Couldn't send code — check the number and try again.",
+      );
     } finally {
       if (mounted) setState(() => _sending = false);
     }
@@ -83,7 +78,6 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
     final result = await widget.authService.signInWithPhoneCode(
       verificationId: verificationId,
       smsCode: code,
-      signUp: widget.signUp,
     );
     if (!mounted) return;
     Navigator.of(context).pop(result);
@@ -140,7 +134,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
                 askingForNumber
                     ? 'We\'ll send you a one-time code by SMS.'
                     : 'Enter the 6-digit code we just sent to '
-                        '${_phoneController.text.trim()}.',
+                          '${_phoneController.text.trim()}.',
                 style: text.bodyMedium?.copyWith(color: context.palette.mist),
               ),
               const SizedBox(height: 28),
@@ -167,7 +161,9 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
                 const SizedBox(height: 12),
                 Text(
                   _error!,
-                  style: text.bodySmall?.copyWith(color: context.palette.danger),
+                  style: text.bodySmall?.copyWith(
+                    color: context.palette.danger,
+                  ),
                 ),
               ],
               const Spacer(),
@@ -207,16 +203,21 @@ class _TacticalField extends StatelessWidget {
       inputFormatters: inputFormatters,
       autofocus: true,
       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            color: context.palette.chalk,
-            letterSpacing: 1.5,
-          ),
+        color: context.palette.chalk,
+        letterSpacing: 1.5,
+      ),
       cursorColor: context.palette.arctic,
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: TextStyle(color: context.palette.muted.withValues(alpha: 0.6)),
+        hintStyle: TextStyle(
+          color: context.palette.muted.withValues(alpha: 0.6),
+        ),
         filled: true,
         fillColor: context.palette.surface,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 18,
+          vertical: 18,
+        ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide(color: context.palette.hairline, width: 1.2),

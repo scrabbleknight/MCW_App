@@ -205,13 +205,13 @@ class _RankShield extends StatelessWidget {
   final String rank;
 
   static const _badges = <String, String>{
-    'RECRUIT': 'assets/branding/recruit_badge.png',
-    'PRIVATE': 'assets/branding/private_badge.png',
-    'CORPORAL': 'assets/branding/corporal_badge.png',
-    'SERGEANT': 'assets/branding/sergeant_badge.png',
-    'LIEUTENANT': 'assets/branding/lieutenant_badge.png',
-    'CAPTAIN': 'assets/branding/captain_badge.png',
-    'GENERAL': 'assets/branding/general_badge.png',
+    'RECRUIT': 'assets/branding/recruit_badge.webp',
+    'PRIVATE': 'assets/branding/private_badge.webp',
+    'CORPORAL': 'assets/branding/corporal_badge.webp',
+    'SERGEANT': 'assets/branding/sergeant_badge.webp',
+    'LIEUTENANT': 'assets/branding/lieutenant_badge.webp',
+    'CAPTAIN': 'assets/branding/captain_badge.webp',
+    'GENERAL': 'assets/branding/general_badge.webp',
   };
 
   @override

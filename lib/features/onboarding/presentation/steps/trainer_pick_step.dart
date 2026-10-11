@@ -6,24 +6,24 @@ enum Trainer { hailey, gemma, amy }
 extension TrainerAssets on Trainer {
   /// Full-body character cutout for hero placements.
   String get cutoutAsset => switch (this) {
-    Trainer.hailey => 'assets/branding/hailey_cutout_1.png',
-    Trainer.gemma => 'assets/branding/gemma_cutout_1.png',
-    Trainer.amy => 'assets/branding/amy_cutout_1.png',
+    Trainer.hailey => 'assets/branding/hailey_cutout_1.webp',
+    Trainer.gemma => 'assets/branding/gemma_cutout_1.webp',
+    Trainer.amy => 'assets/branding/amy_cutout_1.webp',
   };
 
   /// Portrait used inside the trainer-pick cards.
   String get portraitAsset => switch (this) {
-    Trainer.hailey => 'assets/branding/hailey_trainer_1.png',
-    Trainer.gemma => 'assets/branding/gemma_trainer_2.png',
-    Trainer.amy => 'assets/branding/amy_trainer_3.png',
+    Trainer.hailey => 'assets/branding/hailey_trainer_1.webp',
+    Trainer.gemma => 'assets/branding/gemma_trainer_2.webp',
+    Trainer.amy => 'assets/branding/amy_trainer_3.webp',
   };
 
   /// Head-and-shoulders portrait used for the small circular avatar chip on
   /// downstream screens (chat rows, headers).
   String get avatarAsset => switch (this) {
-    Trainer.hailey => 'assets/branding/hailey_cutout_2.png',
-    Trainer.gemma => 'assets/branding/gemma_cutout_2.png',
-    Trainer.amy => 'assets/branding/amy_cutout_2.png',
+    Trainer.hailey => 'assets/branding/hailey_cutout_2.webp',
+    Trainer.gemma => 'assets/branding/gemma_cutout_2.webp',
+    Trainer.amy => 'assets/branding/amy_cutout_2.webp',
   };
 
   String get displayName => switch (this) {
@@ -45,15 +45,15 @@ class _TrainerCard {
 const _roster = <_TrainerCard>[
   _TrainerCard(
     value: Trainer.hailey,
-    imageAsset: 'assets/branding/hailey_trainer_1.png',
+    imageAsset: 'assets/branding/hailey_trainer_1.webp',
   ),
   _TrainerCard(
     value: Trainer.gemma,
-    imageAsset: 'assets/branding/gemma_trainer_2.png',
+    imageAsset: 'assets/branding/gemma_trainer_2.webp',
   ),
   _TrainerCard(
     value: Trainer.amy,
-    imageAsset: 'assets/branding/amy_trainer_3.png',
+    imageAsset: 'assets/branding/amy_trainer_3.webp',
   ),
 ];
 

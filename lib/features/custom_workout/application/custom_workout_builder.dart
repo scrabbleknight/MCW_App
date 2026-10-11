@@ -17,11 +17,11 @@ extension FocusAreaX on FocusArea {
       };
 
   String get asset => switch (this) {
-        FocusArea.arms => 'assets/branding/custom_arm.png',
-        FocusArea.back => 'assets/branding/custom_back.png',
-        FocusArea.core => 'assets/branding/custom_core.png',
-        FocusArea.glutes => 'assets/branding/custom_glutes.png',
-        FocusArea.legs => 'assets/branding/custom_legs.png',
+        FocusArea.arms => 'assets/branding/custom_arm.webp',
+        FocusArea.back => 'assets/branding/custom_back.webp',
+        FocusArea.core => 'assets/branding/custom_core.webp',
+        FocusArea.glutes => 'assets/branding/custom_glutes.webp',
+        FocusArea.legs => 'assets/branding/custom_legs.webp',
       };
 
   Set<ExerciseMuscle> get muscles => switch (this) {

@@ -20,7 +20,7 @@ class BestShapeStep extends StatelessWidget {
   Widget build(BuildContext context) {
     return OverlayChoiceSlide<BestShape>(
       question: 'How long ago were you in the best shape of your life?',
-      imageAsset: 'assets/branding/onboarding_hero_8_transparent.png',
+      imageAsset: 'assets/branding/onboarding_hero_8_transparent.webp',
       selected: selected,
       onSelected: onAnswered,
       pillMaxWidthFraction: 0.44,

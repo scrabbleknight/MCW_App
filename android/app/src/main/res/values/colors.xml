@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="ic_launcher_background">#0752A3</color>
+    <!-- Native splash and window background: the same near-black the
+         in-app launch animation starts from, so there's no white flash. -->
+    <color name="launch_background">#0A0A0A</color>
 </resources>

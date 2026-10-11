@@ -50,3 +50,6 @@ app.*.map.json
 
 # Workout demo videos (large source files, stored outside Git)
 /assets/workouts/
+
+# Cloud Functions dependencies
+/functions/node_modules/

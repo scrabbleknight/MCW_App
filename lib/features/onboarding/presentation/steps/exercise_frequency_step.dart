@@ -19,7 +19,7 @@ class ExerciseFrequencyStep extends StatelessWidget {
   Widget build(BuildContext context) {
     return OverlayChoiceSlide<ExerciseFrequency>(
       question: 'How often do you exercise?',
-      imageAsset: 'assets/branding/onboarding_hero_12_transparent.png',
+      imageAsset: 'assets/branding/onboarding_hero_12_transparent.webp',
       selected: selected,
       onSelected: onAnswered,
       pillMaxWidthFraction: 0.44,

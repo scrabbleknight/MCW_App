@@ -2,27 +2,44 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
+import 'package:in_app_purchase_android/in_app_purchase_android.dart';
+import 'package:military_calisthenics_women/core/dev/dev_access.dart';
+import 'package:military_calisthenics_women/core/dev/review_access.dart';
+import 'package:military_calisthenics_women/core/platform/store_platform.dart';
 import 'package:military_calisthenics_women/features/paywall/presentation/paywall_step.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Thin controller around [InAppPurchase]. Boots on app start, queries the
 /// two subscription products from the store, listens to the purchase
 /// stream, and exposes a Future-per-purchase surface the paywall can await.
+/// [checkAccess] keeps an onboarded user in the app only while the store
+/// says the subscription is live.
 ///
 /// Not opinionated about receipt validation yet — we call
 /// [InAppPurchase.completePurchase] on every incoming transaction so the
-/// system stops re-emitting it, but no server-side check runs. Slot that in
-/// before shipping to production; sandbox testing works without it.
+/// system stops re-emitting it, but no server-side check runs.
 class PurchaseController extends ChangeNotifier {
-  static const _weeklyId = 'com.swiftbee.militarycalisthenicswomen.weekly';
-  static const _yearlyId = 'com.swiftbee.militarycalisthenicswomen.annual';
-  static const _productIds = {_weeklyId, _yearlyId};
+  // Google Play caps product IDs at 40 characters and bans capitals, so the
+  // App Store IDs can't be reused there.
+  static String get _weeklyId => StorePlatform.isAndroid
+      ? 'com.swiftbee.militarycalisthenics.weekly'
+      : 'com.swiftbee.militarycalisthenicswomen.weekly';
+  static String get _yearlyId => StorePlatform.isAndroid
+      ? 'com.swiftbee.militarycalisthenics.annual'
+      : 'com.swiftbee.militarycalisthenicswomen.annual';
+  static Set<String> get _productIds => {_weeklyId, _yearlyId};
 
   final InAppPurchase _iap = InAppPurchase.instance;
   StreamSubscription<List<PurchaseDetails>>? _sub;
 
   final Map<String, ProductDetails> _products = {};
+
+  /// Play only: the offer to buy for each product. A free-trial offer when
+  /// Play says the user is eligible for one, otherwise the base plan.
+  final Map<String, String> _playOfferTokens = {};
   bool _storeAvailable = false;
   bool _loaded = false;
+  final Completer<void> _ready = Completer<void>();
 
   Completer<PurchaseOutcome>? _pending;
   bool _restoreInFlight = false;
@@ -35,18 +52,86 @@ class PurchaseController extends ChangeNotifier {
   bool _hasActiveEntitlement = false;
   bool get hasActiveEntitlement => _hasActiveEntitlement;
 
-  /// A one-shot check-existing-subscription pass. First call kicks the
-  /// StoreKit restore flow; subsequent calls read the cached result so we
-  /// don't spam the Apple-ID password prompt on every plan tap.
+  /// A one-shot check-existing-subscription pass. First call asks the store;
+  /// subsequent calls read the cached result so we don't spam the store on
+  /// every plan tap.
   bool _didProbeForEntitlement = false;
   Completer<void>? _entitlementFlipCompleter;
 
+  /// When the store last confirmed an active subscription (epoch ms).
+  static const _kVerifiedAt = 'purchase.verified_at_ms';
+
+  /// How long an offline user keeps access after the store last confirmed
+  /// their subscription. Long enough for travel; short enough that a
+  /// cancelled subscription can't be kept alive by staying offline.
+  static const offlineGrace = Duration(days: 14);
+
+  AppAccess _access = AppAccess.checking;
+  bool _accessCheckInFlight = false;
+  DateTime? _accessCheckedAt;
+
   bool get isLoaded => _loaded;
+
+  /// Completes once [load] has finished talking to the store, successfully or
+  /// not. Await it before asking whether the user is subscribed.
+  Future<void> get ready => _ready.future;
   bool get isStoreAvailable => _storeAvailable;
   bool get isBusy => _pending != null || _restoreInFlight;
 
-  ProductDetails? productFor(PaywallPlan plan) =>
-      _products[_idFor(plan)];
+  /// Whether a user who has finished onboarding may use the app. The store
+  /// review account and developer builds always may.
+  AppAccess get access => ReviewAccess.isReviewAccount || DevAccess.isDeveloper
+      ? AppAccess.allowed
+      : _access;
+
+  /// Asks the store whether the subscription is still active and updates
+  /// [access]. Opens straight away for anyone confirmed within
+  /// [offlineGrace] while the store answers. Skips the check if one finished
+  /// less than [ifOlderThan] ago.
+  Future<void> checkAccess({Duration ifOlderThan = Duration.zero}) async {
+    final checkedAt = _accessCheckedAt;
+    if (_accessCheckInFlight) return;
+    if (checkedAt != null &&
+        DateTime.now().difference(checkedAt) < ifOlderThan) {
+      return;
+    }
+    _accessCheckInFlight = true;
+    try {
+      await ready;
+      final prefs = await SharedPreferences.getInstance();
+      final now = DateTime.now();
+      var verifiedMs = prefs.getInt(_kVerifiedAt);
+      if (verifiedMs == null) {
+        // Users who onboarded before this check existed have no record yet.
+        // Start their grace window now rather than locking them out offline.
+        verifiedMs = now.millisecondsSinceEpoch;
+        await prefs.setInt(_kVerifiedAt, verifiedMs);
+      }
+      final withinGrace =
+          now.difference(DateTime.fromMillisecondsSinceEpoch(verifiedMs)) <
+          offlineGrace;
+      if (_access == AppAccess.checking && withinGrace) {
+        _access = AppAccess.allowed;
+        notifyListeners();
+      }
+
+      final active = await _queryStore();
+      if (active == true) {
+        _markEntitled();
+      } else if (active == false) {
+        _hasActiveEntitlement = false;
+        _access = AppAccess.notSubscribed;
+      } else {
+        _access = withinGrace ? AppAccess.allowed : AppAccess.needsConnection;
+      }
+      _accessCheckedAt = DateTime.now();
+    } finally {
+      _accessCheckInFlight = false;
+      notifyListeners();
+    }
+  }
+
+  ProductDetails? productFor(PaywallPlan plan) => _products[_idFor(plan)];
 
   Future<void> load() async {
     try {
@@ -59,7 +144,11 @@ class PurchaseController extends ChangeNotifier {
         );
         final response = await _iap.queryProductDetails(_productIds);
         for (final p in response.productDetails) {
-          _products[p.id] = p;
+          if (p is GooglePlayProductDetails) {
+            _addPlayOffer(p);
+          } else {
+            _products[p.id] = p;
+          }
         }
         if (response.notFoundIDs.isNotEmpty) {
           debugPrint(
@@ -72,6 +161,7 @@ class PurchaseController extends ChangeNotifier {
       debugPrintStack(stackTrace: stack);
     } finally {
       _loaded = true;
+      if (!_ready.isCompleted) _ready.complete();
       notifyListeners();
     }
   }
@@ -84,8 +174,8 @@ class PurchaseController extends ChangeNotifier {
     if (_pending != null) return PurchaseOutcome.pending;
 
     // Before we launch the platform buy sheet, silently check whether this
-    // Apple ID already has an active subscription. If it does we treat the
-    // tap as an instant success — no double-billing, no "you are already
+    // store account already has an active subscription. If it does we treat
+    // the tap as an instant success — no double-billing, no "you are already
     // subscribed" system alert.
     if (await checkExistingSubscription()) {
       return PurchaseOutcome.success;
@@ -98,7 +188,12 @@ class PurchaseController extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final param = PurchaseParam(productDetails: product);
+      final param = product is GooglePlayProductDetails
+          ? GooglePlayPurchaseParam(
+              productDetails: product,
+              offerToken: _playOfferTokens[product.id],
+            )
+          : PurchaseParam(productDetails: product);
       final started = await _iap.buyNonConsumable(purchaseParam: param);
       if (!started) {
         _resolvePending(PurchaseOutcome.failed);
@@ -111,12 +206,16 @@ class PurchaseController extends ChangeNotifier {
     return _pending?.future ?? Future.value(PurchaseOutcome.failed);
   }
 
-  /// Kicks off the App Store restore flow. Any restored purchases arrive
-  /// via [_onPurchaseUpdate]; the caller waits on that. Returns `true` when
-  /// StoreKit surfaced an active entitlement (restored or previously
-  /// purchased), `false` otherwise.
-  Future<bool> restore() async {
-    if (!_storeAvailable || _restoreInFlight) return _hasActiveEntitlement;
+  /// Asks the store for an active subscription. Returns `true` when it
+  /// reported one (restored or previously purchased), `false` otherwise.
+  Future<bool> restore() async => await _queryStore() ?? _hasActiveEntitlement;
+
+  /// Asks the store for active subscriptions. Both stores only report live
+  /// ones here — StoreKit 2 reads `Transaction.currentEntitlements`, Play
+  /// returns current purchases — so a cancelled subscription drops out once
+  /// it expires. Null when the store couldn't be asked (offline, no store).
+  Future<bool?> _queryStore() async {
+    if (!_storeAvailable || _restoreInFlight) return null;
     _restoreInFlight = true;
     // Reuse the entitlement-flip completer so the wait below trips as soon
     // as _onPurchaseUpdate marks the account entitled.
@@ -124,7 +223,7 @@ class PurchaseController extends ChangeNotifier {
     notifyListeners();
     try {
       await _iap.restorePurchases();
-      // Give StoreKit a short window to deliver restored transactions on
+      // Give the store a short window to deliver restored transactions on
       // the purchase stream before we report back.
       await Future.any([
         _entitlementFlipCompleter!.future,
@@ -133,7 +232,7 @@ class PurchaseController extends ChangeNotifier {
       return _hasActiveEntitlement;
     } catch (error) {
       debugPrint('PurchaseController: restore failed — $error');
-      return _hasActiveEntitlement;
+      return null;
     } finally {
       _restoreInFlight = false;
       _didProbeForEntitlement = true;
@@ -143,7 +242,7 @@ class PurchaseController extends ChangeNotifier {
 
   /// Silent variant of [restore] used to short-circuit the buy sheet when
   /// the user already owns a subscription. Returns the cached result after
-  /// the first probe so we don't repeatedly hit the App Store on every
+  /// the first probe so we don't repeatedly hit the store on every
   /// plan-card tap.
   Future<bool> checkExistingSubscription() async {
     if (!_storeAvailable) return false;
@@ -183,10 +282,21 @@ class PurchaseController extends ChangeNotifier {
 
   void _markEntitled() {
     _hasActiveEntitlement = true;
+    _access = AppAccess.allowed;
+    unawaited(_recordVerified());
     final completer = _entitlementFlipCompleter;
     _entitlementFlipCompleter = null;
     if (completer != null && !completer.isCompleted) {
       completer.complete();
+    }
+  }
+
+  Future<void> _recordVerified() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt(_kVerifiedAt, DateTime.now().millisecondsSinceEpoch);
+    } catch (error) {
+      debugPrint('PurchaseController: saving verification failed — $error');
     }
   }
 
@@ -196,6 +306,32 @@ class PurchaseController extends ChangeNotifier {
     notifyListeners();
     if (completer != null && !completer.isCompleted) {
       completer.complete(outcome);
+    }
+  }
+
+  /// Play returns one entry per base plan and per offer. Keep the base plan
+  /// as the product, but buy a free-trial offer whenever Play offers one
+  /// (it only returns offers the user is eligible for).
+  void _addPlayOffer(GooglePlayProductDetails details) {
+    final offers = details.productDetails.subscriptionOfferDetails;
+    final index = details.subscriptionIndex;
+    if (offers == null || index == null) {
+      _products[details.id] = details;
+      return;
+    }
+    final offer = offers[index];
+    final isBasePlan = offer.offerId == null;
+    final hasFreeTrial = offer.pricingPhases.any(
+      (phase) => phase.priceAmountMicros == 0,
+    );
+    if (isBasePlan) {
+      _products[details.id] = details;
+      _playOfferTokens.putIfAbsent(details.id, () => offer.offerIdToken);
+    } else {
+      _products.putIfAbsent(details.id, () => details);
+    }
+    if (hasFreeTrial) {
+      _playOfferTokens[details.id] = offer.offerIdToken;
     }
   }
 
@@ -209,6 +345,21 @@ class PurchaseController extends ChangeNotifier {
     _sub?.cancel();
     super.dispose();
   }
+}
+
+/// Whether an onboarded user can use the app right now.
+enum AppAccess {
+  /// The store hasn't answered yet and there's no recent confirmation.
+  checking,
+
+  /// Subscribed (or confirmed recently enough to ride out being offline).
+  allowed,
+
+  /// The store says there's no active subscription.
+  notSubscribed,
+
+  /// Offline for longer than [PurchaseController.offlineGrace].
+  needsConnection,
 }
 
 /// Terminal state of a purchase attempt.

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:military_calisthenics_women/app/startup_shell.dart';
+import 'package:military_calisthenics_women/core/theme/tactical_palette.dart';
 import 'package:military_calisthenics_women/core/theme/tactical_theme.dart';
 import 'package:military_calisthenics_women/core/theme/theme_controller.dart';
 import 'package:military_calisthenics_women/features/home/presentation/home_screen.dart';
@@ -12,6 +13,7 @@ import 'package:military_calisthenics_women/features/onboarding/presentation/ste
 import 'package:military_calisthenics_women/features/onboarding/presentation/steps/height_step.dart';
 import 'package:military_calisthenics_women/features/paywall/application/auth_controller.dart';
 import 'package:military_calisthenics_women/features/paywall/application/purchase_controller.dart';
+import 'package:military_calisthenics_women/features/paywall/presentation/paywall_step.dart';
 import 'package:military_calisthenics_women/features/plan/application/sounds_controller.dart';
 import 'package:military_calisthenics_women/features/health/application/health_controller.dart';
 import 'package:military_calisthenics_women/features/reminders/application/reminder_controller.dart';
@@ -38,7 +40,10 @@ class McwApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => OnboardingController()..load()),
         ChangeNotifierProvider(create: (_) => PurchaseController()..load()),
         ChangeNotifierProvider(create: (_) => SoundsController()..load()),
-        ChangeNotifierProvider(create: (_) => ReminderController()..load()),
+        // Not lazy: loading re-registers the scheduled workout reminders on
+        // every launch, even if the reminder screen is never opened.
+        ChangeNotifierProvider(
+            lazy: false, create: (_) => ReminderController()..load()),
         ChangeNotifierProvider(create: (_) => HealthController()..load()),
         ChangeNotifierProvider(
             create: (_) => StarredWorkoutsController()..load()),
@@ -138,7 +143,6 @@ class _AppFlowGateState extends State<_AppFlowGate> {
 
     if (!_launchAnimationDone) {
       return LaunchAnimationScreen(
-        assetPath: 'assets/launch_animation/newlaunchvid.mov',
         onComplete: () => setState(() => _launchAnimationDone = true),
       );
     }
@@ -147,6 +151,80 @@ class _AppFlowGateState extends State<_AppFlowGate> {
       return const OnboardingScreen();
     }
 
-    return const HomeScreen();
+    return const _SubscriptionGate();
+  }
+}
+
+/// After onboarding, the app stays open only while the store says the
+/// subscription is active. Re-checks on launch and whenever the app returns
+/// to the foreground after a while, so a cancelled subscription ends access
+/// once it expires — and "Log in" on the welcome screen can't skip the
+/// paywall.
+class _SubscriptionGate extends StatefulWidget {
+  const _SubscriptionGate();
+
+  @override
+  State<_SubscriptionGate> createState() => _SubscriptionGateState();
+}
+
+class _SubscriptionGateState extends State<_SubscriptionGate>
+    with WidgetsBindingObserver {
+  static const _recheckAfter = Duration(hours: 6);
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    context.read<PurchaseController>().checkAccess();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      context.read<PurchaseController>().checkAccess(
+            ifOlderThan: _recheckAfter,
+          );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final purchases = context.watch<PurchaseController>();
+    return switch (purchases.access) {
+      AppAccess.allowed => const HomeScreen(),
+      AppAccess.checking => const StartupScaffold(
+          title: 'Checking your subscription',
+          message: 'This only takes a moment.',
+        ),
+      // A purchase or restore flips access to allowed, which rebuilds this
+      // gate into the home screen.
+      AppAccess.notSubscribed => Scaffold(
+          backgroundColor: context.palette.abyss,
+          body: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+              child: PaywallStep(
+                onPurchase: (plan) async =>
+                    await purchases.purchase(plan) == PurchaseOutcome.success,
+                onRestore: purchases.restore,
+              ),
+            ),
+          ),
+        ),
+      AppAccess.needsConnection => StartupScaffold(
+          title: 'Connect to the internet',
+          message: "We couldn't confirm your subscription for a while. "
+              'Connect to the internet and try again to keep training.',
+          isLoading: false,
+          actionLabel: 'Try again',
+          onAction: purchases.checkAccess,
+        ),
+    };
   }
 }

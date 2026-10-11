@@ -16,17 +16,17 @@ class PitchStep extends StatelessWidget {
       onCompleted: onCompleted,
       slides: const [
         PitchSlide(
-          imageAsset: 'assets/branding/onboarding_hero_2.png',
+          imageAsset: 'assets/branding/onboarding_hero_2.webp',
           heading: 'Strong AND sculpted',
           body: '—build real power while your lines lock in tight.',
         ),
         PitchSlide(
-          imageAsset: 'assets/branding/onboarding_hero_3.png',
+          imageAsset: 'assets/branding/onboarding_hero_3.webp',
           heading: 'Meets you where you are',
           body: '—first pushup or full pistol, the plan scales to you.',
         ),
         PitchSlide(
-          imageAsset: 'assets/branding/onboarding_hero_4.png',
+          imageAsset: 'assets/branding/onboarding_hero_4.webp',
           heading: 'Zero gear, zero excuses',
           body: '—train anywhere. Bedroom floor, hotel room, park.',
         ),

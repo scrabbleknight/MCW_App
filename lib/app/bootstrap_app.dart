@@ -10,6 +10,11 @@ import 'package:military_calisthenics_women/firebase_options.dart';
 class BootstrapApp extends StatefulWidget {
   const BootstrapApp({super.key});
 
+  /// Rebuilds the whole app from scratch, so every controller reloads its
+  /// state from disk. Used after deleting the account and erasing local data.
+  static void restart(BuildContext context) =>
+      context.findAncestorStateOfType<_BootstrapAppState>()?._restart();
+
   @override
   State<BootstrapApp> createState() => _BootstrapAppState();
 }
@@ -19,6 +24,7 @@ class _BootstrapAppState extends State<BootstrapApp> {
   static const _firebaseInitTimeout = Duration(seconds: 8);
 
   late Future<void> _bootstrapFuture;
+  int _generation = 0;
 
   @override
   void initState() {
@@ -73,6 +79,8 @@ class _BootstrapAppState extends State<BootstrapApp> {
     }
   }
 
+  void _restart() => setState(() => _generation++);
+
   void _retryBootstrap() {
     setState(() {
       _bootstrapFuture = _bootstrap();
@@ -103,7 +111,7 @@ class _BootstrapAppState extends State<BootstrapApp> {
           );
         }
 
-        return const McwApp();
+        return McwApp(key: ValueKey(_generation));
       },
     );
   }

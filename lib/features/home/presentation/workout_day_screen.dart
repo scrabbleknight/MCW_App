@@ -458,11 +458,11 @@ class _MuscleMap extends StatelessWidget {
     }
     final focus = _focusSlug(day.title);
     return Image.asset(
-      'assets/branding/body_map_${focus}_$side.png',
+      'assets/branding/body_map_${focus}_$side.webp',
       fit: BoxFit.contain,
       alignment: Alignment.center,
       errorBuilder: (_, __, ___) => Image.asset(
-        'assets/branding/body_map_full_body_$side.png',
+        'assets/branding/body_map_full_body_$side.webp',
         fit: BoxFit.contain,
         alignment: Alignment.center,
         errorBuilder: (_, __, ___) => _SkeletonStack(
@@ -487,14 +487,14 @@ class _SkeletonStack extends StatelessWidget {
       fit: StackFit.expand,
       children: [
         Image.asset(
-          'assets/branding/skeleton.png',
+          'assets/branding/skeleton.webp',
           fit: BoxFit.contain,
           alignment: Alignment.center,
           errorBuilder: (_, __, ___) => const SizedBox.shrink(),
         ),
         for (final m in muscles)
           Image.asset(
-            'assets/branding/skeleton_${m}_$side.png',
+            'assets/branding/skeleton_${m}_$side.webp',
             fit: BoxFit.contain,
             alignment: Alignment.center,
             errorBuilder: (_, __, ___) => const SizedBox.shrink(),
@@ -516,7 +516,7 @@ String _focusSlug(String title) {
 
 /// Fallback muscle list — used only when the pre-authored body-map for a
 /// given (focus, side) isn't in the bundle yet. Slugs match
-/// `assets/branding/skeleton_<slug>_<side>.png`.
+/// `assets/branding/skeleton_<slug>_<side>.webp`.
 List<String> _musclesFor(String title, {required bool showBack}) {
   if (title.endsWith('Custom')) {
     final head = title.substring(0, title.length - 'Custom'.length);

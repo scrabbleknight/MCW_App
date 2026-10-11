@@ -19,7 +19,7 @@ class MealsPerDayStep extends StatelessWidget {
   Widget build(BuildContext context) {
     return ImageChoiceGridStep<MealsPerDay>(
       question: 'How many meals do you typically have in a day?',
-      imageAsset: 'assets/branding/onboarding_hero_17.png',
+      imageAsset: 'assets/branding/onboarding_hero_17.webp',
       selected: selected,
       onSelected: onAnswered,
       options: const [

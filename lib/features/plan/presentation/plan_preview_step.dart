@@ -926,7 +926,7 @@ class _CalendarSection extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         Image.asset(
-          'assets/branding/calendar.png',
+          'assets/branding/calendar.webp',
           fit: BoxFit.contain,
         ),
       ],
@@ -991,10 +991,10 @@ class _PlanContentSection extends StatelessWidget {
   final WorkoutDuration? workoutDuration;
   final int dailyCalorieTarget;
 
-  static const _bodyAsset = 'assets/branding/body_image.png';
-  static const _stopwatchAsset = 'assets/branding/stopwatch.png';
-  static const _caloriesAsset = 'assets/branding/calories_image.png';
-  static const _skeletonAsset = 'assets/branding/skeleton.png';
+  static const _bodyAsset = 'assets/branding/body_image.webp';
+  static const _stopwatchAsset = 'assets/branding/stopwatch.webp';
+  static const _caloriesAsset = 'assets/branding/calories_image.webp';
+  static const _skeletonAsset = 'assets/branding/skeleton.webp';
 
   String get _workoutArea => switch (goal) {
         FitnessGoal.buildStrength => 'Upper body + core',
@@ -1157,10 +1157,10 @@ const _week1 = _WeekPreview(
   index: 1,
   title: 'Body Awakening',
   tiles: [
-    _WeekTile(asset: 'assets/branding/week1_x20_1.png'),
-    _WeekTile(asset: 'assets/branding/week1_x5_1.png'),
-    _WeekTile(asset: 'assets/branding/week1_x5_2.png'),
-    _WeekTile(asset: 'assets/branding/week1_x20_2.png'),
+    _WeekTile(asset: 'assets/branding/week1_x20_1.webp'),
+    _WeekTile(asset: 'assets/branding/week1_x5_1.webp'),
+    _WeekTile(asset: 'assets/branding/week1_x5_2.webp'),
+    _WeekTile(asset: 'assets/branding/week1_x20_2.webp'),
   ],
 );
 
@@ -1168,10 +1168,10 @@ const _week2 = _WeekPreview(
   index: 2,
   title: 'Fat Burn Blast',
   tiles: [
-    _WeekTile(asset: 'assets/branding/week2_x10_1.png'),
-    _WeekTile(asset: 'assets/branding/week2_x10_2.png'),
-    _WeekTile(asset: 'assets/branding/week2_x15_1.png'),
-    _WeekTile(asset: 'assets/branding/week2_x20_1.png'),
+    _WeekTile(asset: 'assets/branding/week2_x10_1.webp'),
+    _WeekTile(asset: 'assets/branding/week2_x10_2.webp'),
+    _WeekTile(asset: 'assets/branding/week2_x15_1.webp'),
+    _WeekTile(asset: 'assets/branding/week2_x20_1.webp'),
   ],
 );
 
@@ -1180,9 +1180,9 @@ const _week3 = _WeekPreview(
   title: 'Muscle Strengthening',
   tiles: [
     _WeekTile(asset: 'assets/branding/week3_x15_1.jpg'),
-    _WeekTile(asset: 'assets/branding/week3_x15_2.png'),
-    _WeekTile(asset: 'assets/branding/week3_x30_1.png'),
-    _WeekTile(asset: 'assets/branding/week3_x5_1.png'),
+    _WeekTile(asset: 'assets/branding/week3_x15_2.webp'),
+    _WeekTile(asset: 'assets/branding/week3_x30_1.webp'),
+    _WeekTile(asset: 'assets/branding/week3_x5_1.webp'),
   ],
 );
 

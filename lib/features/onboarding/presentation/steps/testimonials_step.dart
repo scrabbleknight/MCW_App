@@ -18,7 +18,7 @@ class TestimonialsStep extends StatelessWidget {
       onCompleted: onCompleted,
       testimonials: const [
         Testimonial(
-          imageAsset: 'assets/branding/onboarding_hero_5.png',
+          imageAsset: 'assets/branding/onboarding_hero_5.webp',
           afterLabel: 'Day 45',
           title: 'Feeling unstoppable',
           body:
@@ -27,7 +27,7 @@ class TestimonialsStep extends StatelessWidget {
               'my living room.',
         ),
         Testimonial(
-          imageAsset: 'assets/branding/onboarding_hero_6.png',
+          imageAsset: 'assets/branding/onboarding_hero_6.webp',
           afterLabel: 'Day 28',
           title: 'Down 12 kg, up in strength',
           body:
@@ -36,7 +36,7 @@ class TestimonialsStep extends StatelessWidget {
               'after week.',
         ),
         Testimonial(
-          imageAsset: 'assets/branding/onboarding_hero_7.png',
+          imageAsset: 'assets/branding/onboarding_hero_7.webp',
           afterLabel: 'Day 28',
           title: 'Confidence I forgot I had',
           body:

@@ -3,13 +3,13 @@
 /// earned by [workoutThreshold] total completed workouts (mission + training
 /// + custom) so activity in any tab counts.
 enum Rank {
-  recruit('Recruit', 'assets/branding/recruit_badge.png', 0),
-  private('Private', 'assets/branding/private_badge.png', 3),
-  corporal('Corporal', 'assets/branding/corporal_badge.png', 7),
-  sergeant('Sergeant', 'assets/branding/sergeant_badge.png', 12),
-  lieutenant('Lieutenant', 'assets/branding/lieutenant_badge.png', 18),
-  captain('Captain', 'assets/branding/captain_badge.png', 25),
-  general('General', 'assets/branding/general_badge.png', 35);
+  recruit('Recruit', 'assets/branding/recruit_badge.webp', 0),
+  private('Private', 'assets/branding/private_badge.webp', 3),
+  corporal('Corporal', 'assets/branding/corporal_badge.webp', 7),
+  sergeant('Sergeant', 'assets/branding/sergeant_badge.webp', 12),
+  lieutenant('Lieutenant', 'assets/branding/lieutenant_badge.webp', 18),
+  captain('Captain', 'assets/branding/captain_badge.webp', 25),
+  general('General', 'assets/branding/general_badge.webp', 35);
 
   const Rank(this.label, this.asset, this.workoutThreshold);
 

@@ -145,7 +145,7 @@ class MissionCompleteModal extends StatelessWidget {
                     ),
                   ),
                   Image.asset(
-                    'assets/branding/gold_star.png',
+                    'assets/branding/gold_star.webp',
                     width: 190,
                     height: 190,
                     fit: BoxFit.contain,

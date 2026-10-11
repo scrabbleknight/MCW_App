@@ -288,7 +288,7 @@ class _PlanCard extends StatelessWidget {
             width: 140,
             height: 220,
             child: Image.asset(
-              'assets/branding/onboarding_hero_16 Background Removed.png',
+              'assets/branding/onboarding_hero_16 Background Removed.webp',
               fit: BoxFit.contain,
               alignment: Alignment.bottomCenter,
               filterQuality: FilterQuality.medium,

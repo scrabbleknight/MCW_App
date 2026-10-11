@@ -62,7 +62,7 @@ class _SquadWelcomeStepState extends State<SquadWelcomeStep>
           // Layered backdrop: hand-designed camo, dimmed toward the bottom
           // so the mission cards read against a near-black field.
           Image.asset(
-            'assets/branding/camo_background.png',
+            'assets/branding/camo_background.webp',
             fit: BoxFit.cover,
             alignment: Alignment.center,
           ),
@@ -216,7 +216,7 @@ class _HeroDossier extends StatelessWidget {
                 fit: StackFit.expand,
                 children: [
                   Image.asset(
-                    'assets/branding/final_onboarding_page_image.png',
+                    'assets/branding/final_onboarding_page_image.webp',
                     fit: BoxFit.cover,
                     alignment: Alignment.topCenter,
                   ),
@@ -678,11 +678,13 @@ class _DeployButton extends StatelessWidget {
               ),
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 12),
+                // White in both themes: the button is always solid blue, and
+                // the theme's text colour is near-black in light mode.
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(Icons.chevron_right_rounded,
-                        color: context.palette.chalk),
+                        color: Colors.white),
                     const SizedBox(width: 4),
                     // The label uses wide letter-spacing that pushes past
                     // narrow phone widths (RenderFlex overflow). Flex + a
@@ -696,7 +698,7 @@ class _DeployButton extends StatelessWidget {
                           maxLines: 1,
                           softWrap: false,
                           style: GoogleFonts.plusJakartaSans(
-                            color: context.palette.chalk,
+                            color: Colors.white,
                             fontWeight: FontWeight.w900,
                             fontSize: 20,
                             letterSpacing: 2.4,
@@ -706,7 +708,7 @@ class _DeployButton extends StatelessWidget {
                     ),
                     const SizedBox(width: 4),
                     Icon(Icons.chevron_right_rounded,
-                        color: context.palette.chalk),
+                        color: Colors.white),
                   ],
                 ),
               ),

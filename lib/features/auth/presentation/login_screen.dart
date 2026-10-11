@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:military_calisthenics_women/core/platform/store_platform.dart';
 import 'package:military_calisthenics_women/core/theme/tactical_palette.dart';
 import 'package:military_calisthenics_women/features/auth/application/auth_service.dart';
 import 'package:military_calisthenics_women/features/auth/presentation/phone_login_screen.dart';
@@ -9,9 +10,8 @@ import 'package:provider/provider.dart';
 
 /// Full-screen log-in for users who already have an account.
 ///
-/// Three provider tiles (Google, Apple, Phone); each is guarded by
-/// [AuthService]'s `isNewUser` check so accidental sign-ups are rejected
-/// and surfaced as "no account found — sign up instead" errors.
+/// Three provider tiles (Google, Apple, Phone). A credential with no
+/// existing account simply creates one, so users never get stuck.
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -37,17 +37,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _handleResult(LoginResult result) async {
     switch (result.outcome) {
-      case LoginOutcome.existingUser:
+      case LoginOutcome.signedIn:
         await context.read<OnboardingController>().markCompleted();
         if (!mounted) return;
         Navigator.of(context).pop();
-      case LoginOutcome.newUserRejected:
-        _snack(
-          "No account found for that sign-in. Tap Start Now to create one.",
-        );
-      case LoginOutcome.existingUserRejected:
-        // Not expected on the log-in screen, but handle defensively.
-        _snack("You already have an account — try logging in.");
       case LoginOutcome.cancelled:
         if (result.error != null) {
           _snack("Couldn't sign in: ${result.error}");
@@ -85,9 +78,9 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _openSignUp() {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const SignUpScreen()),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const SignUpScreen()));
   }
 
   @override
@@ -118,13 +111,15 @@ class _LoginScreenState extends State<LoginScreen> {
                 style: text.bodyLarge?.copyWith(color: context.palette.mist),
               ),
               const SizedBox(height: 40),
-              _ProviderTile(
-                label: 'Continue with Apple',
-                icon: Icons.apple,
-                onTap: () => _run(_auth.signInWithApple),
-                enabled: !_busy,
-              ),
-              const SizedBox(height: 14),
+              if (StorePlatform.supportsAppleSignIn) ...[
+                _ProviderTile(
+                  label: 'Continue with Apple',
+                  icon: Icons.apple,
+                  onTap: () => _run(_auth.signInWithApple),
+                  enabled: !_busy,
+                ),
+                const SizedBox(height: 14),
+              ],
               _ProviderTile(
                 label: 'Continue with Google',
                 icon: Icons.g_mobiledata_rounded,
@@ -153,7 +148,9 @@ class _LoginScreenState extends State<LoginScreen> {
               Center(
                 child: Text.rich(
                   TextSpan(
-                    style: text.bodyMedium?.copyWith(color: context.palette.muted),
+                    style: text.bodyMedium?.copyWith(
+                      color: context.palette.muted,
+                    ),
                     children: [
                       const TextSpan(text: "Don't have an account? "),
                       WidgetSpan(
@@ -249,15 +246,12 @@ class _ProviderTile extends StatelessWidget {
                   child: Text(
                     label,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: context.palette.chalk,
-                        ),
+                      fontWeight: FontWeight.w700,
+                      color: context.palette.chalk,
+                    ),
                   ),
                 ),
-                Icon(
-                  Icons.chevron_right_rounded,
-                  color: context.palette.muted,
-                ),
+                Icon(Icons.chevron_right_rounded, color: context.palette.muted),
               ],
             ),
           ),

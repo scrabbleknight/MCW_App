@@ -20,7 +20,7 @@ class TargetZonesStep extends StatelessWidget {
   Widget build(BuildContext context) {
     return SplitMultiChoiceSlide<TargetZone>(
       question: 'What are your target zones?',
-      imageAsset: 'assets/branding/onboarding_hero_15.png',
+      imageAsset: 'assets/branding/onboarding_hero_15.webp',
       initialSelection: initialSelection,
       onCompleted: onCompleted,
       options: const [

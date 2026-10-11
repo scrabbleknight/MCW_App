@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:military_calisthenics_women/core/platform/store_platform.dart';
 import 'package:military_calisthenics_women/core/theme/tactical_palette.dart';
 import 'package:military_calisthenics_women/features/auth/application/auth_service.dart';
 import 'package:military_calisthenics_women/features/auth/presentation/phone_login_screen.dart';
@@ -8,9 +9,8 @@ import 'package:provider/provider.dart';
 
 /// Full-screen sign-up mirror of [LoginScreen].
 ///
-/// Same three provider tiles, but each call runs in sign-up mode:
-/// the existing-account guard rejects credentials that already belong to
-/// a user (they're bounced back to log-in instead of creating a dup).
+/// Same three provider tiles. A credential that already has an account
+/// just signs that account in, so users never get stuck.
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
 
@@ -36,19 +36,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   Future<void> _handleResult(LoginResult result) async {
     switch (result.outcome) {
-      case LoginOutcome.existingUser:
-        // Fresh account created (or the credential is already logged in).
+      case LoginOutcome.signedIn:
+        // Fresh account created (or an existing one signed in).
         // Mark onboarding complete and pop back to the app.
         await context.read<OnboardingController>().markCompleted();
         if (!mounted) return;
         Navigator.of(context).pop();
-      case LoginOutcome.existingUserRejected:
-        _snack(
-          "That account already exists — tap Log in below to sign in instead.",
-        );
-      case LoginOutcome.newUserRejected:
-        // Not expected on the sign-up screen, but handle defensively.
-        _snack("Couldn't create an account — try logging in instead.");
       case LoginOutcome.cancelled:
         if (result.error != null) {
           _snack("Couldn't sign up: ${result.error}");
@@ -80,9 +73,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   Future<void> _openPhoneFlow() async {
     if (_busy) return;
     final result = await Navigator.of(context).push<LoginResult>(
-      MaterialPageRoute(
-        builder: (_) => PhoneLoginScreen(authService: _auth, signUp: true),
-      ),
+      MaterialPageRoute(builder: (_) => PhoneLoginScreen(authService: _auth)),
     );
     if (result != null && mounted) _handleResult(result);
   }
@@ -115,17 +106,19 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 style: text.bodyLarge?.copyWith(color: context.palette.mist),
               ),
               const SizedBox(height: 40),
-              _ProviderTile(
-                label: 'Sign up with Apple',
-                icon: Icons.apple,
-                onTap: () => _run(() => _auth.signInWithApple(signUp: true)),
-                enabled: !_busy,
-              ),
-              const SizedBox(height: 14),
+              if (StorePlatform.supportsAppleSignIn) ...[
+                _ProviderTile(
+                  label: 'Sign up with Apple',
+                  icon: Icons.apple,
+                  onTap: () => _run(_auth.signInWithApple),
+                  enabled: !_busy,
+                ),
+                const SizedBox(height: 14),
+              ],
               _ProviderTile(
                 label: 'Sign up with Google',
                 icon: Icons.g_mobiledata_rounded,
-                onTap: () => _run(() => _auth.signInWithGoogle(signUp: true)),
+                onTap: () => _run(_auth.signInWithGoogle),
                 enabled: !_busy,
               ),
               const SizedBox(height: 14),
@@ -150,7 +143,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
               Center(
                 child: Text.rich(
                   TextSpan(
-                    style: text.bodyMedium?.copyWith(color: context.palette.muted),
+                    style: text.bodyMedium?.copyWith(
+                      color: context.palette.muted,
+                    ),
                     children: [
                       const TextSpan(text: 'Already have an account? '),
                       WidgetSpan(
@@ -246,15 +241,12 @@ class _ProviderTile extends StatelessWidget {
                   child: Text(
                     label,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: context.palette.chalk,
-                        ),
+                      fontWeight: FontWeight.w700,
+                      color: context.palette.chalk,
+                    ),
                   ),
                 ),
-                Icon(
-                  Icons.chevron_right_rounded,
-                  color: context.palette.muted,
-                ),
+                Icon(Icons.chevron_right_rounded, color: context.palette.muted),
               ],
             ),
           ),

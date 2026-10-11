@@ -19,7 +19,7 @@ class SleepHoursStep extends StatelessWidget {
   Widget build(BuildContext context) {
     return ImageChoiceGridStep<SleepHours>(
       question: 'How much sleep do you usually get?',
-      imageAsset: 'assets/branding/onboarding_hero_15.png',
+      imageAsset: 'assets/branding/onboarding_hero_15.webp',
       selected: selected,
       onSelected: onAnswered,
       options: const [

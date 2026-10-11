@@ -331,13 +331,13 @@ class _AvatarBadge extends StatelessWidget {
         File(chosen),
         fit: BoxFit.cover,
         errorBuilder: (_, __, ___) =>
-            Image.asset('assets/branding/guest_avatar.png', fit: BoxFit.cover),
+            Image.asset('assets/branding/guest_avatar.webp', fit: BoxFit.cover),
       );
     } else if (loggedIn) {
       child = Image.asset(rank.asset, fit: BoxFit.contain);
     } else {
       child = Image.asset(
-        'assets/branding/guest_avatar.png',
+        'assets/branding/guest_avatar.webp',
         fit: BoxFit.cover,
         errorBuilder: (_, __, ___) =>
             Icon(Icons.person_rounded, color: palette.muted, size: 36),

@@ -22,16 +22,19 @@ class WelcomeStep extends StatelessWidget {
     // Broad, industrial-athletic display face — sits closer to the reference
     // than the system sans and reads as "military poster" without a bespoke
     // font file. Swap the family in one place if this app's brand changes.
+    // The camo backdrop is dark in both themes, so the text over it is
+    // always white rather than following the theme's (dark-in-light-mode)
+    // text colour.
     final titleStyle = GoogleFonts.plusJakartaSans(
       fontWeight: FontWeight.w900,
-      color: context.palette.chalk,
+      color: Colors.white,
       height: 0.88,
       letterSpacing: 1.2,
       fontSize: 68,
     );
 
     return HeroIntroSlide(
-      imageAsset: 'assets/branding/onboarding_hero_1.2.png',
+      imageAsset: 'assets/branding/onboarding_hero_1.2.webp',
       // Asset already ships with a real alpha channel — skip the runtime
       // black-to-alpha colour-matrix fallback for a pixel-perfect cutout.
       dropBlackBackground: false,
@@ -47,11 +50,16 @@ class WelcomeStep extends StatelessWidget {
       onLogIn: onLogIn,
       overlayColor: context.palette.abyss,
       titleTextStyle: titleStyle,
+      subheadTextStyle: text.labelLarge?.copyWith(
+        fontWeight: FontWeight.w700,
+        letterSpacing: 1.8,
+        color: Colors.white.withValues(alpha: 0.9),
+      ),
       // Hand-designed blue-camo backdrop, provided as an asset — richer than
       // the procedural [CamoBackground] painter (kept in the kit for future
       // apps that don't ship one).
       background: Image.asset(
-        'assets/branding/camo_background.png',
+        'assets/branding/camo_background.webp',
         fit: BoxFit.cover,
         alignment: Alignment.center,
       ),

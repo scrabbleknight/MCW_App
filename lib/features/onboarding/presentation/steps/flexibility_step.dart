@@ -20,7 +20,7 @@ class FlexibilityStep extends StatelessWidget {
   Widget build(BuildContext context) {
     return OverlayChoiceSlide<Flexibility>(
       question: 'How flexible are you?',
-      imageAsset: 'assets/branding/onboarding_hero_10_transparent.png',
+      imageAsset: 'assets/branding/onboarding_hero_10_transparent.webp',
       selected: selected,
       onSelected: onAnswered,
       pillMaxWidthFraction: 0.44,

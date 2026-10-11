@@ -28,22 +28,22 @@ class PhysicalBuildStep extends StatelessWidget {
         PortraitOption(
           value: PhysicalBuild.skinny,
           label: 'Slim',
-          imageAsset: 'assets/branding/body_type_5.png',
+          imageAsset: 'assets/branding/body_type_5.webp',
         ),
         PortraitOption(
           value: PhysicalBuild.midSized,
           label: 'Average',
-          imageAsset: 'assets/branding/body_type_6.png',
+          imageAsset: 'assets/branding/body_type_6.webp',
         ),
         PortraitOption(
           value: PhysicalBuild.plusSized,
           label: 'Curvy',
-          imageAsset: 'assets/branding/body_type_7.png',
+          imageAsset: 'assets/branding/body_type_7.webp',
         ),
         PortraitOption(
           value: PhysicalBuild.overweight,
           label: 'Toned',
-          imageAsset: 'assets/branding/body_type_8.png',
+          imageAsset: 'assets/branding/body_type_8.webp',
         ),
       ],
     );

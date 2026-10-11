@@ -724,7 +724,7 @@ class _CustomWorkoutTile extends StatelessWidget {
     final minutes = day?.estimatedMinutes ?? 0;
     final kcal = day?.estimatedCalories ?? 0;
     final heroAsset = spec.areas.isEmpty
-        ? 'assets/branding/custom_background.png'
+        ? 'assets/branding/custom_background.webp'
         : spec.areas.first.asset;
     return Material(
       color: palette.surface,

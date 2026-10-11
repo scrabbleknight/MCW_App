@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:military_calisthenics_women/core/platform/store_platform.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// Final onboarding step — a hard paywall. Presents two plans (weekly and
@@ -95,8 +96,11 @@ class _PaywallStepState extends State<PaywallStep> {
       unawaited(_startPurchase());
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('No previous purchases found on this Apple ID.'),
+        SnackBar(
+          content: Text(
+            'No previous purchases found on this '
+            '${StorePlatform.billingAccountName}.',
+          ),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -177,8 +181,8 @@ class _HeroSplit extends StatelessWidget {
   const _HeroSplit({this.onClose});
   final VoidCallback? onClose;
 
-  static const _beforeAsset = 'assets/branding/before_image.png';
-  static const _afterAsset = 'assets/branding/after_image.png';
+  static const _beforeAsset = 'assets/branding/before_image.webp';
+  static const _afterAsset = 'assets/branding/after_image.webp';
 
   @override
   Widget build(BuildContext context) {
@@ -619,8 +623,9 @@ class _TrialDisclosure extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            'Payment is charged to your Apple ID at confirmation of purchase. '
-            'Manage or cancel any time in your device Settings.',
+            'Payment is charged to your ${StorePlatform.billingAccountName} '
+            'at confirmation of purchase. Manage or cancel any time in '
+            '${StorePlatform.manageSubscriptionsLocation}.',
             textAlign: TextAlign.center,
             style: secondaryStyle,
           ),
@@ -650,7 +655,7 @@ class _AppStoreBadge extends StatelessWidget {
           Icon(Icons.verified_user_rounded, color: scheme.primary, size: 16),
           const SizedBox(width: 8),
           Text(
-            'Secured with Apple Store',
+            'Secured with ${StorePlatform.storeName}',
             style: text.bodySmall?.copyWith(
               color: scheme.onSurface.withValues(alpha: 0.75),
               fontWeight: FontWeight.w600,

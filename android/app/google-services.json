@@ -12,7 +12,36 @@
           "package_name": "com.swiftbee.military_calisthenics_women"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "467154173876-2aj080iimrollhpr3cea4mc52inj2q59.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.swiftbee.military_calisthenics_women",
+            "certificate_hash": "0734ffb62de4af97a148b111f017d8cfeeac4fc3"
+          }
+        },
+        {
+          "client_id": "467154173876-3c9be94ti6p3g8vp3umko4famvea88b5.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.swiftbee.military_calisthenics_women",
+            "certificate_hash": "4eacb0815816c085e08d5bfba91269f0d13f6a3b"
+          }
+        },
+        {
+          "client_id": "467154173876-988ff277h0uodl5hn9pk3ek706621g4o.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.swiftbee.military_calisthenics_women",
+            "certificate_hash": "bc2efc2c49eede78255a1f0e9426fe0a120e9d4c"
+          }
+        },
+        {
+          "client_id": "467154173876-tb2o3jpn2s4f3iin41rgvccrgo7l6gv6.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyBL_9Y-xhfG3-8nFJpmnZchQ2tDuiH_OSs"
@@ -20,7 +49,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "467154173876-tb2o3jpn2s4f3iin41rgvccrgo7l6gv6.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "467154173876-31e5h807g4tmhcclusantp3rpdt9hddr.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.swiftbee.militaryCalisthenicsWomen"
+              }
+            }
+          ]
         }
       }
     }

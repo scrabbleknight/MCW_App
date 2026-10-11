@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:military_calisthenics_women/core/platform/store_platform.dart';
 import 'package:military_calisthenics_women/core/theme/tactical_palette.dart';
 import 'package:military_calisthenics_women/features/health/application/health_controller.dart';
 import 'package:provider/provider.dart';
@@ -18,7 +19,7 @@ class AppleHealthScreen extends StatelessWidget {
           onPressed: () => Navigator.of(context).maybePop(),
         ),
         title: Text(
-          'Apple Health',
+          StorePlatform.healthAppName,
           style: TextStyle(
             color: context.palette.chalk,
             fontWeight: FontWeight.w800,
@@ -40,7 +41,7 @@ class AppleHealthScreen extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    'Apple Health',
+                    StorePlatform.healthAppName,
                     style: TextStyle(
                       color: context.palette.chalk,
                       fontWeight: FontWeight.w700,
@@ -68,10 +69,7 @@ class AppleHealthScreen extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 4),
             child: Text(
               'What this setting does',
-              style: TextStyle(
-                color: context.palette.muted,
-                fontSize: 14,
-              ),
+              style: TextStyle(color: context.palette.muted, fontSize: 14),
             ),
           ),
           const SizedBox(height: 10),
@@ -86,8 +84,9 @@ class AppleHealthScreen extends StatelessWidget {
                 _Reason(
                   icon: Icons.bolt_rounded,
                   text:
-                      'When this is on, completed workouts are written to the '
-                      'Health app as part of your daily activity.',
+                      'When this is on, completed workouts are written to '
+                      '${StorePlatform.healthAppName} as part of your daily '
+                      'activity.',
                 ),
                 Divider(height: 1, color: context.palette.hairline),
                 _Reason(
@@ -147,11 +146,18 @@ class AppleHealthScreen extends StatelessWidget {
     if (value && !ok) {
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
-        ..showSnackBar(const SnackBar(
-          content: Text(
-            'Health access was declined. Enable it in Settings → Health → Data Access.',
+        ..showSnackBar(
+          SnackBar(
+            content: Text(
+              StorePlatform.isAndroid
+                  ? 'Health Connect access was declined or Health Connect '
+                        'isn\'t installed. Install it from Google Play, then allow '
+                        'access in Health Connect → App permissions.'
+                  : 'Health access was declined. Enable it in Settings → '
+                        'Health → Data Access.',
+            ),
           ),
-        ));
+        );
     }
   }
 }

@@ -19,7 +19,7 @@ class WaterIntakeStep extends StatelessWidget {
   Widget build(BuildContext context) {
     return OverlayChoiceSlide<WaterIntake>(
       question: 'How much water do you drink daily?',
-      imageAsset: 'assets/branding/onboarding_hero_14_transparent.png',
+      imageAsset: 'assets/branding/onboarding_hero_14_transparent.webp',
       selected: selected,
       onSelected: onAnswered,
       pillMaxWidthFraction: 0.44,

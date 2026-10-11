@@ -151,7 +151,7 @@ class _Artwork extends StatelessWidget {
   Widget build(BuildContext context) {
     if (entry.kind == WorkoutHistoryKind.custom) {
       return Image.asset(
-        'assets/branding/custom_background.png',
+        'assets/branding/custom_background.webp',
         fit: BoxFit.cover,
         errorBuilder: (_, __, ___) => _gradient(0),
       );

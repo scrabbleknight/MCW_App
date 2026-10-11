@@ -153,7 +153,7 @@ class _Hero extends StatelessWidget {
       child: Stack(
         children: [
           Image.asset(
-            'assets/branding/custom_background.png',
+            'assets/branding/custom_background.webp',
             fit: BoxFit.fitWidth,
             width: double.infinity,
           ),

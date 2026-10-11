@@ -40,7 +40,7 @@ class _MarketingPanel extends StatelessWidget {
   const _MarketingPanel({required this.primary});
   final Color primary;
 
-  static const _camoAsset = 'assets/branding/blue_camo_background_2.png';
+  static const _camoAsset = 'assets/branding/blue_camo_background_2.webp';
 
   @override
   Widget build(BuildContext context) {
@@ -102,8 +102,8 @@ class _HeroConversation extends StatelessWidget {
   const _HeroConversation({required this.trainer});
   final Trainer trainer;
 
-  static const _companionAsset = 'assets/branding/girl_on_right_cutout.png';
-  static const _companionPortrait = 'assets/branding/other_girl_portrait.png';
+  static const _companionAsset = 'assets/branding/girl_on_right_cutout.webp';
+  static const _companionPortrait = 'assets/branding/other_girl_portrait.webp';
 
   @override
   Widget build(BuildContext context) {
@@ -322,8 +322,8 @@ class _TrustBadge extends StatelessWidget {
   final Color primary;
 
   static const _laurelGold = Color(0xFFC9A24B);
-  static const _leftAsset = 'assets/branding/gold_greek_leaves_left.png';
-  static const _rightAsset = 'assets/branding/gold_greek_leaves_right.png';
+  static const _leftAsset = 'assets/branding/gold_greek_leaves_left.webp';
+  static const _rightAsset = 'assets/branding/gold_greek_leaves_right.webp';
 
   @override
   Widget build(BuildContext context) {

@@ -16,7 +16,7 @@ class EnergizedStep extends StatelessWidget {
         'These workouts will strengthen your muscles, and increase endurance.',
         "You'll have more energy to keep up with your daily activities.",
       ],
-      imageAsset: 'assets/branding/onboarding_hero_13_transparent.png',
+      imageAsset: 'assets/branding/onboarding_hero_13_transparent.webp',
       onContinue: onContinue,
     );
   }

@@ -1,24 +1,17 @@
 import 'dart:async';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:military_calisthenics_women/core/platform/store_platform.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 /// Result of an attempted log-in.
 enum LoginOutcome {
-  /// Sign-in succeeded and the credential belongs to a pre-existing account.
-  existingUser,
-
-  /// Sign-in technically succeeded, but Firebase reports this is a new user.
-  /// The transient session is signed back out — the caller should show the
-  /// "no account found" message and route the user to sign-up instead.
-  newUserRejected,
-
-  /// Sign-up mode only: the credential belonged to an existing account. The
-  /// session is signed back out — the caller should tell the user to log in
-  /// instead of creating a new account.
-  existingUserRejected,
+  /// Sign-in succeeded — either an existing account or a newly created one.
+  signedIn,
 
   /// User cancelled the provider flow (dismissed Google/Apple sheet, etc.).
   cancelled,
@@ -33,18 +26,19 @@ class LoginResult {
 
 /// Centralized entry point for the app's third-party sign-in flows.
 ///
-/// Every method that produces a real Firebase session runs through
-/// [_completeSignIn], which enforces the log-in-only contract: if
-/// `additionalUserInfo.isNewUser` is true, the session is signed out again
-/// and the caller receives [LoginOutcome.newUserRejected] instead of a User.
+/// Log in and sign up are the same operation: every method that produces a
+/// real Firebase session runs through [_completeSignIn], which accepts both
+/// new and returning users. (Rejecting one or the other can't work because
+/// `signInWithCredential` has already created the Firebase user by the time
+/// `isNewUser` is known — the user would be locked out of both screens.)
 class AuthService {
   AuthService({FirebaseAuth? firebaseAuth})
-      : _auth = firebaseAuth ?? FirebaseAuth.instance;
+    : _auth = firebaseAuth ?? FirebaseAuth.instance;
 
   final FirebaseAuth _auth;
   bool _googleInitialized = false;
 
-  Future<LoginResult> signInWithGoogle({bool signUp = false}) async {
+  Future<LoginResult> signInWithGoogle() async {
     try {
       final google = GoogleSignIn.instance;
       if (!_googleInitialized) {
@@ -58,7 +52,7 @@ class AuthService {
         return const LoginResult(LoginOutcome.cancelled);
       }
       final credential = GoogleAuthProvider.credential(idToken: idToken);
-      return _completeSignIn(credential, signUp: signUp);
+      return await _completeSignIn(credential);
     } on GoogleSignInException catch (error) {
       if (error.code == GoogleSignInExceptionCode.canceled) {
         return const LoginResult(LoginOutcome.cancelled);
@@ -70,7 +64,7 @@ class AuthService {
     }
   }
 
-  Future<LoginResult> signInWithApple({bool signUp = false}) async {
+  Future<LoginResult> signInWithApple() async {
     try {
       final appleCred = await SignInWithApple.getAppleIDCredential(
         scopes: const [
@@ -82,7 +76,7 @@ class AuthService {
         idToken: appleCred.identityToken,
         accessToken: appleCred.authorizationCode,
       );
-      final result = await _completeSignIn(oauth, signUp: signUp);
+      final result = await _completeSignIn(oauth);
       // Apple only returns the user's name on the FIRST authorization for the
       // app. Capture it then and persist it as the Firebase displayName so the
       // profile screen has something friendlier than the email address.
@@ -121,10 +115,7 @@ class AuthService {
   /// auto-retrieval), the session is signed in immediately and this future
   /// resolves with `PhoneAutoResult.autoVerified(result)` — the caller
   /// should check the type before showing the code-entry screen.
-  Future<PhoneCodeChallenge> sendPhoneCode(
-    String phoneE164, {
-    bool signUp = false,
-  }) async {
+  Future<PhoneCodeChallenge> sendPhoneCode(String phoneE164) async {
     final completer = Completer<PhoneCodeChallenge>();
 
     await _auth.verifyPhoneNumber(
@@ -132,7 +123,7 @@ class AuthService {
       timeout: const Duration(seconds: 60),
       verificationCompleted: (credential) async {
         try {
-          final result = await _completeSignIn(credential, signUp: signUp);
+          final result = await _completeSignIn(credential);
           if (!completer.isCompleted) {
             completer.complete(PhoneCodeChallenge.autoVerified(result));
           }
@@ -161,14 +152,13 @@ class AuthService {
   Future<LoginResult> signInWithPhoneCode({
     required String verificationId,
     required String smsCode,
-    bool signUp = false,
   }) async {
     try {
       final credential = PhoneAuthProvider.credential(
         verificationId: verificationId,
         smsCode: smsCode,
       );
-      return _completeSignIn(credential, signUp: signUp);
+      return await _completeSignIn(credential);
     } catch (error) {
       debugPrint('AuthService: phone code sign-in failed — $error');
       return LoginResult(LoginOutcome.cancelled, error: error);
@@ -186,11 +176,19 @@ class AuthService {
     final user = _auth.currentUser;
     if (user == null) return DeleteAccountResult.notSignedIn;
 
-    final providers =
-        user.providerData.map((p) => p.providerId).toSet();
+    final providers = user.providerData.map((p) => p.providerId).toSet();
+    final usesAppleSignIn =
+        providers.contains('apple.com') && StorePlatform.supportsAppleSignIn;
+
+    // Delete on the server where we can: no "sign in again" step needed.
+    // Apple accounts keep the flow below, because Apple requires revoking
+    // their token with a fresh authorization code.
+    if (!usesAppleSignIn && await _deleteOnServer()) {
+      return DeleteAccountResult.success;
+    }
 
     try {
-      if (providers.contains('apple.com')) {
+      if (usesAppleSignIn) {
         final appleCred = await SignInWithApple.getAppleIDCredential(
           scopes: const [
             AppleIDAuthorizationScopes.email,
@@ -198,16 +196,16 @@ class AuthService {
           ],
         );
         final authCode = appleCred.authorizationCode;
-        final oauth = OAuthProvider('apple.com').credential(
-          idToken: appleCred.identityToken,
-          accessToken: authCode,
-        );
+        final oauth = OAuthProvider(
+          'apple.com',
+        ).credential(idToken: appleCred.identityToken, accessToken: authCode);
         await user.reauthenticateWithCredential(oauth);
         try {
           await _auth.revokeTokenWithAuthorizationCode(authCode);
         } catch (error) {
           debugPrint('AuthService: Apple token revoke failed — $error');
         }
+        await _deleteUserData(user.uid);
         await user.delete();
         return DeleteAccountResult.success;
       }
@@ -223,6 +221,7 @@ class AuthService {
         if (idToken == null) return DeleteAccountResult.cancelled;
         final credential = GoogleAuthProvider.credential(idToken: idToken);
         await user.reauthenticateWithCredential(credential);
+        await _deleteUserData(user.uid);
         await user.delete();
         return DeleteAccountResult.success;
       }
@@ -230,6 +229,7 @@ class AuthService {
       // Phone (or anything else): no silent reauth we can do here. Try a
       // direct delete; if Firebase demands a recent login, tell the UI so
       // it can bounce the user back to the log-in screen.
+      await _deleteUserData(user.uid);
       await user.delete();
       return DeleteAccountResult.success;
     } on SignInWithAppleAuthorizationException catch (error) {
@@ -252,26 +252,46 @@ class AuthService {
     }
   }
 
-  Future<LoginResult> _completeSignIn(
-    AuthCredential credential, {
-    required bool signUp,
-  }) async {
+  /// Calls the `deleteAccount` Cloud Function (functions/index.js), which
+  /// deletes the caller's account and feedback with the Admin SDK — no
+  /// recent sign-in needed. Returns false if it couldn't, so the caller can
+  /// fall back to deleting from the app.
+  Future<bool> _deleteOnServer() async {
+    try {
+      await FirebaseFunctions.instanceFor(
+        region: 'europe-west2',
+      ).httpsCallable('deleteAccount').call<void>();
+      // The account no longer exists; drop the stale local session.
+      await _auth.signOut();
+      return true;
+    } catch (error) {
+      debugPrint('AuthService: server delete failed — $error');
+      return false;
+    }
+  }
+
+  /// Deletes the workout feedback stored under [uid] in Firestore. Best
+  /// effort: a failure here must not block deleting the account itself.
+  Future<void> _deleteUserData(String uid) async {
+    final firestore = FirebaseFirestore.instance;
+    for (final collection in ['session_feedback', 'quit_feedback']) {
+      try {
+        final parent = firestore.collection(collection).doc(uid);
+        final entries = await parent.collection('entries').get();
+        for (final doc in entries.docs) {
+          await doc.reference.delete();
+        }
+        await parent.delete();
+      } catch (error) {
+        debugPrint('AuthService: deleting $collection failed — $error');
+      }
+    }
+  }
+
+  Future<LoginResult> _completeSignIn(AuthCredential credential) async {
     try {
       final result = await _auth.signInWithCredential(credential);
-      final isNew = result.additionalUserInfo?.isNewUser ?? false;
-      if (!signUp && isNew) {
-        // Log-in-only: undo the account we just created and surface a
-        // "no account" result to the UI.
-        await _auth.signOut();
-        return const LoginResult(LoginOutcome.newUserRejected);
-      }
-      if (signUp && !isNew) {
-        // Sign-up-only: the credential matches an existing account. Sign the
-        // transient session back out and tell the UI to bounce them to log-in.
-        await _auth.signOut();
-        return const LoginResult(LoginOutcome.existingUserRejected);
-      }
-      return LoginResult(LoginOutcome.existingUser, user: result.user);
+      return LoginResult(LoginOutcome.signedIn, user: result.user);
     } on FirebaseAuthException catch (error) {
       debugPrint('AuthService: Firebase sign-in failed — ${error.code}');
       return LoginResult(LoginOutcome.cancelled, error: error);
@@ -306,10 +326,12 @@ class DeleteAccountResult {
 
   static const success = DeleteAccountResult._(DeleteAccountKind.success);
   static const cancelled = DeleteAccountResult._(DeleteAccountKind.cancelled);
-  static const notSignedIn =
-      DeleteAccountResult._(DeleteAccountKind.notSignedIn);
-  static const needsRecentLogin =
-      DeleteAccountResult._(DeleteAccountKind.needsRecentLogin);
+  static const notSignedIn = DeleteAccountResult._(
+    DeleteAccountKind.notSignedIn,
+  );
+  static const needsRecentLogin = DeleteAccountResult._(
+    DeleteAccountKind.needsRecentLogin,
+  );
 
   factory DeleteAccountResult.failed(String message) =>
       DeleteAccountResult._(DeleteAccountKind.failed, message);

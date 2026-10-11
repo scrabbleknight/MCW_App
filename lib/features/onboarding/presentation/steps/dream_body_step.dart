@@ -28,22 +28,22 @@ class DreamBodyStep extends StatelessWidget {
         PortraitOption(
           value: DreamBody.slim,
           label: 'Skinny',
-          imageAsset: 'assets/branding/body_type_1.png',
+          imageAsset: 'assets/branding/body_type_1.webp',
         ),
         PortraitOption(
           value: DreamBody.average,
           label: 'Mid-sized',
-          imageAsset: 'assets/branding/body_type_2.png',
+          imageAsset: 'assets/branding/body_type_2.webp',
         ),
         PortraitOption(
           value: DreamBody.curvy,
           label: 'Plus-sized',
-          imageAsset: 'assets/branding/body_type_3.png',
+          imageAsset: 'assets/branding/body_type_3.webp',
         ),
         PortraitOption(
           value: DreamBody.toned,
           label: 'Overweight',
-          imageAsset: 'assets/branding/body_type_4.png',
+          imageAsset: 'assets/branding/body_type_4.webp',
         ),
       ],
     );

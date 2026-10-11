@@ -106,8 +106,8 @@ class _PhonePreview extends StatelessWidget {
   const _PhonePreview();
 
   static const _appIconAsset = 'assets/branding/app_icon.png';
-  static const _heroAsset = 'assets/branding/amy_kick_pose.png';
-  static const _thumbAsset = 'assets/branding/amy_cutout_2.png';
+  static const _heroAsset = 'assets/branding/amy_kick_pose.webp';
+  static const _thumbAsset = 'assets/branding/amy_cutout_2.webp';
 
   @override
   Widget build(BuildContext context) {

@@ -19,7 +19,7 @@ class StairsStep extends StatelessWidget {
   Widget build(BuildContext context) {
     return OverlayChoiceSlide<StairsFeel>(
       question: 'How do you feel when climbing the stairs?',
-      imageAsset: 'assets/branding/onboarding_hero_11_transparent.png',
+      imageAsset: 'assets/branding/onboarding_hero_11_transparent.webp',
       selected: selected,
       onSelected: onAnswered,
       pillMaxWidthFraction: 0.44,
