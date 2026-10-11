@@ -15,7 +15,8 @@ initializeApp();
  * so it only ever deletes the caller's own data.
  *
  * Everything else lives on the phone, and the app erases it after this
- * succeeds.
+ * succeeds. Called from AuthService.deleteCurrentAccount
+ * (lib/features/auth/application/auth_service.dart).
  */
 exports.deleteAccount = onCall({ region: 'europe-west2' }, async (request) => {
   const uid = request.auth?.uid;
