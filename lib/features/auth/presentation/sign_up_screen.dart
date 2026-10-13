@@ -41,7 +41,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
         // Mark onboarding complete and pop back to the app.
         await context.read<OnboardingController>().markCompleted();
         if (!mounted) return;
-        Navigator.of(context).pop();
+        Navigator.of(context).pop(true);
       case LoginOutcome.cancelled:
         if (result.error != null) {
           _snack("Couldn't sign up: ${result.error}");

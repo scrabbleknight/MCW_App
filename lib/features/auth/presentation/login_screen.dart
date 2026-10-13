@@ -77,10 +77,13 @@ class _LoginScreenState extends State<LoginScreen> {
     if (result != null && mounted) _handleResult(result);
   }
 
-  void _openSignUp() {
-    Navigator.of(
+  Future<void> _openSignUp() async {
+    final signedIn = await Navigator.of(
       context,
-    ).push(MaterialPageRoute(builder: (_) => const SignUpScreen()));
+    ).push<bool>(MaterialPageRoute(builder: (_) => const SignUpScreen()));
+    // Sign up sits on top of this screen; once it has signed the user in,
+    // close this one too so they land in the app, not back on log in.
+    if (signedIn == true && mounted) Navigator.of(context).pop();
   }
 
   @override
