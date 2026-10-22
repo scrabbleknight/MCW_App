@@ -242,6 +242,8 @@ class _PaywallStepState extends State<PaywallStep> {
           _HeroSplit(onClose: widget.onClose),
           SizedBox(height: gapSm),
           _Header(),
+          SizedBox(height: gapSm),
+          const _FeatureList(),
           if (widget.onOpenReferrals != null) ...[
             SizedBox(height: gapSm),
             _ReferralPromo(
@@ -463,6 +465,71 @@ class _Header extends StatelessWidget {
 }
 
 // ============================================================================
+// Feature list
+// ============================================================================
+
+/// What the subscription unlocks. App Review requires this on the paywall
+/// (guideline 3.1.2(c)).
+class _FeatureList extends StatelessWidget {
+  const _FeatureList();
+
+  static const _items = [
+    'Personalized plan',
+    'Exercise videos',
+    'Custom workouts',
+    'Progress tracking',
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final text = Theme.of(context).textTheme;
+    Widget item(String label) => Expanded(
+      child: Row(
+        children: [
+          Icon(Icons.check_circle_rounded, color: scheme.primary, size: 18),
+          const SizedBox(width: 6),
+          Flexible(
+            child: Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  style: text.bodyMedium?.copyWith(color: scheme.onSurface),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+    return Column(
+      children: [
+        Text(
+          'Your subscription unlocks',
+          style: text.labelLarge?.copyWith(color: scheme.onSurfaceVariant),
+        ),
+        const SizedBox(height: 6),
+        for (var i = 0; i < _items.length; i += 2)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 3),
+            child: Row(
+              children: [
+                const SizedBox(width: 8),
+                item(_items[i]),
+                item(_items[i + 1]),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+// ============================================================================
 // Plan card
 // ============================================================================
 
@@ -613,29 +680,34 @@ class _PrimaryCta extends StatelessWidget {
                   color: Colors.white,
                 ),
               )
-            : Row(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    textLabel,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 0.4,
-                      fontSize: 16,
-                    ),
-                  ),
-                  if (hasHandsEmoji) ...[
-                    const SizedBox(width: 6),
-                    Transform.translate(
-                      offset: const Offset(0, -2),
-                      child: const Text(
-                        '🙌',
-                        style: TextStyle(fontSize: 18, height: 1),
+            // Shrinks rather than overflows on narrow screens or with large
+            // text.
+            : FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      textLabel,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.4,
+                        fontSize: 16,
                       ),
                     ),
+                    if (hasHandsEmoji) ...[
+                      const SizedBox(width: 6),
+                      Transform.translate(
+                        offset: const Offset(0, -2),
+                        child: const Text(
+                          '🙌',
+                          style: TextStyle(fontSize: 18, height: 1),
+                        ),
+                      ),
+                    ],
                   ],
-                ],
+                ),
               ),
       ),
     );

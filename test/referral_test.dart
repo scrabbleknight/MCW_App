@@ -71,6 +71,27 @@ void main() {
       ),
     );
 
+    // App Review 3.1.2(c): what the subscription unlocks, on a small phone
+    // (and on iPad, which runs this iPhone-only app at about this size).
+    testWidgets('lists what the subscription unlocks on a small screen', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(375, 667);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(paywall());
+      expect(tester.takeException(), isNull);
+      expect(find.text('Your subscription unlocks'), findsOneWidget);
+      for (final f in [
+        'Personalized plan',
+        'Exercise videos',
+        'Custom workouts',
+        'Progress tracking',
+      ]) {
+        expect(find.text(f), findsOneWidget);
+      }
+    });
+
     testWidgets('shows the invite card with all three rewards', (tester) async {
       await tester.pumpWidget(paywall());
       expect(find.text('Invite friends, get it free'), findsOneWidget);
