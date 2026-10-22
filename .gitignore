@@ -53,3 +53,9 @@ app.*.map.json
 
 # Cloud Functions dependencies
 /functions/node_modules/
+
+# Firebase Functions local secrets (emulator)
+functions/.secret.local
+
+# Firebase CLI deploy cache
+.firebase/

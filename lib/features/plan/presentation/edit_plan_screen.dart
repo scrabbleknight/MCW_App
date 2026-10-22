@@ -320,7 +320,7 @@ class _EditPlanScreenState extends State<EditPlanScreen> {
             ],
           ),
           const SizedBox(height: 20),
-          if (FirebaseAuth.instance.currentUser != null)
+          if (FirebaseAuth.instance.currentUser?.isAnonymous == false)
             _SettingsCard(
               children: [
                 _DangerRow(
@@ -329,7 +329,7 @@ class _EditPlanScreenState extends State<EditPlanScreen> {
                 ),
               ],
             ),
-          if (FirebaseAuth.instance.currentUser != null)
+          if (FirebaseAuth.instance.currentUser?.isAnonymous == false)
             const SizedBox(height: 20),
           Center(
             child: FutureBuilder<PackageInfo>(

@@ -1,0 +1,107 @@
+<!doctype html>
+<!--
+  Military Calisthenics for Women — YouTube channel banner, source for banner.png.
+  Canvas is 2560x1440 (YouTube's recommended size; TVs show all of it).
+  Desktop shows a 2560x423 strip through the middle, and phones only the
+  centre 1546x423 "all devices" area (x 507–2053, y 508–931), so the logo,
+  headline, chips and the athlete's face and fists all sit inside that box.
+  Re-render: see render_banner.sh.
+-->
+<html>
+<head>
+<meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=block" rel="stylesheet">
+<style>
+  :root {
+    --navy: #0B111C;
+    --chalk: #F5F7FA;
+    --mist: #B8C4D6;
+    --blue: #3B82F6;
+    --blue-deep: #1D5FD1;
+    --sky: #6FA8DC;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 2560px; height: 1440px; overflow: hidden; background: var(--navy); }
+  body { font-family: 'Plus Jakarta Sans', sans-serif; color: var(--chalk); }
+
+  .banner { position: relative; width: 2560px; height: 1440px; overflow: hidden;
+    background: linear-gradient(100deg, #070B13 0%, #0B111C 40%, #0F1A2E 100%); }
+
+  /* Camo: thresholded turbulence in four navy/blue tones, faded towards the copy. */
+  .camo { position: absolute; inset: 0; opacity: 0.55;
+    -webkit-mask-image: linear-gradient(90deg, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0.35) 35%, #000 70%); }
+  .glow { position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse 900px 700px at 1760px 760px, rgba(59,130,246,0.30) 0%, rgba(59,130,246,0) 70%),
+      radial-gradient(ellipse 800px 500px at 900px 720px, rgba(7,11,19,0.85) 0%, rgba(7,11,19,0) 75%); }
+
+  .squad { position: absolute; left: 0; top: 0; width: 2560px; height: 1440px; }
+  .squad img { position: absolute; filter: drop-shadow(0 30px 60px rgba(0,0,0,0.55)); }
+  /* 1404x1120 flex cutout: fists ~y 540, face ~y 690, both inside the phone box */
+  .hero { left: 1262px; top: 470px; width: 920px;
+    -webkit-mask-image: linear-gradient(180deg, #000 62%, transparent 97%); mask-image: linear-gradient(180deg, #000 62%, transparent 97%); }
+  /* fade the bottom of the squad into the floor */
+  .floor { position: absolute; left: 0; right: 0; top: 960px; height: 480px;
+    background: linear-gradient(180deg, rgba(11,17,28,0) 0%, #0B111C 85%); }
+
+  .copy { position: absolute; left: 600px; top: 528px; width: 900px; }
+  .brand { display: flex; align-items: center; gap: 20px; margin-bottom: 28px; }
+  .brand img { width: 72px; height: 72px; border-radius: 17px; box-shadow: 0 10px 30px rgba(59,130,246,0.35); }
+  .brand span { font-size: 26px; font-weight: 700; letter-spacing: 4px; text-transform: uppercase; color: var(--mist); }
+  h1 { font-size: 88px; line-height: 1.0; font-weight: 800; letter-spacing: -1.5px; text-transform: uppercase; }
+  h1 em { font-style: normal; color: var(--blue); }
+  .rule { width: 120px; height: 7px; border-radius: 4px; background: var(--blue); margin: 28px 0 0; }
+  .chips { display: flex; gap: 14px; margin-top: 28px; }
+  .chip { display: flex; align-items: center; gap: 10px; padding: 11px 22px 11px 18px; border-radius: 999px;
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.14);
+    font-size: 22px; font-weight: 600; color: var(--mist); }
+  .dot { width: 10px; height: 10px; border-radius: 2px; transform: rotate(45deg); background: var(--blue); }
+</style>
+</head>
+<body>
+  <div class="banner">
+    <svg class="camo" width="2560" height="1440" viewBox="0 0 2560 1440">
+      <filter id="camo" x="0" y="0" width="100%" height="100%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.0032 0.0042" numOctaves="3" seed="11"/>
+        <feColorMatrix type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  1 0 0 0 0"/>
+        <feComponentTransfer>
+          <feFuncA type="discrete" tableValues="0 0 0.33 0.66 1 1"/>
+        </feComponentTransfer>
+        <feComponentTransfer result="steps">
+          <feFuncA type="linear" slope="1"/>
+        </feComponentTransfer>
+        <feFlood flood-color="#1D5FD1"/>
+        <feComposite in2="steps" operator="in"/>
+      </filter>
+      <rect width="2560" height="1440" fill="#101A2C"/>
+      <rect width="2560" height="1440" filter="url(#camo)" opacity="0.55"/>
+      <filter id="camo2" x="0" y="0" width="100%" height="100%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.0045 0.0058" numOctaves="3" seed="4"/>
+        <feColorMatrix type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  1 0 0 0 0"/>
+        <feComponentTransfer><feFuncA type="discrete" tableValues="0 0 0 0 1 1"/></feComponentTransfer>
+        <feComposite in="SourceGraphic" operator="in"/>
+      </filter>
+      <rect width="2560" height="1440" fill="#070B13" filter="url(#camo2)" opacity="0.8"/>
+    </svg>
+    <div class="glow"></div>
+
+    <div class="squad">
+      <img class="hero" src="../../assets/branding/onboarding_hero_13_transparent.webp" alt="">
+    </div>
+    <div class="floor"></div>
+
+    <div class="copy">
+      <div class="brand">
+        <img src="../google_play/app_icon_512.png" alt="">
+        <span>Military Calisthenics for Women</span>
+      </div>
+      <h1>Train like<br>a <em>soldier.</em></h1>
+      <div class="chips">
+        <div class="chip"><span class="dot"></span>No gym</div>
+        <div class="chip"><span class="dot"></span>No equipment</div>
+        <div class="chip"><span class="dot"></span>Bodyweight only</div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

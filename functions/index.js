@@ -3,11 +3,14 @@ const { initializeApp } = require('firebase-admin/app');
 const { getAuth } = require('firebase-admin/auth');
 const { getFirestore } = require('firebase-admin/firestore');
 
+const referrals = require('./referrals');
+
 initializeApp();
 
 /**
  * Deletes the signed-in caller's account and the workout feedback stored
- * under it (session_feedback/{uid}, quit_feedback/{uid}).
+ * under it (session_feedback/{uid}, quit_feedback/{uid}), plus their
+ * referral record (functions/referrals).
  *
  * Deleting from the app itself needs a sign-in from the last few minutes,
  * which forces users to sign in again just to delete. The Admin SDK has no
@@ -27,6 +30,15 @@ exports.deleteAccount = onCall({ region: 'europe-west2' }, async (request) => {
   for (const collection of ['session_feedback', 'quit_feedback']) {
     await db.recursiveDelete(db.collection(collection).doc(uid));
   }
+  await referrals.deleteReferralData(uid);
   await getAuth().deleteUser(uid);
   return { deleted: true };
 });
+
+// Referral programme: codes, friend discount and referrer rewards.
+exports.referralStatus = referrals.referralStatus;
+exports.applyReferralCode = referrals.applyReferralCode;
+exports.recordPurchase = referrals.recordPurchase;
+exports.claimReferralReward = referrals.claimReferralReward;
+exports.checkRewardCodes = referrals.checkRewardCodes;
+exports.applyScheduledRewards = referrals.applyScheduledRewards;

@@ -10,6 +10,7 @@ import 'package:military_calisthenics_women/features/profile/application/body_pr
 import 'package:military_calisthenics_women/features/profile/application/profile_avatar_controller.dart';
 import 'package:military_calisthenics_women/features/profile/presentation/workout_history_screen.dart';
 import 'package:military_calisthenics_women/features/progression/domain/rank.dart';
+import 'package:military_calisthenics_women/features/referrals/presentation/referral_screen.dart';
 import 'package:military_calisthenics_women/features/workouts/application/progress_controller.dart';
 import 'package:military_calisthenics_women/features/workouts/application/workout_history_controller.dart';
 
@@ -50,7 +51,9 @@ class _ProfileBodyState extends State<_ProfileBody> {
     final progress = context.watch<ProgressController>();
     final history = context.watch<WorkoutHistoryController>();
     final rank = Rank.forWorkouts(history.entries.length);
-    final loggedIn = user != null;
+    // Using a referral code signs people in anonymously; that isn't an
+    // account they can log in to.
+    final loggedIn = user != null && !user.isAnonymous;
     final displayName = user?.displayName?.trim();
     final name = (displayName != null && displayName.isNotEmpty)
         ? displayName
@@ -133,6 +136,12 @@ class _ProfileBodyState extends State<_ProfileBody> {
             days: progress.completedDays.length,
             stars: progress.stars,
             rank: rank,
+          ),
+        ),
+        const SliverToBoxAdapter(
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(20, 16, 20, 0),
+            child: InviteFriendsCard(),
           ),
         ),
         SliverToBoxAdapter(

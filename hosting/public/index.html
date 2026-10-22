@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Military Calisthenics for Women</title>
+<meta name="description" content="Bodyweight strength training for women. No gym. No equipment. Download on iPhone and Android.">
+<meta property="og:title" content="Military Calisthenics for Women">
+<meta property="og:description" content="Bodyweight strength for women. No gym. No equipment.">
+<meta property="og:image" content="https://mcwapp.web.app/icon.png">
+<link rel="icon" href="icon.png">
+<link rel="apple-touch-icon" href="icon.png">
+<style>
+  :root { --ink:#fff; --muted:rgba(255,255,255,.78); --card:rgba(10,20,40,.72); --btn:#fff; --btnInk:#0b1a33; }
+  * { box-sizing:border-box; }
+  html,body { margin:0; height:100%; }
+  body {
+    font:16px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color:var(--ink); background:#0b1a33 url(camo.webp) center/cover fixed;
+    display:flex; align-items:center; justify-content:center; padding:16px;
+  }
+  main { width:100%; max-width:380px; background:var(--card); border-radius:24px; padding:32px 24px; text-align:center;
+         backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); }
+  img.icon { width:96px; height:96px; border-radius:22px; box-shadow:0 6px 20px rgba(0,0,0,.4); }
+  h1 { font-size:22px; margin:16px 0 4px; }
+  p { margin:0 0 24px; color:var(--muted); }
+  a.btn { display:flex; align-items:center; justify-content:center; gap:10px; width:100%; padding:15px 16px; margin-top:12px;
+          border-radius:14px; background:var(--btn); color:var(--btnInk); font-weight:700; text-decoration:none; font-size:17px; }
+  a.btn svg { width:22px; height:22px; fill:currentColor; }
+  a.btn.soon { background:rgba(255,255,255,.18); color:var(--muted); pointer-events:none; }
+  small { display:block; margin-top:20px; color:var(--muted); font-size:12px; }
+</style>
+</head>
+<body>
+<main>
+  <img class="icon" src="icon.png" alt="Military Calisthenics for Women app icon">
+  <h1>Military Calisthenics for Women</h1>
+  <p>Bodyweight strength. No gym. No equipment.</p>
+  <a class="btn" id="ios" href="https://apps.apple.com/app/id6809903076">
+    <svg viewBox="0 0 24 24"><path d="M16.37 12.6c-.02-2.3 1.88-3.4 1.96-3.46-1.07-1.56-2.73-1.78-3.32-1.8-1.41-.14-2.76.83-3.47.83-.72 0-1.82-.81-2.99-.79-1.54.02-2.96.9-3.75 2.27-1.6 2.78-.41 6.89 1.15 9.14.76 1.1 1.67 2.34 2.86 2.3 1.15-.05 1.58-.74 2.97-.74 1.38 0 1.78.74 2.99.72 1.24-.02 2.02-1.12 2.77-2.23.87-1.28 1.23-2.52 1.25-2.58-.03-.01-2.4-.92-2.42-3.66zM14.1 5.85c.63-.77 1.06-1.83.94-2.89-.91.04-2.01.61-2.66 1.37-.58.67-1.09 1.75-.96 2.79 1.02.08 2.05-.51 2.68-1.27z"/></svg>
+    <span>Download for iPhone</span>
+  </a>
+  <a class="btn" id="android" href="https://play.google.com/store/apps/details?id=com.swiftbee.military_calisthenics_women">
+    <svg viewBox="0 0 24 24"><path d="M3.6 2.3c-.2.2-.3.6-.3 1v17.4c0 .4.1.8.3 1l9.7-9.7L3.6 2.3zm10.8 10.8 2.8 2.8-11 6.3c-.3.2-.7.2-1 .1l9.2-9.2zm3.9-3.9 3 1.7c.8.5.8 1.7 0 2.2l-3 1.7-3.1-3 3.1-2.6zM5.2 1.9c.3-.1.7 0 1 .2l11 6.3-2.8 2.8-9.2-9.3z"/></svg>
+    <span>Download for Android</span>
+  </a>
+  <small>Free to download</small>
+</main>
+<script>
+(function () {
+  var APPLE_ID = '6809903076';
+  var ios = document.getElementById('ios');
+  var android = document.getElementById('android');
+
+  // Pass the traffic source through to Google Play's install referrer (?src=tiktok by default).
+  var src = new URLSearchParams(location.search).get('src') || 'tiktok';
+  android.href += '&referrer=' + encodeURIComponent('utm_source=' + src + '&utm_medium=bio');
+
+  var ua = navigator.userAgent || '';
+  var isAndroid = /android/i.test(ua);
+  var isIOS = /iphone|ipad|ipod/i.test(ua) || (/macintosh/i.test(ua) && navigator.maxTouchPoints > 1);
+
+  // Android: straight to Play.
+  if (isAndroid) { location.replace(android.href); return; }
+
+  // Ask Apple whether the app is live yet; if not, show "coming soon" instead of a dead link.
+  var settled = false;
+  window.__appleLookup = function (res) {
+    settled = true;
+    var live = res && res.resultCount > 0;
+    if (!live) {
+      ios.classList.add('soon');
+      ios.querySelector('span').textContent = 'iPhone: coming soon';
+      ios.removeAttribute('href');
+      return;
+    }
+    if (isIOS) location.replace(ios.href);
+  };
+  var s = document.createElement('script');
+  s.src = 'https://itunes.apple.com/lookup?id=' + APPLE_ID + '&callback=__appleLookup';
+  s.onerror = function () { if (!settled && isIOS) location.replace(ios.href); };
+  document.head.appendChild(s);
+  // If Apple is slow, don't strand iPhone users: send them on after 2.5s.
+  setTimeout(function () { if (!settled && isIOS) location.replace(ios.href); }, 2500);
+})();
+</script>
+</body>
+</html>

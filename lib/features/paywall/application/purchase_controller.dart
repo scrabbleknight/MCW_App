@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:in_app_purchase_android/in_app_purchase_android.dart';
+import 'package:in_app_purchase_storekit/in_app_purchase_storekit.dart';
 import 'package:in_app_purchase_storekit/store_kit_2_wrappers.dart';
 import 'package:military_calisthenics_women/core/dev/dev_access.dart';
 import 'package:military_calisthenics_women/core/dev/review_access.dart';
@@ -28,7 +29,22 @@ class PurchaseController extends ChangeNotifier {
   static String get _yearlyId => StorePlatform.isAndroid
       ? 'com.swiftbee.militarycalisthenics.annual'
       : 'com.swiftbee.militarycalisthenicswomen.annual';
-  static Set<String> get _productIds => {_weeklyId, _yearlyId};
+
+  /// iOS twin of Annual whose introductory offer is the referral friend
+  /// discount (50% off the first year). Apple only gives intro offers to new
+  /// subscribers, which is who the friend discount is for.
+  static const _yearlyFriendId =
+      'com.swiftbee.militarycalisthenicswomen.annual.friend';
+
+  /// Play: the friend discount is a developer-determined offer on the annual
+  /// base plan. Play never picks it by itself.
+  static const _playFriendOfferId = 'referral-friend';
+
+  static Set<String> get _productIds => {
+    _weeklyId,
+    _yearlyId,
+    if (!StorePlatform.isAndroid) _yearlyFriendId,
+  };
 
   final InAppPurchase _iap = InAppPurchase.instance;
   StreamSubscription<List<PurchaseDetails>>? _sub;
@@ -42,6 +58,18 @@ class PurchaseController extends ChangeNotifier {
   /// Products whose free trial this user can still get. Play only returns
   /// trial offers to eligible users; on iOS StoreKit 2 is asked directly.
   final Set<String> _trialEligible = {};
+
+  /// Play only: the friend discount offer for each product, and what its
+  /// first phase costs as Play formats it.
+  final Map<String, String> _playFriendOfferTokens = {};
+  final Map<String, String> _playFriendPrices = {};
+
+  /// The subscription the store last reported as bought or still active.
+  PurchaseDetails? _activeSubscription;
+
+  /// Called with every purchase the store reports as bought or restored,
+  /// after access has been granted. The referral programme listens here.
+  void Function(PurchaseDetails purchase)? onPurchase;
   bool _storeAvailable = false;
   bool _loaded = false;
   final Completer<void> _ready = Completer<void>();
@@ -160,6 +188,42 @@ class PurchaseController extends ChangeNotifier {
     return (formatted: product.price, amount: product.rawPrice);
   }
 
+  /// Whether the store has the referral friend discount for [plan]. Only
+  /// Annual has one (50% off the first year).
+  /// On iOS the discount is an introductory offer, which Apple gives once
+  /// per subscription group: someone who has had a trial or subscription
+  /// before would pay full price, so they aren't offered it.
+  bool hasFriendOffer(PaywallPlan plan) {
+    if (plan != PaywallPlan.yearly) return false;
+    return StorePlatform.isAndroid
+        ? _playFriendOfferTokens.containsKey(_yearlyId)
+        : _products.containsKey(_yearlyFriendId) &&
+              _trialEligible.contains(_yearlyFriendId);
+  }
+
+  /// iOS: the store has the friend discount, but Apple won't give it to
+  /// this user because they've had a trial or subscription before.
+  bool get friendOfferIneligible =>
+      !StorePlatform.isAndroid &&
+      _products.containsKey(_yearlyFriendId) &&
+      !_trialEligible.contains(_yearlyFriendId);
+
+  /// What the friend discount's first phase costs, where the store says
+  /// (Play). Null on iOS: StoreKit shows it on the purchase sheet.
+  String? friendOfferPrice(PaywallPlan plan) => _playFriendPrices[_idFor(plan)];
+
+  /// The plan of the subscription the store last reported, if any.
+  PaywallPlan? get currentPlan => switch (_activeSubscription?.productID) {
+    null => null,
+    final id when id == _weeklyId => PaywallPlan.weekly,
+    _ => PaywallPlan.yearly,
+  };
+
+  /// What the server needs to look the current subscription up: the Play
+  /// purchase token, or Apple's signed transaction.
+  String? get currentVerificationData =>
+      _activeSubscription?.verificationData.serverVerificationData;
+
   /// Whether buying [plan] starts with a free trial for this user. Before the
   /// store has returned the product, assume the trial the stores are set up
   /// with: the yearly plan has one, the weekly plan doesn't.
@@ -205,8 +269,13 @@ class PurchaseController extends ChangeNotifier {
 
   /// Starts the platform purchase sheet for [plan]. Completes with the
   /// terminal outcome (or [PurchaseOutcome.pending] if another purchase is
-  /// already in-flight).
-  Future<PurchaseOutcome> purchase(PaywallPlan plan) async {
+  /// already in-flight). With [friendDiscount], buys it with the referral
+  /// friend discount instead of the usual trial; the server must have
+  /// accepted a friend's code first (ReferralController.applyCode).
+  Future<PurchaseOutcome> purchase(
+    PaywallPlan plan, {
+    bool friendDiscount = false,
+  }) async {
     if (!_storeAvailable) return PurchaseOutcome.storeUnavailable;
     if (_pending != null) return PurchaseOutcome.pending;
 
@@ -218,19 +287,64 @@ class PurchaseController extends ChangeNotifier {
       return PurchaseOutcome.success;
     }
 
-    final product = _products[_idFor(plan)];
+    if (friendDiscount && !hasFriendOffer(plan)) {
+      return PurchaseOutcome.productNotFound;
+    }
+    final id = friendDiscount && !StorePlatform.isAndroid
+        ? _yearlyFriendId
+        : _idFor(plan);
+    final product = _products[id];
     if (product == null) return PurchaseOutcome.productNotFound;
+    final offerToken = friendDiscount
+        ? _playFriendOfferTokens[id]
+        : _playOfferTokens[id];
+    if (StorePlatform.isAndroid && friendDiscount && offerToken == null) {
+      return PurchaseOutcome.productNotFound;
+    }
 
+    return _buy(
+      product is GooglePlayProductDetails
+          ? GooglePlayPurchaseParam(
+              productDetails: product,
+              offerToken: offerToken,
+            )
+          : PurchaseParam(productDetails: product),
+    );
+  }
+
+  /// iOS: buys the plan an Apple promotional offer the server signed for a
+  /// referral reward is for. That's usually the user's own plan, but the
+  /// half-price year is always Annual, so a Weekly subscriber upgrades. The
+  /// user is usually subscribed already, so this skips the
+  /// existing-subscription check.
+  Future<PurchaseOutcome> purchaseWithPromotionalOffer(
+    SignedPromotionalOffer offer,
+  ) async {
+    if (!_storeAvailable) return PurchaseOutcome.storeUnavailable;
+    if (_pending != null) return PurchaseOutcome.pending;
+    final product = _products[offer.productId];
+    if (product == null) return PurchaseOutcome.productNotFound;
+    return _buy(
+      Sk2PurchaseParam(
+        productDetails: product,
+        promotionalOffer: SK2PromotionalOffer(
+          offerId: offer.offerId,
+          signature: SK2SubscriptionOfferSignature(
+            keyID: offer.keyId,
+            nonce: offer.nonce,
+            timestamp: offer.timestamp,
+            signature: offer.signature,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<PurchaseOutcome> _buy(PurchaseParam param) async {
     _pending = Completer<PurchaseOutcome>();
     notifyListeners();
 
     try {
-      final param = product is GooglePlayProductDetails
-          ? GooglePlayPurchaseParam(
-              productDetails: product,
-              offerToken: _playOfferTokens[product.id],
-            )
-          : PurchaseParam(productDetails: product);
       final started = await _iap.buyNonConsumable(purchaseParam: param);
       if (!started) {
         _resolvePending(PurchaseOutcome.failed);
@@ -296,8 +410,12 @@ class PurchaseController extends ChangeNotifier {
           break;
         case PurchaseStatus.purchased:
         case PurchaseStatus.restored:
+          if (_isSubscription(purchase.productID)) {
+            _activeSubscription = purchase;
+          }
           _markEntitled();
           _resolvePending(PurchaseOutcome.success);
+          onPurchase?.call(purchase);
           break;
         case PurchaseStatus.error:
           debugPrint(
@@ -357,6 +475,12 @@ class PurchaseController extends ChangeNotifier {
       return;
     }
     final offer = offers[index];
+    if (offer.offerId == _playFriendOfferId) {
+      _products.putIfAbsent(details.id, () => details);
+      _playFriendOfferTokens[details.id] = offer.offerIdToken;
+      _playFriendPrices[details.id] = offer.pricingPhases.first.formattedPrice;
+      return;
+    }
     final isBasePlan = offer.offerId == null;
     final hasFreeTrial = offer.pricingPhases.any(
       (phase) => phase.priceAmountMicros == 0,
@@ -377,21 +501,41 @@ class PurchaseController extends ChangeNotifier {
   /// the subscription group. If the check fails, assume they can, which is
   /// how the paywall behaved before this check existed.
   Future<void> _checkAppStoreTrial() async {
-    if (!_products.containsKey(_yearlyId)) return;
-    try {
-      if (await SK2Product.isIntroductoryOfferEligible(_yearlyId)) {
+    if (_products.containsKey(_yearlyId)) {
+      try {
+        if (await SK2Product.isIntroductoryOfferEligible(_yearlyId)) {
+          _trialEligible.add(_yearlyId);
+        }
+      } catch (error) {
+        debugPrint(
+          'PurchaseController: trial eligibility check failed — $error',
+        );
         _trialEligible.add(_yearlyId);
       }
-    } catch (error) {
-      debugPrint('PurchaseController: trial eligibility check failed — $error');
-      _trialEligible.add(_yearlyId);
+    }
+    // The friend discount is the friend twin's introductory offer. Unlike
+    // the trial, don't assume eligibility when the check fails: offering
+    // 50% off and charging full price would be worse than not offering it.
+    if (_products.containsKey(_yearlyFriendId)) {
+      try {
+        if (await SK2Product.isIntroductoryOfferEligible(_yearlyFriendId)) {
+          _trialEligible.add(_yearlyFriendId);
+        }
+      } catch (error) {
+        debugPrint('PurchaseController: friend offer check failed — $error');
+      }
     }
   }
 
   String _idFor(PaywallPlan plan) => switch (plan) {
-        PaywallPlan.weekly => _weeklyId,
-        PaywallPlan.yearly => _yearlyId,
-      };
+    PaywallPlan.weekly => _weeklyId,
+    PaywallPlan.yearly => _yearlyId,
+  };
+
+  bool _isSubscription(String productId) =>
+      productId == _weeklyId ||
+      productId == _yearlyId ||
+      productId == _yearlyFriendId;
 
   @override
   void dispose() {
@@ -399,6 +543,16 @@ class PurchaseController extends ChangeNotifier {
     super.dispose();
   }
 }
+
+/// An Apple promotional offer the server signed (claimReferralReward).
+typedef SignedPromotionalOffer = ({
+  String productId,
+  String offerId,
+  String keyId,
+  String nonce,
+  int timestamp,
+  String signature,
+});
 
 /// Whether an onboarded user can use the app right now.
 enum AppAccess {

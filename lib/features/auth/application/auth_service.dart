@@ -289,6 +289,30 @@ class AuthService {
   }
 
   Future<LoginResult> _completeSignIn(AuthCredential credential) async {
+    // Someone who used a referral code before making an account is signed
+    // in anonymously, and their referral record hangs off that uid. Turn
+    // that user into the real account so the record comes with them. If the
+    // account already exists, sign in to it instead.
+    final anonymous = _auth.currentUser;
+    if (anonymous != null && anonymous.isAnonymous) {
+      try {
+        final result = await anonymous.linkWithCredential(credential);
+        return LoginResult(LoginOutcome.signedIn, user: result.user);
+      } on FirebaseAuthException catch (error) {
+        const alreadyAnAccount = {
+          'credential-already-in-use',
+          'email-already-in-use',
+          'account-exists-with-different-credential',
+        };
+        if (!alreadyAnAccount.contains(error.code)) {
+          debugPrint('AuthService: linking failed — ${error.code}');
+          return LoginResult(LoginOutcome.cancelled, error: error);
+        }
+        // Phone and Apple credentials are single-use; Firebase hands back a
+        // fresh one with the error.
+        credential = error.credential ?? credential;
+      }
+    }
     try {
       final result = await _auth.signInWithCredential(credential);
       return LoginResult(LoginOutcome.signedIn, user: result.user);

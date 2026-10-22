@@ -16,7 +16,8 @@ class AuthController extends ChangeNotifier {
   bool get isLoaded => _loaded;
   User? get user => _user;
   String? get uid => _user?.uid;
-  bool get hasAuthenticatedAccount => _user != null && !(_user?.isAnonymous ?? true);
+  bool get hasAuthenticatedAccount =>
+      _user != null && !(_user?.isAnonymous ?? true);
 
   Future<void> load() async {
     try {

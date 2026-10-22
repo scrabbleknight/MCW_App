@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:military_calisthenics_women/core/promo/cross_promo.dart';
+import 'package:military_calisthenics_women/core/review/review_prompt.dart';
 import 'package:military_calisthenics_women/core/theme/tactical_palette.dart';
 import 'package:military_calisthenics_women/features/health/application/health_controller.dart';
 import 'package:military_calisthenics_women/features/onboarding/application/onboarding_controller.dart';
@@ -244,9 +245,13 @@ class _SessionScreenState extends State<SessionScreen>
         await rankCtrl.acknowledge(unlockedRank);
       });
     }
-    // Waits for the celebration modals above to be closed first.
+    // Waits for the celebration modals above to be closed first. The review
+    // request is once per device, so on the rare session that also shows the
+    // promo it just waits for the next completed workout.
     if (await showPromo) {
       unawaited(CrossPromo.showWhenIdle(rootNav, _cycleSyncAd));
+    } else {
+      unawaited(ReviewPrompt.requestWhenIdle(rootNav));
     }
   }
 

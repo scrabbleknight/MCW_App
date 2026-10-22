@@ -13,8 +13,9 @@ import 'package:military_calisthenics_women/features/onboarding/presentation/ste
 import 'package:military_calisthenics_women/features/onboarding/presentation/steps/height_step.dart';
 import 'package:military_calisthenics_women/features/paywall/application/auth_controller.dart';
 import 'package:military_calisthenics_women/features/paywall/application/purchase_controller.dart';
-import 'package:military_calisthenics_women/features/paywall/presentation/paywall_step.dart';
+import 'package:military_calisthenics_women/features/paywall/presentation/connected_paywall.dart';
 import 'package:military_calisthenics_women/features/plan/application/sounds_controller.dart';
+import 'package:military_calisthenics_women/features/referrals/application/referral_controller.dart';
 import 'package:military_calisthenics_women/features/health/application/health_controller.dart';
 import 'package:military_calisthenics_women/features/reminders/application/reminder_controller.dart';
 import 'package:military_calisthenics_women/features/profile/application/body_progress_controller.dart';
@@ -38,7 +39,13 @@ class McwApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ThemeController()..load()),
         ChangeNotifierProvider(create: (_) => AuthController()..load()),
         ChangeNotifierProvider(create: (_) => OnboardingController()..load()),
-        ChangeNotifierProvider(create: (_) => PurchaseController()..load()),
+        ChangeNotifierProvider(create: (_) => ReferralController()),
+        ChangeNotifierProvider(
+          create: (context) => PurchaseController()
+            // Purchases go to the referral server while it's waiting on one.
+            ..onPurchase = context.read<ReferralController>().reportPurchase
+            ..load(),
+        ),
         ChangeNotifierProvider(create: (_) => SoundsController()..load()),
         // Not lazy: loading re-registers the scheduled workout reminders on
         // every launch, even if the reminder screen is never opened.
@@ -209,14 +216,7 @@ class _SubscriptionGateState extends State<_SubscriptionGate>
           body: SafeArea(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
-              child: PaywallStep(
-                onPurchase: (plan) async =>
-                    await purchases.purchase(plan) == PurchaseOutcome.success,
-                onRestore: purchases.restore,
-                weeklyPrice: purchases.priceFor(PaywallPlan.weekly),
-                yearlyPrice: purchases.priceFor(PaywallPlan.yearly),
-                yearlyHasTrial: purchases.hasFreeTrial(PaywallPlan.yearly),
-              ),
+              child: const ConnectedPaywall(),
             ),
           ),
         ),

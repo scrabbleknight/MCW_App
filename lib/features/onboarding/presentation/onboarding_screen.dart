@@ -6,8 +6,7 @@ import 'package:military_calisthenics_women/features/reminders/application/remin
 import 'package:military_calisthenics_women/features/auth/presentation/login_screen.dart';
 import 'package:military_calisthenics_women/features/onboarding/application/onboarding_controller.dart';
 import 'package:military_calisthenics_women/features/onboarding/application/plan_recommendation.dart';
-import 'package:military_calisthenics_women/features/paywall/application/purchase_controller.dart';
-import 'package:military_calisthenics_women/features/paywall/presentation/paywall_step.dart';
+import 'package:military_calisthenics_women/features/paywall/presentation/connected_paywall.dart';
 import 'package:military_calisthenics_women/features/plan/application/plan_generator.dart';
 import 'package:military_calisthenics_women/features/plan/presentation/plan_preview_step.dart';
 import 'package:military_calisthenics_women/features/onboarding/presentation/steps/achievements_step.dart';
@@ -146,30 +145,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   Widget _paywall(OnboardingController controller) {
-    final purchases = context.read<PurchaseController>();
-    // Rebuild when the store's prices and trial eligibility arrive, but not
-    // on every purchase state change.
-    final (weeklyPrice, yearlyPrice, yearlyHasTrial) = context.select(
-      (PurchaseController p) => (
-        p.priceFor(PaywallPlan.weekly),
-        p.priceFor(PaywallPlan.yearly),
-        p.hasFreeTrial(PaywallPlan.yearly),
-      ),
-    );
-    return PaywallStep(
-      weeklyPrice: weeklyPrice,
-      yearlyPrice: yearlyPrice,
-      yearlyHasTrial: yearlyHasTrial,
-      onPurchase: (plan) async {
-        final outcome = await purchases.purchase(plan);
-        if (outcome == PurchaseOutcome.success) {
-          controller.setAnswer('paywall_plan', plan);
-          _next();
-          return true;
-        }
-        return false;
+    return ConnectedPaywall(
+      onPurchased: (plan) {
+        controller.setAnswer('paywall_plan', plan);
+        _next();
       },
-      onRestore: purchases.restore,
     );
   }
 

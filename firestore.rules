@@ -5,7 +5,10 @@ rules_version = '2';
 //   quit_feedback/{uid}/entries/{id}     (after leaving one early)
 // Signed-in users write under their own uid and may read or delete their
 // entries (Delete Account removes them). Users who haven't signed in write
-// under "anonymous" and can't read anything back. Everything else is closed.
+// under "anonymous" and can't read anything back. Everything else is closed,
+// including the referral programme's collections (referralUsers,
+// referralCodes, referralPurchases, rewardCodes), which only the Cloud
+// Functions in functions/referrals read and write.
 service cloud.firestore {
   match /databases/{database}/documents {
     function isOwner(uid) {
