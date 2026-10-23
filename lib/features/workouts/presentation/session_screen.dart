@@ -778,7 +778,11 @@ class _ExerciseVideoState extends State<_ExerciseVideo> {
       return;
     }
 
-    final controller = VideoPlayerController.networkUrl(Uri.parse(url));
+    final controller = VideoPlayerController.networkUrl(
+      Uri.parse(url),
+      // The clips are silent — leave the user's music playing.
+      videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
+    );
     try {
       await controller.initialize();
       await controller.setLooping(true);
