@@ -21,7 +21,12 @@ let txn = 0;
 stores.verifyAppleTransaction = async (jws) => ({
   ...JSON.parse(jws),
   originalTransactionId: String(++txn),
+  transactionId: `t${txn}`,
 });
+const refunded = new Set();
+stores.appleTransactionRefunded = async ({ transactionId }) =>
+  refunded.has(transactionId);
+stores.playVoidedTokens = async () => new Set();
 stores.verifyPlaySubscription = async (token) => ({
   purchaseToken: token,
   productId: 'com.swiftbee.militarycalisthenics.annual',
@@ -34,6 +39,18 @@ stores.deferPlaySubscription = async (args) => {
   deferred.push(args);
   return '2027-12-01T00:00:00Z';
 };
+
+/** Ends every pending friend purchase's hold and runs the daily check. */
+async function settle() {
+  const pending = await getFirestore()
+    .collection('referralPurchases')
+    .where('state', '==', 'pending')
+    .get();
+  for (const doc of pending.docs) {
+    await doc.ref.update({ confirmsAt: new Date(Date.now() - 1000) });
+  }
+  await referrals.confirmReferrals.run({});
+}
 
 const friendBuy = (uid) =>
   call('recordPurchase', uid, {
@@ -79,8 +96,20 @@ test('a referrer climbs the tiers as friends subscribe', async () => {
   assert.equal(bought.friendDiscount.state, 'used');
   // Reporting the same friend again doesn't double count.
   await friendBuy('f1');
+  // Nothing counts until the 14-day hold is over.
+  status = await call('referralStatus', 'referrer', { platform: 'android' });
+  assert.equal(status.friends, 0);
+  assert.equal(status.pendingFriends, 1);
+  assert.deepEqual(status.tiers.map((t) => t.state), ['locked', 'locked', 'locked']);
+  // Not due yet: still pending.
+  await referrals.confirmReferrals.run({});
+  status = await call('referralStatus', 'referrer', { platform: 'android' });
+  assert.equal(status.pendingFriends, 1);
+
+  await settle();
   status = await call('referralStatus', 'referrer', { platform: 'android' });
   assert.equal(status.friends, 1);
+  assert.equal(status.pendingFriends, 0);
   assert.deepEqual(status.tiers.map((t) => t.state), ['earned', 'locked', 'locked']);
 
   // A friend can't switch to a second code.
@@ -95,9 +124,44 @@ test('a referrer climbs the tiers as friends subscribe', async () => {
     await call('applyReferralCode', f, { platform: 'ios', code: me.code });
     await friendBuy(f);
   }
+  await settle();
   status = await call('referralStatus', 'referrer', { platform: 'android' });
   assert.equal(status.friends, 3);
   assert.deepEqual(status.tiers.map((t) => t.state), ['earned', 'earned', 'earned']);
+});
+
+test('a friend refunded during the hold earns nothing', async () => {
+  const me = await call('referralStatus', 'refunded-ref', { platform: 'ios' });
+  await call('applyReferralCode', 'refunder', { platform: 'ios', code: me.code });
+  await friendBuy('refunder');
+  refunded.add(`t${txn}`);
+  await settle();
+  const status = await call('referralStatus', 'refunded-ref', { platform: 'ios' });
+  assert.equal(status.friends, 0);
+  assert.equal(status.pendingFriends, 0);
+  assert.equal(status.tiers[0].state, 'locked');
+  // The refunded purchase can't qualify again.
+  await friendBuy('refunder');
+  const after = await call('referralStatus', 'refunded-ref', { platform: 'ios' });
+  assert.equal(after.pendingFriends, 0);
+});
+
+test('a refund check that fails waits for the next run', async () => {
+  const me = await call('referralStatus', 'retry-ref', { platform: 'ios' });
+  await call('applyReferralCode', 'retry-f', { platform: 'ios', code: me.code });
+  await friendBuy('retry-f');
+  const realCheck = stores.appleTransactionRefunded;
+  stores.appleTransactionRefunded = async () => {
+    throw new Error('App Store unavailable');
+  };
+  await settle();
+  stores.appleTransactionRefunded = realCheck;
+  let status = await call('referralStatus', 'retry-ref', { platform: 'ios' });
+  assert.equal(status.pendingFriends, 1);
+  await settle();
+  status = await call('referralStatus', 'retry-ref', { platform: 'ios' });
+  assert.equal(status.friends, 1);
+  assert.equal(status.pendingFriends, 0);
 });
 
 test('Android half-price year is free only after 182 more paid days', async () => {
@@ -140,6 +204,7 @@ test('a scheduled Android reward is kept back if the user cancelled', async () =
   const me = await call('referralStatus', 'quitter', { platform: 'android' });
   await call('applyReferralCode', 'quitter-f', { platform: 'ios', code: me.code });
   await friendBuy('quitter-f');
+  await settle();
   await call('claimReferralReward', 'quitter', {
     platform: 'android',
     reward: 'half_1y',
@@ -211,6 +276,7 @@ test('an Apple promotional offer purchase marks its reward redeemed', async () =
   const me = await call('referralStatus', 'apple-ref', { platform: 'ios' });
   await call('applyReferralCode', 'apple-f1', { platform: 'ios', code: me.code });
   await friendBuy('apple-f1');
+  await settle();
   const out = await call('recordPurchase', 'apple-ref', {
     platform: 'ios',
     verificationData: JSON.stringify({
@@ -246,6 +312,7 @@ test('an issued Lifetime code that expired unredeemed is replaced', async () => 
     await call('applyReferralCode', f, { platform: 'ios', code: me.code });
     await friendBuy(f);
   }
+  await settle();
   const day = 24 * 60 * 60 * 1000;
   await pool.doc('ios_APPLE1').set({ platform: 'ios', code: 'APPLE1', assignedTo: null, expiresAt: new Date(Date.now() + 10 * day) });
   await pool.doc('ios_APPLE2').set({ platform: 'ios', code: 'APPLE2', assignedTo: null, expiresAt: new Date(Date.now() + 170 * day) });

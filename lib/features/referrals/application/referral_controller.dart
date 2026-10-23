@@ -273,6 +273,8 @@ class ReferralStatus {
     required this.code,
     required this.friends,
     required this.tiers,
+    this.pendingFriends = 0,
+    this.holdDays = 14,
     this.friendDiscount,
   });
 
@@ -281,6 +283,8 @@ class ReferralStatus {
     return ReferralStatus(
       code: json['code'] as String,
       friends: (json['friends'] as num?)?.toInt() ?? 0,
+      pendingFriends: (json['pendingFriends'] as num?)?.toInt() ?? 0,
+      holdDays: (json['holdDays'] as num?)?.toInt() ?? 14,
       tiers: [
         for (final raw in json['tiers'] as List)
           if (ReferralReward.fromId((raw as Map)['reward'] as String)
@@ -310,8 +314,13 @@ class ReferralStatus {
   /// The user's own code to share.
   final String code;
 
-  /// Friends who have subscribed with [code].
+  /// Friends who have subscribed with [code] and are past the hold.
   final int friends;
+
+  /// Friends who subscribed with [code] less than [holdDays] ago. They count
+  /// once the hold is over, unless they're refunded.
+  final int pendingFriends;
+  final int holdDays;
   final List<ReferralTier> tiers;
 
   /// The friend's code this user entered, if any.

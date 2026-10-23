@@ -6,6 +6,7 @@ const { getFirestore, FieldValue } = require('firebase-admin/firestore');
 
 const {
   TIERS,
+  REFERRAL_HOLD_DAYS,
   SUBSCRIPTIONS,
   IOS_PROMO_OFFERS,
   ANDROID_DEFER_DAYS,
@@ -31,7 +32,8 @@ const stores = require('./stores');
  * reward at 1, 2 and 3 friends who subscribed with it (see config.TIERS).
  *
  * A friend only counts once the store confirms they bought with the referral
- * discount, so typing a code in on a spare account earns nothing. Every
+ * discount, so typing a code in on a spare account earns nothing, and only
+ * after a REFERRAL_HOLD_DAYS hold without a refund. Every
  * reward is delivered through the store: Apple promotional offers and Play
  * renewal deferrals for the subscription rewards, single-use codes for the
  * Lifetime product.
@@ -39,13 +41,18 @@ const stores = require('./stores');
  * Firestore (server-only, see firestore.rules):
  *   referralCodes/{code}     → { uid }
  *   referralUsers/{uid}      → { code, referredBy, friendPurchaseAt,
- *                                friends, rewards: { [reward]: {...} } }
- *   referralPurchases/{key}  → one per store purchase that qualified a friend
+ *                                friends, pendingFriends,
+ *                                rewards: { [reward]: {...} } }
+ *   referralPurchases/{key}  → one per store purchase that qualified a friend,
+ *                                state pending → confirmed | refunded
  *   rewardCodes/{id}         → { platform, code, assignedTo } Lifetime codes
  */
 
 const APPLE_IAP_KEY = defineSecret('APPLE_IAP_KEY');
 const APPLE_IAP_KEY_ID = defineSecret('APPLE_IAP_KEY_ID');
+const APPLE_IAP_ISSUER_ID = defineSecret('APPLE_IAP_ISSUER_ID');
+
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 /**
  * Lets Xcode/TestFlight sandbox and Play license-tester purchases count.
@@ -116,6 +123,8 @@ function statusOf(data, platform) {
   return {
     code: data.code,
     friends: data.friends ?? 0,
+    pendingFriends: Math.max(data.pendingFriends ?? 0, 0),
+    holdDays: REFERRAL_HOLD_DAYS,
     tiers: TIERS.map(({ reward, friends }) => {
       const r = rewards[reward];
       // An issued code that expired unredeemed can be claimed again.
@@ -210,7 +219,8 @@ async function verifyPurchase(platform, verificationData) {
  * The app calls this after a purchase while the caller has a friend
  * discount to use or a reward on its way. Verifies the purchase with the
  * store, then:
- *  - a friend discount purchase counts towards the referrer's rewards;
+ *  - a friend discount purchase starts its hold, after which it counts
+ *    towards the referrer's rewards (confirmReferrals);
  *  - an Apple promotional offer purchase marks that reward as redeemed;
  *  - a Lifetime purchase marks the Lifetime reward as redeemed.
  */
@@ -267,30 +277,27 @@ exports.recordPurchase = onCall({ region: REGION }, async (request) => {
     }
 
     if (qualifies && !keySnap.exists && referrerSnap?.exists) {
+      // Pending until the hold is over (confirmReferrals), so a refund in
+      // that time earns the referrer nothing.
       tx.set(keyRef, {
         uid,
         referrerUid: data.referredBy.uid,
         platform,
         at: FieldValue.serverTimestamp(),
+        state: 'pending',
+        confirmsAt: new Date(Date.now() + REFERRAL_HOLD_DAYS * DAY_MS),
+        ...(platform === 'ios'
+          ? {
+              transactionId: purchase.transactionId,
+              environment: purchase.environment ?? null,
+            }
+          : { purchaseToken: purchase.purchaseToken }),
       });
       updates.friendPurchaseAt = FieldValue.serverTimestamp();
-
-      const referrer = referrerSnap.data();
-      const friends = (referrer.friends ?? 0) + 1;
-      const referrerUpdates = { friends };
-      for (const reward of rewardsEarned(friends)) {
-        if (!referrer.rewards?.[reward]) {
-          referrerUpdates[`rewards.${reward}`] = {
-            state: 'earned',
-            earnedAt: FieldValue.serverTimestamp(),
-          };
-        }
-      }
-      tx.update(referrerRef, referrerUpdates);
-      logger.info('Referral qualified', {
+      tx.update(referrerRef, { pendingFriends: FieldValue.increment(1) });
+      logger.info('Referral pending', {
         referrer: data.referredBy.uid,
         friend: uid,
-        friends,
       });
     }
 
@@ -504,6 +511,117 @@ async function applyScheduledReward(ref, reward, r) {
       error: String(error),
     });
   }
+}
+
+/**
+ * Daily: settles friend purchases whose hold (REFERRAL_HOLD_DAYS) is over.
+ * One that was refunded in the hold is dropped; the rest count towards the
+ * referrer's rewards. A purchase the stores can't be asked about yet waits
+ * for the next run.
+ */
+exports.confirmReferrals = onSchedule(
+  {
+    region: REGION,
+    schedule: 'every day 07:00',
+    timeZone: 'Europe/London',
+    secrets: [APPLE_IAP_KEY, APPLE_IAP_KEY_ID, APPLE_IAP_ISSUER_ID],
+  },
+  async () => {
+    const now = Date.now();
+    const pending = await db()
+      .collection('referralPurchases')
+      .where('state', '==', 'pending')
+      .get();
+    const due = pending.docs.filter(
+      (doc) => millisOf(doc.data().confirmsAt) <= now,
+    );
+
+    let voided = null;
+    if (due.some((doc) => doc.data().platform === 'android')) {
+      try {
+        // Play keeps voided purchases for 30 days.
+        voided = await stores.playVoidedTokens(new Date(now - 30 * DAY_MS));
+      } catch (error) {
+        logger.error('Play voided purchases check failed', {
+          error: String(error),
+        });
+      }
+    }
+
+    for (const doc of due) {
+      let refunded;
+      try {
+        refunded = await purchaseRefunded(doc.data(), voided);
+      } catch (error) {
+        logger.error('Referral refund check failed', {
+          purchase: doc.id,
+          error: String(error),
+        });
+        continue; // Try again tomorrow.
+      }
+      await settleReferral(doc.ref, refunded);
+    }
+  },
+);
+
+async function purchaseRefunded(purchase, voided) {
+  if (purchase.platform === 'ios') {
+    return stores.appleTransactionRefunded(purchase, {
+      privateKey: APPLE_IAP_KEY.value(),
+      keyId: APPLE_IAP_KEY_ID.value(),
+      issuerId: APPLE_IAP_ISSUER_ID.value(),
+    });
+  }
+  if (!voided) throw new Error("Play's voided purchases are unavailable.");
+  if (voided.has(purchase.purchaseToken)) return true;
+  try {
+    const sub = await stores.verifyPlaySubscription(purchase.purchaseToken, {
+      allowTest: ALLOW_TEST_PURCHASES.value(),
+    });
+    // A year's subscription only ends this soon if it was revoked.
+    return sub.state === 'SUBSCRIPTION_STATE_EXPIRED';
+  } catch (error) {
+    if (error instanceof stores.UntrustedPurchase) return true;
+    throw error;
+  }
+}
+
+async function settleReferral(ref, refunded) {
+  await db().runTransaction(async (tx) => {
+    const purchase = (await tx.get(ref)).data();
+    if (purchase.state !== 'pending') return;
+    // Null if the referrer has since deleted their account.
+    const referrerRef = purchase.referrerUid
+      ? users().doc(purchase.referrerUid)
+      : null;
+    const referrerSnap = referrerRef ? await tx.get(referrerRef) : null;
+
+    tx.update(ref, {
+      state: refunded ? 'refunded' : 'confirmed',
+      settledAt: FieldValue.serverTimestamp(),
+    });
+    if (!referrerSnap?.exists) return;
+
+    const referrer = referrerSnap.data();
+    const updates = { pendingFriends: FieldValue.increment(-1) };
+    if (!refunded) {
+      const friends = (referrer.friends ?? 0) + 1;
+      updates.friends = friends;
+      for (const reward of rewardsEarned(friends)) {
+        if (!referrer.rewards?.[reward]) {
+          updates[`rewards.${reward}`] = {
+            state: 'earned',
+            earnedAt: FieldValue.serverTimestamp(),
+          };
+        }
+      }
+    }
+    tx.update(referrerRef, updates);
+    logger.info(refunded ? 'Referral refunded' : 'Referral confirmed', {
+      referrer: purchase.referrerUid,
+      friend: purchase.uid,
+    });
+  });
 }
 
 /**

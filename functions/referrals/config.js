@@ -17,6 +17,14 @@ const TIERS = [
   { reward: 'lifetime', friends: 3 },
 ];
 
+/**
+ * A friend's purchase stays pending this long before it counts towards the
+ * referrer's rewards, and is dropped if it's refunded in that time. Apple and
+ * Google refund most requests within days, so without it a friend could buy,
+ * earn the referrer a reward, then get their money back.
+ */
+const REFERRAL_HOLD_DAYS = 14;
+
 /** The standard subscriptions, keyed by plan, per store. */
 const SUBSCRIPTIONS = {
   ios: {
@@ -98,6 +106,7 @@ module.exports = {
   IOS_APP_APPLE_ID,
   ANDROID_PACKAGE,
   TIERS,
+  REFERRAL_HOLD_DAYS,
   SUBSCRIPTIONS,
   FRIEND_OFFER,
   IOS_PROMO_OFFERS,

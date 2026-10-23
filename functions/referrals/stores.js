@@ -3,6 +3,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const {
+  AppStoreServerAPIClient,
   Environment,
   PromotionalOfferSignatureCreator,
   SignedDataVerifier,
@@ -99,7 +100,34 @@ async function verifyAppleTransaction(jws, { allowSandbox }) {
     transactionId: payload.transactionId,
     offerType: payload.offerType ?? null,
     offerIdentifier: payload.offerIdentifier ?? null,
+    environment: payload.environment ?? Environment.PRODUCTION,
   };
+}
+
+/**
+ * Asks the App Store Server API whether a transaction has been refunded
+ * since the app reported it. Uses the same In-App Purchase key as
+ * promotional offers, plus the team's issuer ID (APPLE_IAP_ISSUER_ID).
+ */
+async function appleTransactionRefunded(
+  { transactionId, environment },
+  { privateKey, keyId, issuerId },
+) {
+  const env = environment ?? Environment.PRODUCTION;
+  const client = new AppStoreServerAPIClient(
+    privateKey,
+    keyId,
+    issuerId,
+    IOS_BUNDLE_ID,
+    env,
+  );
+  const { signedTransactionInfo } = await client.getTransactionInfo(
+    transactionId,
+  );
+  const payload = await appleVerifier(env).verifyAndDecodeTransaction(
+    signedTransactionInfo,
+  );
+  return payload.revocationDate != null;
 }
 
 function describe(error) {
@@ -205,10 +233,36 @@ async function deferPlaySubscription({ purchaseToken, etag, days }) {
   return data.itemExpiryTimeDetails?.[0]?.expiryTime ?? null;
 }
 
+/**
+ * Purchase tokens of subscriptions Play has refunded or charged back since
+ * [since]. A refund doesn't always revoke the subscription, so its state
+ * alone can't show it.
+ */
+async function playVoidedTokens(since) {
+  const tokens = new Set();
+  let token;
+  do {
+    const { data } = await playClient().purchases.voidedpurchases.list({
+      packageName: ANDROID_PACKAGE,
+      startTime: String(since.getTime()),
+      type: 1, // Include subscriptions, not just one-time products.
+      maxResults: 1000,
+      token,
+    });
+    for (const v of data.voidedPurchases ?? []) {
+      if (v.purchaseToken) tokens.add(v.purchaseToken);
+    }
+    token = data.tokenPagination?.nextPageToken;
+  } while (token);
+  return tokens;
+}
+
 module.exports = {
   UntrustedPurchase,
   verifyAppleTransaction,
+  appleTransactionRefunded,
   signPromotionalOffer,
   verifyPlaySubscription,
   deferPlaySubscription,
+  playVoidedTokens,
 };

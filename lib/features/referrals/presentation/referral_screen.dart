@@ -286,13 +286,15 @@ class _ReferralScreenState extends State<ReferralScreen> {
                 const SizedBox(height: 16),
                 Text(
                   StorePlatform.isAndroid
-                      ? 'A friend counts once they subscribe with your code. '
-                            'Google Play applies subscription rewards by '
+                      ? 'A friend counts ${status.holdDays} days after they '
+                            'subscribe with your code, unless they get a '
+                            'refund. Google Play applies subscription rewards by '
                             'moving your next payment back. 50% off for a '
                             'year: stay subscribed for 182 days and the next '
                             '182 are free. A free year adds 365 free days.'
-                      : 'A friend counts once they subscribe with your code. '
-                            'Rewards are applied through the App Store: the '
+                      : 'A friend counts ${status.holdDays} days after they '
+                            'subscribe with your code, unless they get a '
+                            'refund. Rewards are applied through the App Store: the '
                             'half-price year is a year of Annual, and a free '
                             'year starts from your next renewal.',
                   style: TextStyle(color: p.muted, fontSize: 12, height: 1.4),
@@ -392,6 +394,15 @@ class _Progress extends StatelessWidget {
             fontSize: 18,
           ),
         ),
+        if (status.pendingFriends > 0) ...[
+          const SizedBox(height: 4),
+          Text(
+            '${status.pendingFriends} pending: '
+            '${status.pendingFriends == 1 ? 'counts' : 'count'} '
+            '${status.holdDays} days after subscribing',
+            style: TextStyle(color: p.mist, fontSize: 13),
+          ),
+        ],
         const SizedBox(height: 10),
         ClipRRect(
           borderRadius: BorderRadius.circular(6),
@@ -570,7 +581,12 @@ class InviteFriendsCard extends StatelessWidget {
     final p = context.palette;
     final status = context.watch<ReferralController>().status;
     final friends = status?.friends ?? 0;
-    final subtitle = friends == 0
+    final pending = status?.pendingFriends ?? 0;
+    final subtitle = friends == 0 && pending > 0
+        ? pending == 1
+              ? '1 friend pending'
+              : '$pending friends pending'
+        : friends == 0
         ? 'Friends get 50% off. You can earn free for life.'
         : friends == 1
         ? '1 friend subscribed'

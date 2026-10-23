@@ -42,3 +42,4 @@ exports.recordPurchase = referrals.recordPurchase;
 exports.claimReferralReward = referrals.claimReferralReward;
 exports.checkRewardCodes = referrals.checkRewardCodes;
 exports.applyScheduledRewards = referrals.applyScheduledRewards;
+exports.confirmReferrals = referrals.confirmReferrals;
