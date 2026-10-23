@@ -26,6 +26,7 @@ import 'package:military_calisthenics_women/features/workouts/presentation/diffi
 import 'package:military_calisthenics_women/features/workouts/presentation/quit_feedback_screen.dart';
 import 'package:military_calisthenics_women/features/workouts/presentation/session_complete_screen.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:video_player/video_player.dart';
 
 /// Walks the user through one day's full session: warmup cards → main-set
@@ -62,6 +63,13 @@ class _SessionScreenState extends State<SessionScreen>
   bool _paused = false;
   late final Ticker _ticker;
   late final DateTime _sessionStartedAt;
+  late final AppLifecycleListener _lifecycle;
+
+  /// Set while the user is off in their music app from a card step (warm-up
+  /// / rest / cool-down). Cards have no play button, so the step picks up
+  /// again when the app comes back — with the time away not counted.
+  bool _resumeOnReturn = false;
+  bool _pausedBeforeMusic = false;
 
   @override
   void initState() {
@@ -69,12 +77,14 @@ class _SessionScreenState extends State<SessionScreen>
     final rest = context.read<WorkoutSettingsController>().restSeconds;
     _steps = buildSessionSteps(day: widget.day, restSeconds: rest);
     _ticker = createTicker(_onTick);
+    _lifecycle = AppLifecycleListener(onResume: _onAppResumed);
     _sessionStartedAt = DateTime.now();
     _startStep(0);
   }
 
   @override
   void dispose() {
+    _lifecycle.dispose();
     _ticker.dispose();
     for (final controller in widget.preloadedVideoControllers.values) {
       controller.dispose();
@@ -128,6 +138,59 @@ class _SessionScreenState extends State<SessionScreen>
     _lastTick = Duration.zero;
   });
   void _addTen() => setState(() => _totalSec += 10);
+
+  void _restorePause(bool paused) => setState(() {
+    _paused = paused;
+    _lastTick = Duration.zero;
+  });
+
+  void _onAppResumed() {
+    if (!_resumeOnReturn || !mounted) return;
+    _resumeOnReturn = false;
+    _restorePause(_pausedBeforeMusic);
+  }
+
+  /// Offers a shortcut to the user's music app. The clips are silent and
+  /// mix with other audio, so whatever they start keeps playing.
+  Future<void> _openMusic() async {
+    // Hold the workout while the sheet is up, same as [_confirmExit].
+    final wasPaused = _paused;
+    final onCard = _steps[_index].kind == SessionStepKind.card;
+    setState(() => _paused = true);
+
+    final app = await _showMusicSheet(context);
+    if (!mounted) return;
+    if (app == null) {
+      _restorePause(wasPaused);
+      return;
+    }
+
+    // Armed before launching — the app can be backgrounded before
+    // launchUrl returns. Player steps just stay paused until the user taps
+    // play, so time spent in the music app never moves the workout on.
+    _pausedBeforeMusic = wasPaused;
+    _resumeOnReturn = onCard;
+
+    var opened = false;
+    for (final link in app.links) {
+      try {
+        opened = await launchUrl(
+          Uri.parse(link),
+          mode: LaunchMode.externalApplication,
+        );
+      } catch (_) {
+        opened = false;
+      }
+      if (opened) break;
+    }
+    if (!mounted || opened) return;
+
+    _resumeOnReturn = false;
+    _restorePause(wasPaused);
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text("Couldn't open ${app.label}.")));
+  }
 
   /// Training-tab days use a synthetic day index (10 000+) so we can tell
   /// them apart from 21-day mission days. Progress plumbing routes to the
@@ -351,6 +414,7 @@ class _SessionScreenState extends State<SessionScreen>
                   onSkip: _skip,
                   onPrev: _prev,
                   onAddTen: _addTen,
+                  onMusic: _openMusic,
                   onExit: () async {
                     if (await _confirmExit()) {
                       _ticker.stop();
@@ -373,6 +437,7 @@ class _SessionScreenState extends State<SessionScreen>
                 onPrev: _prev,
                 onNext: _skip,
                 onTogglePause: _togglePause,
+                onMusic: _openMusic,
                 onExit: () async {
                   if (await _confirmExit()) {
                     _ticker.stop();
@@ -401,6 +466,7 @@ class _CardView extends StatelessWidget {
     required this.onSkip,
     required this.onPrev,
     required this.onAddTen,
+    required this.onMusic,
     required this.onExit,
   });
 
@@ -412,6 +478,7 @@ class _CardView extends StatelessWidget {
   final VoidCallback onSkip;
   final VoidCallback onPrev;
   final VoidCallback onAddTen;
+  final VoidCallback onMusic;
   final VoidCallback onExit;
 
   @override
@@ -437,6 +504,12 @@ class _CardView extends StatelessWidget {
                 color: palette.chalk,
               ),
               const Spacer(),
+              IconButton(
+                onPressed: onMusic,
+                tooltip: 'Play music',
+                icon: const Icon(Icons.music_note_rounded, size: 28),
+                color: palette.chalk,
+              ),
             ],
           ),
         ),
@@ -997,6 +1070,7 @@ class _PlayerView extends StatelessWidget {
     required this.onPrev,
     required this.onNext,
     required this.onTogglePause,
+    required this.onMusic,
     required this.onExit,
   });
 
@@ -1014,6 +1088,7 @@ class _PlayerView extends StatelessWidget {
   final VoidCallback onPrev;
   final VoidCallback onNext;
   final VoidCallback onTogglePause;
+  final VoidCallback onMusic;
   final VoidCallback onExit;
 
   @override
@@ -1091,6 +1166,11 @@ class _PlayerView extends StatelessWidget {
                   children: [
                     _CircleGlyph(icon: Icons.close_rounded, onTap: onExit),
                     const Spacer(),
+                    _CircleGlyph(
+                      icon: Icons.music_note_rounded,
+                      tooltip: 'Play music',
+                      onTap: onMusic,
+                    ),
                   ],
                 ),
               ),
@@ -1263,14 +1343,15 @@ class _DashProgressBar extends StatelessWidget {
 }
 
 class _CircleGlyph extends StatelessWidget {
-  const _CircleGlyph({required this.icon, required this.onTap});
+  const _CircleGlyph({required this.icon, required this.onTap, this.tooltip});
   final IconData icon;
   final VoidCallback onTap;
+  final String? tooltip;
 
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
-    return GestureDetector(
+    final glyph = GestureDetector(
       onTap: onTap,
       child: Container(
         width: 40,
@@ -1283,6 +1364,7 @@ class _CircleGlyph extends StatelessWidget {
         child: Icon(icon, color: palette.chalk, size: 22),
       ),
     );
+    return tooltip == null ? glyph : Tooltip(message: tooltip, child: glyph);
   }
 }
 
@@ -1382,6 +1464,86 @@ class _BottomControlBar extends StatelessWidget {
       ),
     );
   }
+}
+
+enum _MusicApp {
+  spotify('Spotify', ['spotify:', 'https://open.spotify.com/']),
+  appleMusic('Apple Music', ['music://', 'https://music.apple.com/']);
+
+  const _MusicApp(this.label, this.links);
+  final String label;
+
+  /// App scheme first, then the web fallback.
+  final List<String> links;
+}
+
+Future<_MusicApp?> _showMusicSheet(BuildContext context) {
+  final palette = context.palette;
+  return showModalBottomSheet<_MusicApp>(
+    context: context,
+    backgroundColor: palette.surface,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+    ),
+    builder: (sheetCtx) {
+      Widget appButton(_MusicApp app) => FilledButton(
+        style: FilledButton.styleFrom(
+          backgroundColor: palette.arctic,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 14),
+        ),
+        onPressed: () => Navigator.of(sheetCtx).pop(app),
+        child: Text(
+          app.label,
+          style: const TextStyle(fontWeight: FontWeight.w800),
+        ),
+      );
+
+      return SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'Play your music',
+                style: TextStyle(
+                  color: palette.chalk,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Start a playlist, then come back — your music keeps playing '
+                'during your workout.',
+                style: TextStyle(
+                  color: palette.mist,
+                  fontSize: 14,
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 20),
+              appButton(_MusicApp.spotify),
+              const SizedBox(height: 10),
+              appButton(_MusicApp.appleMusic),
+              const SizedBox(height: 10),
+              FilledButton(
+                style: FilledButton.styleFrom(
+                  backgroundColor: palette.surfaceHigh,
+                  foregroundColor: palette.chalk,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+                onPressed: () => Navigator.of(sheetCtx).pop(),
+                child: const Text('Back to workout'),
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
 }
 
 const _cycleSyncAd = CrossPromoAd(
