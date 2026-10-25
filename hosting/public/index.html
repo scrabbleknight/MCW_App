@@ -47,18 +47,51 @@
   <small>Free to download</small>
 </main>
 <script>
+/* ve-attribution:start — generated from ViralEngine links/smartlink-snippet.js; edit there and run `node links/sync-snippet.js` */
+// Attribution: where the click came from (?p=<post code> for a tracked post link, ?src=<platform>
+// for a bio link, else the in-app browser it opened in) tags the store links: Apple campaign
+// token `ct` (+ provider token `pt` once set) and Google Play's install referrer (utm_*).
+// The visit is logged to the click logger with time, platform, post code and device type only:
+// no cookies, no IP, no identifiers.
+var VE = (function () {
+  var APP = 'mcw', LOG = 'https://ve-links.pistepath-telemetry-worker.workers.dev/c', PT = '';
+  var q = new URLSearchParams(location.search);
+  var ua = navigator.userAgent || '';
+  var LETTER = { t: 'tiktok', i: 'instagram', f: 'facebook', y: 'youtube' };
+  var ALIAS = { tt: 'tiktok', ig: 'instagram', fb: 'facebook', yt: 'youtube' };
+  var p = (q.get('p') || '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 12);
+  if (!LETTER[p.charAt(0)]) p = '';
+  var raw = (q.get('src') || '').toLowerCase().replace(/[^\w-]/g, '').slice(0, 30);
+  var via = /musical_ly|Bytedance|TikTok|trill_/i.test(ua) ? 'tiktok' : /Instagram/i.test(ua) ? 'instagram'
+    : /FBAN|FBAV|FB_IAB|FBIOS|FB4A/i.test(ua) ? 'facebook' : '';
+  var src = (p && LETTER[p.charAt(0)]) || ALIAS[raw] || (raw !== 'bio' && raw) || via || 'bio';
+  var ct = ('ve_' + src + (p ? '_' + p : '')).slice(0, 40);
+  return {
+    src: src, p: p,
+    referrer: 'utm_source=' + src + '&utm_medium=' + (p ? 'post' : 'bio') + '&utm_campaign=' + (p ? 'p_' + p : 've_bio') + (p ? '&utm_content=' + p : ''),
+    ios: function (href) { return href + (href.indexOf('?') < 0 ? '?' : '&') + 'ct=' + ct + (PT ? '&pt=' + PT + '&mt=8' : ''); },
+    log: function (store) {
+      if (q.get('l')) return; // already logged by the tracked-link redirect
+      // The raw ?src= goes to the logger, which works the platform out the same way (code,
+      // then src, then in-app browser) — so test clicks (?src=selftest) stay recognisable.
+      try { navigator.sendBeacon(LOG, JSON.stringify({ app: APP, src: raw, p: p, store: store })); } catch (e) {}
+    },
+  };
+})();
+/* ve-attribution:end */
 (function () {
   var APPLE_ID = '6809903076';
   var ios = document.getElementById('ios');
   var android = document.getElementById('android');
 
-  // Pass the traffic source through to Google Play's install referrer (?src=tiktok by default).
-  var src = new URLSearchParams(location.search).get('src') || 'tiktok';
-  android.href += '&referrer=' + encodeURIComponent('utm_source=' + src + '&utm_medium=bio');
+  // The traffic source (?src= / ?p= / in-app browser) goes to both stores' attribution.
+  android.href += '&referrer=' + encodeURIComponent(VE.referrer);
+  ios.href = VE.ios(ios.href);
 
   var ua = navigator.userAgent || '';
   var isAndroid = /android/i.test(ua);
   var isIOS = /iphone|ipad|ipod/i.test(ua) || (/macintosh/i.test(ua) && navigator.maxTouchPoints > 1);
+  VE.log(isAndroid ? 'android' : isIOS ? 'ios' : 'web');
 
   // Android: straight to Play.
   if (isAndroid) { location.replace(android.href); return; }
