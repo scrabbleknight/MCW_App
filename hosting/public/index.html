@@ -54,7 +54,7 @@
 // The visit is logged to the click logger with time, platform, post code and device type only:
 // no cookies, no IP, no identifiers.
 var VE = (function () {
-  var APP = 'mcw', LOG = 'https://ve-links.pistepath-telemetry-worker.workers.dev/c', PT = '';
+  var APP = 'mcw', LOG = 'https://ve-links.pistepath-telemetry-worker.workers.dev/c', PT = '120321415';
   var q = new URLSearchParams(location.search);
   var ua = navigator.userAgent || '';
   var LETTER = { t: 'tiktok', i: 'instagram', f: 'facebook', y: 'youtube' };
@@ -65,7 +65,7 @@ var VE = (function () {
   var via = /musical_ly|Bytedance|TikTok|trill_/i.test(ua) ? 'tiktok' : /Instagram/i.test(ua) ? 'instagram'
     : /FBAN|FBAV|FB_IAB|FBIOS|FB4A/i.test(ua) ? 'facebook' : '';
   var src = (p && LETTER[p.charAt(0)]) || ALIAS[raw] || (raw !== 'bio' && raw) || via || 'bio';
-  var ct = ('ve_' + src + (p ? '_' + p : '')).slice(0, 40);
+  var ct = ('ve_' + src + (p ? '_' + p : '')).slice(0, 30); // Apple's campaign limit
   return {
     src: src, p: p,
     referrer: 'utm_source=' + src + '&utm_medium=' + (p ? 'post' : 'bio') + '&utm_campaign=' + (p ? 'p_' + p : 've_bio') + (p ? '&utm_content=' + p : ''),
