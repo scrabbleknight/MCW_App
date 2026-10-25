@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:military_calisthenics_women/core/funnel/analytics_consent_sheet.dart';
+import 'package:military_calisthenics_women/core/funnel/funnel_tracker.dart';
 import 'package:military_calisthenics_women/app/bootstrap_app.dart';
 import 'package:military_calisthenics_women/core/notifications/workout_reminders.dart';
 import 'package:military_calisthenics_women/core/platform/store_platform.dart';
@@ -295,6 +297,21 @@ class _EditPlanScreenState extends State<EditPlanScreen> {
                 onTap: () => _openUrl(
                   context,
                   Uri.parse('https://deepblue.org.uk/privacy-policy'),
+                ),
+              ),
+              _SettingsRow(
+                label: 'Usage Analytics',
+                value: context.watch<FunnelTracker>().consent ==
+                        AnalyticsConsent.granted
+                    ? 'Allowed'
+                    : 'Off',
+                onTap: () => showAnalyticsConsentSheet(
+                  context,
+                  tracker: context.read<FunnelTracker>(),
+                  appName: 'Military Calisthenics',
+                  privacyPolicy:
+                      Uri.parse('https://deepblue.org.uk/privacy-policy'),
+                  force: true,
                 ),
               ),
               _SettingsRow(

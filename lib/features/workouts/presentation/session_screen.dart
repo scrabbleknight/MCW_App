@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:military_calisthenics_women/core/funnel/funnel_tracker.dart';
 import 'package:military_calisthenics_women/core/promo/cross_promo.dart';
 import 'package:military_calisthenics_women/core/review/review_prompt.dart';
 import 'package:military_calisthenics_women/core/theme/tactical_palette.dart';
@@ -201,6 +202,7 @@ class _SessionScreenState extends State<SessionScreen>
   Future<void> _finish() async {
     _ticker.stop();
     if (!mounted) return;
+    context.read<FunnelTracker>().firstCoreAction('workout_complete');
 
     // Grab controllers + trainer/level BEFORE we push the feedback screen so
     // the recording that follows doesn't depend on the current widget context

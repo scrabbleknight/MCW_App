@@ -43,3 +43,9 @@ exports.claimReferralReward = referrals.claimReferralReward;
 exports.checkRewardCodes = referrals.checkRewardCodes;
 exports.applyScheduledRewards = referrals.applyScheduledRewards;
 exports.confirmReferrals = referrals.confirmReferrals;
+
+// Commerce ledger for the funnel: verified purchases and App Store
+// subscription lifecycle (shared code from ViralEngine/funnel-kit).
+const commerce = require('./commerce');
+exports.verifyStorePurchase = commerce.verifyStorePurchase;
+exports.appStoreNotifications = commerce.appStoreNotifications;

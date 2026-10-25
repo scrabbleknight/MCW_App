@@ -7,6 +7,8 @@ import 'package:in_app_purchase_storekit/in_app_purchase_storekit.dart';
 import 'package:in_app_purchase_storekit/store_kit_2_wrappers.dart';
 import 'package:military_calisthenics_women/core/dev/dev_access.dart';
 import 'package:military_calisthenics_women/core/dev/review_access.dart';
+import 'package:military_calisthenics_women/core/funnel/funnel_tracker.dart';
+import 'package:military_calisthenics_women/core/funnel/install_attribution.dart';
 import 'package:military_calisthenics_women/core/platform/store_platform.dart';
 import 'package:military_calisthenics_women/features/paywall/presentation/paywall_step.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -70,6 +72,12 @@ class PurchaseController extends ChangeNotifier {
   /// Called with every purchase the store reports as bought or restored,
   /// after access has been granted. The referral programme listens here.
   void Function(PurchaseDetails purchase)? onPurchase;
+
+  /// Logs purchase attempts and the ones that don't go through.
+  FunnelTracker? funnel;
+
+  /// The product of the purchase sheet currently open, for purchase_failed.
+  String? _buyingProductId;
   bool _storeAvailable = false;
   bool _loaded = false;
   final Completer<void> _ready = Completer<void>();
@@ -275,8 +283,16 @@ class PurchaseController extends ChangeNotifier {
   Future<PurchaseOutcome> purchase(
     PaywallPlan plan, {
     bool friendDiscount = false,
+    String? placement,
   }) async {
-    if (!_storeAvailable) return PurchaseOutcome.storeUnavailable;
+    final attemptId = friendDiscount && !StorePlatform.isAndroid
+        ? _yearlyFriendId
+        : _idFor(plan);
+    funnel?.purchaseAttempt(productId: attemptId, placement: placement);
+    if (!_storeAvailable) {
+      _logFailure(attemptId, PurchaseFailure.storeUnavailable);
+      return PurchaseOutcome.storeUnavailable;
+    }
     if (_pending != null) return PurchaseOutcome.pending;
 
     // Before we launch the platform buy sheet, silently check whether this
@@ -284,21 +300,27 @@ class PurchaseController extends ChangeNotifier {
     // the tap as an instant success — no double-billing, no "you are already
     // subscribed" system alert.
     if (await checkExistingSubscription()) {
+      _logFailure(attemptId, PurchaseFailure.alreadyOwned);
       return PurchaseOutcome.success;
     }
 
     if (friendDiscount && !hasFriendOffer(plan)) {
+      _logFailure(attemptId, PurchaseFailure.productUnavailable);
       return PurchaseOutcome.productNotFound;
     }
     final id = friendDiscount && !StorePlatform.isAndroid
         ? _yearlyFriendId
         : _idFor(plan);
     final product = _products[id];
-    if (product == null) return PurchaseOutcome.productNotFound;
+    if (product == null) {
+      _logFailure(id, PurchaseFailure.productUnavailable);
+      return PurchaseOutcome.productNotFound;
+    }
     final offerToken = friendDiscount
         ? _playFriendOfferTokens[id]
         : _playOfferTokens[id];
     if (StorePlatform.isAndroid && friendDiscount && offerToken == null) {
+      _logFailure(id, PurchaseFailure.productUnavailable);
       return PurchaseOutcome.productNotFound;
     }
 
@@ -307,8 +329,25 @@ class PurchaseController extends ChangeNotifier {
           ? GooglePlayPurchaseParam(
               productDetails: product,
               offerToken: offerToken,
+              // "ve_<post code>" when the install came from a social post's
+              // link, so Play ties the subscription to that post. Play needs
+              // an account id with it: a random per-install one.
+              obfuscatedProfileId:
+                  InstallAttribution.instance.obfuscatedProfileId,
+              applicationUserName:
+                  InstallAttribution.instance.obfuscatedAccountId,
             )
           : PurchaseParam(productDetails: product),
+    );
+  }
+
+  void _logFailure(String? productId, String category) {
+    funnel?.purchaseFailed(
+      // Play's errors don't name the product.
+      productId: productId == null || productId.isEmpty
+          ? _buyingProductId ?? ''
+          : productId,
+      category: category,
     );
   }
 
@@ -342,16 +381,25 @@ class PurchaseController extends ChangeNotifier {
 
   Future<PurchaseOutcome> _buy(PurchaseParam param) async {
     _pending = Completer<PurchaseOutcome>();
+    _buyingProductId = param.productDetails.id;
     notifyListeners();
 
     try {
+      if (kDebugMode && param is GooglePlayPurchaseParam) {
+        debugPrint(
+          '[funnel] Play purchase profile id: ${param.obfuscatedProfileId}, '
+          'account id: ${param.applicationUserName}',
+        );
+      }
       final started = await _iap.buyNonConsumable(purchaseParam: param);
       if (!started) {
+        _logFailure(null, PurchaseFailure.unknown);
         _resolvePending(PurchaseOutcome.failed);
       }
     } catch (error, stack) {
       debugPrint('PurchaseController: buy failed — $error');
       debugPrintStack(stackTrace: stack);
+      _logFailure(null, PurchaseFailure.categorise(error.toString()));
       _resolvePending(PurchaseOutcome.failed);
     }
     return _pending?.future ?? Future.value(PurchaseOutcome.failed);
@@ -421,9 +469,21 @@ class PurchaseController extends ChangeNotifier {
           debugPrint(
             'PurchaseController: transaction error — ${purchase.error}',
           );
+          if (_pending != null) {
+            _logFailure(
+              purchase.productID,
+              PurchaseFailure.categorise(
+                purchase.error?.code,
+                purchase.error?.message,
+              ),
+            );
+          }
           _resolvePending(PurchaseOutcome.failed);
           break;
         case PurchaseStatus.canceled:
+          if (_pending != null) {
+            _logFailure(purchase.productID, PurchaseFailure.cancelled);
+          }
           _resolvePending(PurchaseOutcome.cancelled);
           break;
       }

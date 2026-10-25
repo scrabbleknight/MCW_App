@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:military_calisthenics_women/app/startup_shell.dart';
+import 'package:military_calisthenics_women/core/funnel/analytics_consent_sheet.dart';
+import 'package:military_calisthenics_women/core/funnel/funnel_purchases.dart';
+import 'package:military_calisthenics_women/core/funnel/funnel_tracker.dart';
 import 'package:military_calisthenics_women/core/theme/tactical_palette.dart';
 import 'package:military_calisthenics_women/core/theme/tactical_theme.dart';
 import 'package:military_calisthenics_women/core/theme/theme_controller.dart';
@@ -36,15 +39,37 @@ class McwApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        // The commercial funnel (consent-gated analytics). First, so every
+        // controller below can log to it.
+        ChangeNotifierProvider(
+          create: (_) => FunnelTracker(
+            onboardingVersion: OnboardingScreen.funnelVersion,
+            onboardingStepCount: OnboardingScreen.funnelStepCount,
+          )..load(),
+        ),
+        Provider(
+          create: (ctx) =>
+              FunnelPurchaseReporter(tracker: ctx.read<FunnelTracker>()),
+        ),
         ChangeNotifierProvider(create: (_) => ThemeController()..load()),
         ChangeNotifierProvider(create: (_) => AuthController()..load()),
         ChangeNotifierProvider(create: (_) => OnboardingController()..load()),
         ChangeNotifierProvider(create: (_) => ReferralController()),
         ChangeNotifierProvider(
-          create: (context) => PurchaseController()
-            // Purchases go to the referral server while it's waiting on one.
-            ..onPurchase = context.read<ReferralController>().reportPurchase
-            ..load(),
+          create: (context) {
+            final referrals = context.read<ReferralController>();
+            final funnel = context.read<FunnelTracker>();
+            final reporter = context.read<FunnelPurchaseReporter>();
+            return PurchaseController()
+              ..funnel = funnel
+              ..onPurchase = (purchase) {
+                // Purchases go to the referral server while it's waiting on
+                // one, and always to the commerce ledger.
+                referrals.reportPurchase(purchase);
+                reporter.report(purchase, placement: funnel.gatePlacement);
+              }
+              ..load();
+          },
         ),
         ChangeNotifierProvider(create: (_) => SoundsController()..load()),
         // Not lazy: loading re-registers the scheduled workout reminders on
@@ -119,14 +144,36 @@ class _AppFlowGateState extends State<_AppFlowGate> {
   // when the OS restores the app from the background.
   bool _launchAnimationDone = false;
   bool _bodySeeded = false;
+  bool _consentAsked = false;
+
+  /// People already past onboarding (from before analytics existed) are
+  /// asked once, wherever they land. New users are asked on the welcome
+  /// screen's Get Started (OnboardingScreen).
+  void _askConsentOnce() {
+    if (_consentAsked) return;
+    _consentAsked = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      showAnalyticsConsentSheet(
+        context,
+        tracker: context.read<FunnelTracker>(),
+        appName: 'Military Calisthenics',
+        privacyPolicy: Uri.parse('https://deepblue.org.uk/privacy-policy'),
+      );
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final onboarding = context.watch<OnboardingController>();
     final auth = context.watch<AuthController>();
     final theme = context.watch<ThemeController>();
+    final funnel = context.watch<FunnelTracker>();
 
-    if (!onboarding.isLoaded || !auth.isLoaded || !theme.isLoaded) {
+    if (!onboarding.isLoaded ||
+        !auth.isLoaded ||
+        !theme.isLoaded ||
+        !funnel.isLoaded) {
       return const StartupScaffold(
         title: 'Loading your plan',
         message: 'Restoring your workouts, streak, and progress.',
@@ -158,6 +205,7 @@ class _AppFlowGateState extends State<_AppFlowGate> {
       return const OnboardingScreen();
     }
 
+    if (funnel.consent == AnalyticsConsent.unknown) _askConsentOnce();
     return const _SubscriptionGate();
   }
 }

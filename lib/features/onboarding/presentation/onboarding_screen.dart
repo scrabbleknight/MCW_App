@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:military_calisthenics_women/core/funnel/analytics_consent_sheet.dart';
+import 'package:military_calisthenics_women/core/funnel/funnel_tracker.dart';
 import 'package:military_calisthenics_women/core/onboarding_kit/onboarding_kit.dart';
 import 'package:military_calisthenics_women/features/reminders/application/reminder_controller.dart';
 import 'package:military_calisthenics_women/features/auth/presentation/login_screen.dart';
@@ -57,6 +59,59 @@ import 'package:provider/provider.dart';
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
 
+  /// Funnel analytics: bump [funnelVersion] whenever steps are added,
+  /// removed or reordered (and update [_screenIds] to match the pages).
+  static const funnelVersion = 'v1';
+
+  /// The question screens between the welcome slide and the paywall.
+  static int get funnelStepCount => _paywallIndex - 1;
+
+  /// Analytics code name of each page, in [PageView] order.
+  static const _screenIds = [
+    'welcome',
+    'experience',
+    'pitch',
+    'age',
+    'goal',
+    'testimonials',
+    'achievements',
+    'dream_body',
+    'physical_build',
+    'weight_change',
+    'best_shape',
+    'flexibility',
+    'fitness_level',
+    'stairs',
+    'exercise_frequency',
+    'energy_level',
+    'typical_day',
+    'work_schedule',
+    'workout_preferences',
+    'workout_duration',
+    'energized',
+    'water_intake',
+    'sleep_hours',
+    'meals_per_day',
+    'weight_gain_events',
+    'food_cravings',
+    'eating_habits',
+    'diet_type',
+    'current_weight',
+    'goal_weight',
+    'height',
+    'wellness_profile',
+    'main_reason',
+    'upcoming_event',
+    'trainer_pick',
+    'scientific_plan',
+    'get_notified',
+    'calibration',
+    'plan_preview',
+    'paywall',
+    'squad_welcome',
+  ];
+  static int get _paywallIndex => _screenIds.indexOf('paywall');
+
   @override
   State<OnboardingScreen> createState() => _OnboardingScreenState();
 }
@@ -84,7 +139,43 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   Future<void> _next() => _goTo(_index + 1);
-  Future<void> _back() => _goTo(_index - 1);
+
+  Future<void> _back() {
+    if (_index == OnboardingScreen._paywallIndex) {
+      context.read<FunnelTracker>().paywallDismiss(
+            paywallId: ConnectedPaywall.funnelId,
+            placement: PaywallPlacement.onboarding,
+            method: PaywallDismissMethod.back,
+          );
+    }
+    return _goTo(_index - 1);
+  }
+
+  /// Welcome → first question. Asks for analytics consent first if it
+  /// hasn't been answered (nothing is collected before a yes).
+  Future<void> _getStarted() async {
+    final funnel = context.read<FunnelTracker>();
+    await showAnalyticsConsentSheet(
+      context,
+      tracker: funnel,
+      appName: 'Military Calisthenics',
+      privacyPolicy: Uri.parse('https://deepblue.org.uk/privacy-policy'),
+    );
+    if (!mounted) return;
+    funnel.onboardingStarted();
+    await _next();
+  }
+
+  void _onPageChanged(int index) {
+    setState(() => _index = index);
+    // Question screens only: not the welcome slide, paywall or reveal.
+    if (index >= 1 && index < OnboardingScreen._paywallIndex) {
+      context.read<FunnelTracker>().onboardingStepView(
+            OnboardingScreen._screenIds[index],
+            index - 1,
+          );
+    }
+  }
 
   // ignore: unused_element
   Future<void> _finish() async {
@@ -138,7 +229,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       goal: controller.answerFor<FitnessGoal>('goal'),
       workoutDuration: controller.answerFor<WorkoutDuration>('workout_duration'),
       dailyCalorieTarget: rec.caloriesPerDay,
-      onConfirm: _next,
+      onConfirm: () {
+        // Questions done; the paywall is next.
+        context.read<FunnelTracker>().onboardingComplete();
+        _next();
+      },
       onFeelingChanged: (feeling) =>
           controller.setAnswer('pre_start_feeling', feeling),
     );
@@ -146,6 +241,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   Widget _paywall(OnboardingController controller) {
     return ConnectedPaywall(
+      placement: PaywallPlacement.onboarding,
       onPurchased: (plan) {
         controller.setAnswer('paywall_plan', plan);
         _next();
@@ -208,7 +304,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     return ScientificPlanStep(trainer: trainer, onStart: _next);
   }
 
-  int get _stepCount => 41;
+  int get _stepCount => OnboardingScreen._screenIds.length;
 
   @override
   Widget build(BuildContext context) {
@@ -220,7 +316,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
     final pages = <Widget>[
       WelcomeStep(
-        onContinue: _next,
+        onContinue: _getStarted,
         onLogIn: () => Navigator.of(context).push(
           MaterialPageRoute(builder: (_) => const LoginScreen()),
         ),
@@ -530,6 +626,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       // _StepBody padding, no chrome) so the enlistment moment lands.
       SquadWelcomeStep(onDeploy: _finish),
     ];
+    assert(
+      pages.length == _stepCount,
+      'Every page needs an entry in OnboardingScreen._screenIds',
+    );
 
     return Scaffold(
       body: Stack(
@@ -537,7 +637,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           PageView(
             controller: _pageController,
             physics: const NeverScrollableScrollPhysics(),
-            onPageChanged: (index) => setState(() => _index = index),
+            onPageChanged: _onPageChanged,
             children: pages,
           ),
           // Chrome layer for every non-welcome step. Pointer-transparent
