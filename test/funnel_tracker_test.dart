@@ -112,7 +112,10 @@ void main() {
         ..recordVerified(_purchase('tx1'))
         ..recordVerified(_purchase('tx1'))
         ..recordVerified(_purchase('tx2', event: null))
-        ..recordVerified(_purchase('tx3', isNew: false));
+        ..recordVerified(_purchase('tx3', isNew: false))
+        // Renewals StoreKit replays at launch stay in the server ledger.
+        ..recordVerified(_purchase('tx4', event: 'subscription_renewed'))
+        ..recordVerified(_purchase('tx5', event: 'trial_converted_to_paid'));
       await Future<void>.delayed(Duration.zero);
       expect(sink.events.map((e) => e.$1), ['trial_start']);
       expect(sink.events.single.$2['paid'], 0);

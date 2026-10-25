@@ -367,9 +367,18 @@ class FunnelTracker extends ChangeNotifier {
   /// Logs what the server verified, once per store transaction. Restores
   /// (event null) and transactions the ledger already knew are never logged
   /// as acquisitions.
+  ///
+  /// Only acquisitions (trial_start, purchase_verified) go to analytics.
+  /// StoreKit also hands the app renewals it missed while closed; those stay
+  /// in the server's commerce ledger, which sees every renewal whether or
+  /// not the app is opened.
   void recordVerified(VerifiedPurchase v) {
     final event = v.event;
     if (event == null || !v.isNew || v.transactionId.isEmpty) return;
+    if (event != FunnelEvents.trialStart &&
+        event != FunnelEvents.purchaseVerified) {
+      return;
+    }
     if (_transactions.contains(v.transactionId)) return;
     _transactions.add(v.transactionId);
     if (_transactions.length > 50) _transactions.removeAt(0);
