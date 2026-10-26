@@ -360,7 +360,7 @@ exports.claimReferralReward = onCall(
 );
 
 async function claimApplePromo(uid, reward, plan) {
-  if (plan !== 'weekly' && plan !== 'yearly') {
+  if (plan !== 'monthly' && plan !== 'yearly' && plan !== 'weekly') {
     throw new HttpsError('invalid-argument', 'Unknown plan.');
   }
   const target = IOS_PROMO_OFFERS[reward][plan];

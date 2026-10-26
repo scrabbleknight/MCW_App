@@ -14,7 +14,7 @@ import 'package:military_calisthenics_women/features/paywall/presentation/paywal
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Thin controller around [InAppPurchase]. Boots on app start, queries the
-/// two subscription products from the store, listens to the purchase
+/// subscription products from the store, listens to the purchase
 /// stream, and exposes a Future-per-purchase surface the paywall can await.
 /// [checkAccess] keeps an onboarded user in the app only while the store
 /// says the subscription is live.
@@ -25,12 +25,19 @@ import 'package:shared_preferences/shared_preferences.dart';
 class PurchaseController extends ChangeNotifier {
   // Google Play caps product IDs at 40 characters and bans capitals, so the
   // App Store IDs can't be reused there.
-  static String get _weeklyId => StorePlatform.isAndroid
-      ? 'com.swiftbee.militarycalisthenics.weekly'
-      : 'com.swiftbee.militarycalisthenicswomen.weekly';
+  static String get _monthlyId => StorePlatform.isAndroid
+      ? 'com.swiftbee.militarycalisthenics.monthly'
+      : 'com.swiftbee.militarycalisthenicswomen.monthly';
   static String get _yearlyId => StorePlatform.isAndroid
       ? 'com.swiftbee.militarycalisthenics.annual'
       : 'com.swiftbee.militarycalisthenicswomen.annual';
+
+  /// Weekly is no longer sold (Monthly replaced it), but people who
+  /// subscribed to it still renew. Kept so they're recognised as subscribed
+  /// and the store returns the product their referral rewards are bought on.
+  static String get _weeklyId => StorePlatform.isAndroid
+      ? 'com.swiftbee.militarycalisthenics.weekly'
+      : 'com.swiftbee.militarycalisthenicswomen.weekly';
 
   /// iOS twin of Annual whose introductory offer is the referral friend
   /// discount (50% off the first year). Apple only gives intro offers to new
@@ -43,8 +50,9 @@ class PurchaseController extends ChangeNotifier {
   static const _playFriendOfferId = 'referral-friend';
 
   static Set<String> get _productIds => {
-    _weeklyId,
+    _monthlyId,
     _yearlyId,
+    _weeklyId,
     if (!StorePlatform.isAndroid) _yearlyFriendId,
   };
 
@@ -223,6 +231,7 @@ class PurchaseController extends ChangeNotifier {
   /// The plan of the subscription the store last reported, if any.
   PaywallPlan? get currentPlan => switch (_activeSubscription?.productID) {
     null => null,
+    final id when id == _monthlyId => PaywallPlan.monthly,
     final id when id == _weeklyId => PaywallPlan.weekly,
     _ => PaywallPlan.yearly,
   };
@@ -234,7 +243,7 @@ class PurchaseController extends ChangeNotifier {
 
   /// Whether buying [plan] starts with a free trial for this user. Before the
   /// store has returned the product, assume the trial the stores are set up
-  /// with: the yearly plan has one, the weekly plan doesn't.
+  /// with: the yearly plan has one, the monthly plan doesn't.
   bool hasFreeTrial(PaywallPlan plan) {
     final id = _idFor(plan);
     if (!_products.containsKey(id)) return plan == PaywallPlan.yearly;
@@ -353,7 +362,8 @@ class PurchaseController extends ChangeNotifier {
 
   /// iOS: buys the plan an Apple promotional offer the server signed for a
   /// referral reward is for. That's usually the user's own plan, but the
-  /// half-price year is always Annual, so a Weekly subscriber upgrades. The
+  /// half-price year is always Annual, so a Monthly (or legacy Weekly)
+  /// subscriber upgrades. The
   /// user is usually subscribed already, so this skips the
   /// existing-subscription check.
   Future<PurchaseOutcome> purchaseWithPromotionalOffer(
@@ -588,14 +598,16 @@ class PurchaseController extends ChangeNotifier {
   }
 
   String _idFor(PaywallPlan plan) => switch (plan) {
-    PaywallPlan.weekly => _weeklyId,
+    PaywallPlan.monthly => _monthlyId,
     PaywallPlan.yearly => _yearlyId,
+    PaywallPlan.weekly => _weeklyId,
   };
 
   bool _isSubscription(String productId) =>
-      productId == _weeklyId ||
+      productId == _monthlyId ||
       productId == _yearlyId ||
-      productId == _yearlyFriendId;
+      productId == _yearlyFriendId ||
+      productId == _weeklyId;
 
   @override
   void dispose() {

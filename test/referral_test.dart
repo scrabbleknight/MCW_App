@@ -92,6 +92,18 @@ void main() {
       }
     });
 
+    testWidgets('offers Monthly and Yearly at the UK prices until the store '
+        'answers', (tester) async {
+      await tester.pumpWidget(paywall());
+      expect(find.text('Monthly Plan'), findsOneWidget);
+      expect(find.text('£14.99/mo'), findsOneWidget);
+      expect(find.text('Yearly Plan'), findsOneWidget);
+      expect(find.text('£49.99/yr'), findsOneWidget);
+      // £49.99 against 12 × £14.99 = £179.88.
+      expect(find.text('SAVE 72%'), findsOneWidget);
+      expect(find.textContaining('Weekly'), findsNothing);
+    });
+
     testWidgets('shows the invite card with all three rewards', (tester) async {
       await tester.pumpWidget(paywall());
       expect(find.text('Invite friends, get it free'), findsOneWidget);
@@ -129,7 +141,7 @@ void main() {
         ),
       );
       expect(
-        find.text('50% off your first year, then £59.99 per year'),
+        find.text('50% off your first year, then £49.99 per year'),
         findsOneWidget,
       );
       expect(find.text('50% OFF'), findsOneWidget);
@@ -149,16 +161,16 @@ void main() {
         paywall(
           friendCode: 'XYZ789',
           yearlyFriendOffer: true,
-          yearlyFriendPrice: '£29.99',
+          yearlyFriendPrice: '£24.99',
         ),
       );
       expect(
-        find.text('£29.99 for your first year, then £59.99 per year'),
+        find.text('£24.99 for your first year, then £49.99 per year'),
         findsOneWidget,
       );
     });
 
-    testWidgets('Weekly never gets the discount', (tester) async {
+    testWidgets('Monthly never gets the discount', (tester) async {
       bool? boughtWithDiscount;
       await tester.pumpWidget(
         paywall(
@@ -167,7 +179,7 @@ void main() {
           onBuy: (_, discount) => boughtWithDiscount = discount,
         ),
       );
-      await tester.tap(find.text('Weekly Plan'));
+      await tester.tap(find.text('Monthly Plan'));
       await tester.pump();
       await tester.scrollUntilVisible(find.text('GET STARTED'), 200);
       await tester.tap(find.text('GET STARTED'));

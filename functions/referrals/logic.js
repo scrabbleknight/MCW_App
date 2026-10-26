@@ -35,7 +35,10 @@ function normalizeCode(input) {
   return code;
 }
 
-/** 'weekly' or 'yearly' for a standard or friend subscription, else null. */
+/**
+ * 'monthly', 'yearly' or (retired) 'weekly' for a standard or friend
+ * subscription, else null.
+ */
 function planForProduct(platform, productId) {
   for (const products of [SUBSCRIPTIONS[platform], FRIEND_OFFER[platform]]) {
     if (!products) continue;

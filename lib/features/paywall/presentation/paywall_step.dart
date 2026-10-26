@@ -5,7 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:military_calisthenics_women/core/platform/store_platform.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-/// Final onboarding step — a hard paywall. Presents two plans (weekly and
+/// Final onboarding step — a hard paywall. Presents two plans (monthly and
 /// annual, with a free-trial CTA) and gates the app until the user picks.
 /// No sticky "skip"; the small X in the corner is optional and off by
 /// default (parent decides whether to allow dismissal). A friend's referral
@@ -16,7 +16,7 @@ class PaywallStep extends StatefulWidget {
     required this.onPurchase,
     this.onClose,
     this.onRestore,
-    this.weeklyPrice,
+    this.monthlyPrice,
     this.yearlyPrice,
     this.yearlyHasTrial = true,
     this.trialDays = 3,
@@ -50,7 +50,7 @@ class PaywallStep extends StatefulWidget {
   /// Store prices for each plan. Until both arrive the paywall shows the UK
   /// prices, so it never mixes a store price with a fallback in another
   /// currency.
-  final PlanPrice? weeklyPrice;
+  final PlanPrice? monthlyPrice;
   final PlanPrice? yearlyPrice;
 
   /// False when the store says this user has already had the yearly free
@@ -94,13 +94,16 @@ class _PaywallStepState extends State<PaywallStep> {
 
   // Shown until the store answers, or when it can't be reached. These match
   // the UK prices in App Store Connect and Play Console.
-  static const PlanPrice _fallbackWeekly = (formatted: '£6.99', amount: 6.99);
-  static const PlanPrice _fallbackYearly = (formatted: '£59.99', amount: 59.99);
+  static const PlanPrice _fallbackMonthly = (
+    formatted: '£14.99',
+    amount: 14.99,
+  );
+  static const PlanPrice _fallbackYearly = (formatted: '£49.99', amount: 49.99);
 
   bool get _hasStorePrices =>
-      widget.weeklyPrice != null && widget.yearlyPrice != null;
-  PlanPrice get _weekly =>
-      _hasStorePrices ? widget.weeklyPrice! : _fallbackWeekly;
+      widget.monthlyPrice != null && widget.yearlyPrice != null;
+  PlanPrice get _monthly =>
+      _hasStorePrices ? widget.monthlyPrice! : _fallbackMonthly;
   PlanPrice get _yearly =>
       _hasStorePrices ? widget.yearlyPrice! : _fallbackYearly;
 
@@ -124,12 +127,12 @@ class _PaywallStepState extends State<PaywallStep> {
       ? '50% off your first year'
       : '${widget.yearlyFriendPrice} for your first year';
 
-  /// How much cheaper a year on the annual plan is than 52 weeks of the
-  /// weekly plan, rounded down so the badge never overstates it.
+  /// How much cheaper a year on the annual plan is than 12 months of the
+  /// monthly plan, rounded down so the badge never overstates it.
   String? get _savingsBadge {
-    final weeklyForAYear = _weekly.amount * 52;
-    if (weeklyForAYear <= 0) return null;
-    final percent = ((1 - _yearly.amount / weeklyForAYear) * 100).floor();
+    final monthlyForAYear = _monthly.amount * 12;
+    if (monthlyForAYear <= 0) return null;
+    final percent = ((1 - _yearly.amount / monthlyForAYear) * 100).floor();
     return percent > 0 ? 'SAVE $percent%' : null;
   }
 
@@ -271,11 +274,11 @@ class _PaywallStepState extends State<PaywallStep> {
           ),
           SizedBox(height: gapSm),
           _PlanCard(
-            label: 'Weekly Plan',
-            price: '${_weekly.formatted}/wk',
-            plan: PaywallPlan.weekly,
-            selected: _selected == PaywallPlan.weekly,
-            onTap: () => setState(() => _selected = PaywallPlan.weekly),
+            label: 'Monthly Plan',
+            price: '${_monthly.formatted}/mo',
+            plan: PaywallPlan.monthly,
+            selected: _selected == PaywallPlan.monthly,
+            onTap: () => setState(() => _selected = PaywallPlan.monthly),
           ),
           if (widget.friendCode != null)
             _FriendCodeRow(
@@ -324,7 +327,14 @@ class _PaywallStepState extends State<PaywallStep> {
   }
 }
 
-enum PaywallPlan { weekly, yearly }
+enum PaywallPlan {
+  monthly,
+  yearly,
+
+  /// No longer sold: Monthly replaced it. Only ever the plan of an existing
+  /// subscriber, so their referral rewards apply to the right product.
+  weekly,
+}
 
 /// A plan's price: [formatted] for display (currency symbol included) and
 /// [amount] in that currency for working out savings.

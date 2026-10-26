@@ -80,7 +80,7 @@ class _ConnectedPaywallState extends State<ConnectedPaywall>
     // Rebuild when the store's prices, trial eligibility and friend offer
     // arrive, but not on every purchase state change.
     final (
-      weeklyPrice,
+      monthlyPrice,
       yearlyPrice,
       yearlyHasTrial,
       yearlyFriendOffer,
@@ -88,7 +88,7 @@ class _ConnectedPaywallState extends State<ConnectedPaywall>
       friendIneligible,
     ) = context.select(
       (PurchaseController p) => (
-        p.priceFor(PaywallPlan.weekly),
+        p.priceFor(PaywallPlan.monthly),
         p.priceFor(PaywallPlan.yearly),
         p.hasFreeTrial(PaywallPlan.yearly),
         p.hasFriendOffer(PaywallPlan.yearly),
@@ -101,7 +101,7 @@ class _ConnectedPaywallState extends State<ConnectedPaywall>
           r.hasFriendDiscount ? r.status!.friendDiscount!.code : null,
     );
     return PaywallStep(
-      weeklyPrice: weeklyPrice,
+      monthlyPrice: monthlyPrice,
       yearlyPrice: yearlyPrice,
       yearlyHasTrial: yearlyHasTrial,
       friendCode: friendCode,

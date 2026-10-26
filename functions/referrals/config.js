@@ -25,21 +25,27 @@ const TIERS = [
  */
 const REFERRAL_HOLD_DAYS = 14;
 
-/** The standard subscriptions, keyed by plan, per store. */
+/**
+ * The standard subscriptions, keyed by plan, per store. Weekly is no longer
+ * sold (Monthly replaced it 2026-10-26) but stays here so existing weekly
+ * subscribers still count and can claim their rewards.
+ */
 const SUBSCRIPTIONS = {
   ios: {
-    weekly: 'com.swiftbee.militarycalisthenicswomen.weekly',
+    monthly: 'com.swiftbee.militarycalisthenicswomen.monthly',
     yearly: 'com.swiftbee.militarycalisthenicswomen.annual',
+    weekly: 'com.swiftbee.militarycalisthenicswomen.weekly',
   },
   android: {
-    weekly: 'com.swiftbee.militarycalisthenics.weekly',
+    monthly: 'com.swiftbee.militarycalisthenics.monthly',
     yearly: 'com.swiftbee.militarycalisthenics.annual',
+    weekly: 'com.swiftbee.militarycalisthenics.weekly',
   },
 };
 
 /**
- * The friend's discount: 50% off the first year of Annual. Weekly has no
- * friend discount (Apple caps weekly intro discounts at 12 weeks).
+ * The friend's discount: 50% off the first year of Annual. Monthly (and the
+ * retired Weekly) has no friend discount.
  *
  * iOS: Apple only gives introductory offers to new subscribers, and
  * promotional offers only to existing ones, so the friend buys a twin of
@@ -61,16 +67,18 @@ const FRIEND_OFFER = {
  * for each reward and the plan the referrer is on, the standard plan to buy
  * and the offer to buy it with. A referrer on the friend twin moves to the
  * standard Annual. Half price for a year is always a year of Annual, so a
- * Weekly subscriber claiming it upgrades to Annual at half price.
+ * Monthly or Weekly subscriber claiming it upgrades to Annual at half price.
  */
 const IOS_PROMO_OFFERS = {
   half_1y: {
-    weekly: { plan: 'yearly', offerId: 'ref_half1y_annual' },
+    monthly: { plan: 'yearly', offerId: 'ref_half1y_annual' },
     yearly: { plan: 'yearly', offerId: 'ref_half1y_annual' },
+    weekly: { plan: 'yearly', offerId: 'ref_half1y_annual' },
   },
   free_1y: {
-    weekly: { plan: 'weekly', offerId: 'ref_free1y_weekly' },
+    monthly: { plan: 'monthly', offerId: 'ref_free1y_monthly' },
     yearly: { plan: 'yearly', offerId: 'ref_free1y_annual' },
+    weekly: { plan: 'weekly', offerId: 'ref_free1y_weekly' },
   },
 };
 

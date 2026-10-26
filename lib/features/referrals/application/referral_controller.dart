@@ -108,8 +108,9 @@ class ReferralController extends ChangeNotifier {
     final result = await _call('claimReferralReward', {
       'reward': reward.id,
       'plan': ?switch (plan) {
-        PaywallPlan.weekly => 'weekly',
+        PaywallPlan.monthly => 'monthly',
         PaywallPlan.yearly => 'yearly',
+        PaywallPlan.weekly => 'weekly',
         null => null,
       },
       'verificationData': ?verificationData,

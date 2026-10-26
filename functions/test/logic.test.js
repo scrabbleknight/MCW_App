@@ -56,7 +56,11 @@ test('only the friend discount counts as a friend purchase', () => {
 });
 
 test('plans are found for standard and friend products', () => {
+  assert.equal(logic.planForProduct('ios', 'com.swiftbee.militarycalisthenicswomen.monthly'), 'monthly');
+  assert.equal(logic.planForProduct('android', 'com.swiftbee.militarycalisthenics.monthly'), 'monthly');
+  // Weekly is no longer sold, but existing weekly subscribers still count.
   assert.equal(logic.planForProduct('ios', 'com.swiftbee.militarycalisthenicswomen.weekly'), 'weekly');
+  assert.equal(logic.planForProduct('android', 'com.swiftbee.militarycalisthenics.weekly'), 'weekly');
   assert.equal(logic.planForProduct('ios', 'com.swiftbee.militarycalisthenicswomen.annual.friend'), 'yearly');
   assert.equal(logic.planForProduct('android', 'com.swiftbee.militarycalisthenics.annual'), 'yearly');
   assert.equal(logic.planForProduct('android', 'com.swiftbee.militarycalisthenicswomen.annual'), null);
@@ -64,6 +68,7 @@ test('plans are found for standard and friend products', () => {
 
 test('promotional offer ids map back to their reward', () => {
   assert.equal(logic.rewardForPromoOffer('ref_half1y_annual'), 'half_1y');
+  assert.equal(logic.rewardForPromoOffer('ref_free1y_monthly'), 'free_1y');
   assert.equal(logic.rewardForPromoOffer('ref_free1y_weekly'), 'free_1y');
   assert.equal(logic.rewardForPromoOffer('something_else'), null);
 });
