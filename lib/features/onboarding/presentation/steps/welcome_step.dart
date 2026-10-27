@@ -2,6 +2,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:military_calisthenics_women/core/funnel/analytics_consent_sheet.dart';
 import 'package:military_calisthenics_women/core/onboarding_kit/onboarding_kit.dart';
 import 'package:military_calisthenics_women/core/theme/tactical_palette.dart';
 
@@ -63,41 +64,46 @@ class WelcomeStep extends StatelessWidget {
         fit: BoxFit.cover,
         alignment: Alignment.center,
       ),
-      termsRich: Text.rich(
-        TextSpan(
-          text: 'By continuing you agree to the ',
-          style: text.bodySmall?.copyWith(color: context.palette.muted),
-          children: [
-            TextSpan(
-              text: 'Privacy Policy',
-              style: text.bodySmall?.copyWith(
-                color: context.palette.arcticSoft,
-                decoration: TextDecoration.underline,
-                decorationColor: context.palette.arcticSoft,
+      // The (i) says what analytics is for; Start Now turns it on.
+      termsRich: AnalyticsSmallPrint(
+        privacyPolicy: Uri.parse('https://deepblue.org.uk/privacy-policy'),
+        color: context.palette.muted,
+        child: Text.rich(
+          TextSpan(
+            text: 'By continuing you agree to the ',
+            style: text.bodySmall?.copyWith(color: context.palette.muted),
+            children: [
+              TextSpan(
+                text: 'Privacy Policy',
+                style: text.bodySmall?.copyWith(
+                  color: context.palette.arcticSoft,
+                  decoration: TextDecoration.underline,
+                  decorationColor: context.palette.arcticSoft,
+                ),
+                recognizer: TapGestureRecognizer()
+                  ..onTap = () => launchUrl(
+                        Uri.parse('https://deepblue.org.uk/privacy-policy'),
+                        mode: LaunchMode.externalApplication,
+                      ),
               ),
-              recognizer: TapGestureRecognizer()
-                ..onTap = () => launchUrl(
-                      Uri.parse('https://deepblue.org.uk/privacy-policy'),
-                      mode: LaunchMode.externalApplication,
-                    ),
-            ),
-            const TextSpan(text: ' and '),
-            TextSpan(
-              text: 'Terms of Use',
-              style: text.bodySmall?.copyWith(
-                color: context.palette.arcticSoft,
-                decoration: TextDecoration.underline,
-                decorationColor: context.palette.arcticSoft,
+              const TextSpan(text: ' and '),
+              TextSpan(
+                text: 'Terms of Use',
+                style: text.bodySmall?.copyWith(
+                  color: context.palette.arcticSoft,
+                  decoration: TextDecoration.underline,
+                  decorationColor: context.palette.arcticSoft,
+                ),
+                recognizer: TapGestureRecognizer()
+                  ..onTap = () => launchUrl(
+                        Uri.parse('https://deepblue.org.uk/terms-of-use'),
+                        mode: LaunchMode.externalApplication,
+                      ),
               ),
-              recognizer: TapGestureRecognizer()
-                ..onTap = () => launchUrl(
-                      Uri.parse('https://deepblue.org.uk/terms-of-use'),
-                      mode: LaunchMode.externalApplication,
-                    ),
-            ),
-          ],
+            ],
+          ),
+          textAlign: TextAlign.center,
         ),
-        textAlign: TextAlign.center,
       ),
     );
   }

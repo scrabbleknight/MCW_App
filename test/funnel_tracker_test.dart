@@ -64,6 +64,32 @@ void main() {
     ]);
   });
 
+  test(
+    'continuing from Welcome turns analytics on, unless Settings said no',
+    () async {
+      final (t, sink) = await _tracker();
+      await t.acceptByContinuing();
+      expect(t.consent, AnalyticsConsent.granted);
+      expect(sink.enabled, [true]);
+
+      final (off, offSink) = await _tracker({'funnel.consent.v1': 'denied'});
+      await off.acceptByContinuing();
+      expect(off.consent, AnalyticsConsent.denied);
+      expect(offSink.enabled, isEmpty);
+    },
+  );
+
+  test('acquisition survey sends known platforms only', () async {
+    final (t, sink) = await _tracker({'funnel.consent.v1': 'granted'});
+    t.acquisitionSurvey('tiktok');
+    t.acquisitionSurvey('my mate Dave on a podcast');
+    await Future<void>.delayed(Duration.zero);
+    expect(sink.events.map((e) => (e.$1, e.$2['source'])), [
+      ('acquisition_survey', 'tiktok'),
+      ('acquisition_survey', 'other'),
+    ]);
+  });
+
   test('a no discards what waited and sends nothing later', () async {
     final (t, sink) = await _tracker();
     t.onboardingStepView('first', 0);

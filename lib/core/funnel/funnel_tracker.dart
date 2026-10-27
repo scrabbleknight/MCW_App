@@ -34,6 +34,7 @@ abstract final class FunnelEvents {
   static const subscriptionCancelled = 'subscription_cancelled';
   static const subscriptionExpired = 'subscription_expired';
   static const firstCoreAction = 'first_core_action';
+  static const acquisitionSurvey = 'acquisition_survey';
 }
 
 /// Where a paywall was shown.
@@ -288,6 +289,12 @@ class FunnelTracker extends ChangeNotifier {
     }
   }
 
+  /// Going on from Welcome, whose small print says analytics is on
+  /// ([AnalyticsSmallPrint]). Keeps an answer already given in Settings.
+  Future<void> acceptByContinuing() async {
+    if (_consent == AnalyticsConsent.unknown) await setConsent(true);
+  }
+
   /// The app-instance id to send with a purchase check, only with consent.
   Future<String?> appInstanceIdIfConsented() async =>
       canCollect ? _sink.appInstanceId() : null;
@@ -398,6 +405,36 @@ class FunnelTracker extends ChangeNotifier {
   void firstCoreAction(String action) {
     if (!_firstTime(FunnelEvents.firstCoreAction)) return;
     _log(FunnelEvents.firstCoreAction, {'action': action});
+  }
+
+  // ------------------------------------------------------- acquisition ---
+
+  /// The platform ids "How did you find us?" may send. ViralEngine's
+  /// platform names where there is one, so the answer lines up with its
+  /// per-post attribution.
+  static const acquisitionSources = {
+    'tiktok',
+    'instagram',
+    'facebook',
+    'youtube',
+    'pinterest',
+    'snapchat',
+    'google',
+    'app_store',
+    'google_play',
+    'friends',
+    'other',
+  };
+
+  /// The user's own answer to "How did you find us?". Only a known platform
+  /// id is sent: anything else (and never the "Other" text) becomes
+  /// `other`. Logged each time the question is answered; reports use the
+  /// latest per user.
+  void acquisitionSurvey(String source) {
+    _log(FunnelEvents.acquisitionSurvey, {
+      'source': acquisitionSources.contains(source) ? source : 'other',
+      'onboarding_version': onboardingVersion,
+    });
   }
 
   // ---------------------------------------------------------- plumbing ---

@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:military_calisthenics_women/core/funnel/analytics_consent_sheet.dart';
 import 'package:military_calisthenics_women/core/funnel/funnel_tracker.dart';
 import 'package:military_calisthenics_women/core/onboarding_kit/onboarding_kit.dart';
 import 'package:military_calisthenics_women/features/reminders/application/reminder_controller.dart';
@@ -151,16 +150,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     return _goTo(_index - 1);
   }
 
-  /// Welcome → first question. Asks for analytics consent first if it
-  /// hasn't been answered (nothing is collected before a yes).
+  /// Welcome → first question. Going on turns analytics on, as Welcome's
+  /// small print says, unless it was turned off in Settings. Nothing is
+  /// collected before this.
   Future<void> _getStarted() async {
     final funnel = context.read<FunnelTracker>();
-    await showAnalyticsConsentSheet(
-      context,
-      tracker: funnel,
-      appName: 'Military Calisthenics',
-      privacyPolicy: Uri.parse('https://deepblue.org.uk/privacy-policy'),
-    );
+    await funnel.acceptByContinuing();
     if (!mounted) return;
     funnel.onboardingStarted();
     await _next();
@@ -317,9 +312,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     final pages = <Widget>[
       WelcomeStep(
         onContinue: _getStarted,
-        onLogIn: () => Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const LoginScreen()),
-        ),
+        onLogIn: () {
+          // Going on to log in also accepts Welcome's small print.
+          context.read<FunnelTracker>().acceptByContinuing();
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const LoginScreen()),
+          );
+        },
       ),
       _StepBody(
         child: ExperienceStep(

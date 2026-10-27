@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:military_calisthenics_women/app/startup_shell.dart';
-import 'package:military_calisthenics_women/core/funnel/analytics_consent_sheet.dart';
 import 'package:military_calisthenics_women/core/funnel/funnel_purchases.dart';
 import 'package:military_calisthenics_women/core/funnel/funnel_tracker.dart';
 import 'package:military_calisthenics_women/core/theme/tactical_palette.dart';
@@ -144,24 +143,6 @@ class _AppFlowGateState extends State<_AppFlowGate> {
   // when the OS restores the app from the background.
   bool _launchAnimationDone = false;
   bool _bodySeeded = false;
-  bool _consentAsked = false;
-
-  /// People already past onboarding (from before analytics existed) are
-  /// asked once, wherever they land. New users are asked on the welcome
-  /// screen's Get Started (OnboardingScreen).
-  void _askConsentOnce() {
-    if (_consentAsked) return;
-    _consentAsked = true;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      showAnalyticsConsentSheet(
-        context,
-        tracker: context.read<FunnelTracker>(),
-        appName: 'Military Calisthenics',
-        privacyPolicy: Uri.parse('https://deepblue.org.uk/privacy-policy'),
-      );
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -205,7 +186,6 @@ class _AppFlowGateState extends State<_AppFlowGate> {
       return const OnboardingScreen();
     }
 
-    if (funnel.consent == AnalyticsConsent.unknown) _askConsentOnce();
     return const _SubscriptionGate();
   }
 }
