@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:military_calisthenics_women/core/deepblue/deepblue_sign_in_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:military_calisthenics_women/core/platform/store_platform.dart';
@@ -320,6 +321,7 @@ class _PaywallStepState extends State<PaywallStep> {
               isBusy: _restoring,
             ),
           ],
+          const DeepBlueSignInButton(),
           SizedBox(height: tight ? 12 : 24),
         ],
       ),

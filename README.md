@@ -22,7 +22,7 @@ store's price once it loads; its fallback matches these.
 
 | Plan | iOS product | Android product | Price |
 |---|---|---|---|
-| Monthly | `com.swiftbee.militarycalisthenicswomen.monthly` | `com.swiftbee.militarycalisthenics.monthly` | £14.99 / month (US $19.99), no trial |
+| Monthly | `com.swiftbee.militarycalisthenicswomen.monthly` | `com.swiftbee.militarycalisthenics.month` | £14.99 / month (US $19.99), no trial |
 | Yearly | `com.swiftbee.militarycalisthenicswomen.annual` | `com.swiftbee.militarycalisthenics.annual` | £49.99 / year (US $64.99), free trial unchanged |
 | Yearly, friend twin (iOS) | `com.swiftbee.militarycalisthenicswomen.annual.friend` | `referral-friend` offer on the annual base plan | 50% off the first year (£24.99), then £49.99 |
 | Weekly (no longer sold) | `com.swiftbee.militarycalisthenicswomen.weekly` | `com.swiftbee.militarycalisthenics.weekly` | Existing subscribers only |

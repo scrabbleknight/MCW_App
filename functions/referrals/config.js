@@ -37,7 +37,7 @@ const SUBSCRIPTIONS = {
     weekly: 'com.swiftbee.militarycalisthenicswomen.weekly',
   },
   android: {
-    monthly: 'com.swiftbee.militarycalisthenics.monthly',
+    monthly: 'com.swiftbee.militarycalisthenics.month',
     yearly: 'com.swiftbee.militarycalisthenics.annual',
     weekly: 'com.swiftbee.militarycalisthenics.weekly',
   },

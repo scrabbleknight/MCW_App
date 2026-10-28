@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:military_calisthenics_women/core/deepblue/deepblue_membership.dart';
 import 'package:flutter/foundation.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:in_app_purchase_android/in_app_purchase_android.dart';
@@ -26,7 +27,7 @@ class PurchaseController extends ChangeNotifier {
   // Google Play caps product IDs at 40 characters and bans capitals, so the
   // App Store IDs can't be reused there.
   static String get _monthlyId => StorePlatform.isAndroid
-      ? 'com.swiftbee.militarycalisthenics.monthly'
+      ? 'com.swiftbee.militarycalisthenics.month'
       : 'com.swiftbee.militarycalisthenicswomen.monthly';
   static String get _yearlyId => StorePlatform.isAndroid
       ? 'com.swiftbee.militarycalisthenics.annual'
@@ -129,9 +130,21 @@ class PurchaseController extends ChangeNotifier {
 
   /// Whether a user who has finished onboarding may use the app. The store
   /// review account and developer builds always may.
-  AppAccess get access => ReviewAccess.isReviewAccount || DevAccess.isDeveloper
+  AppAccess get access =>
+      ReviewAccess.isReviewAccount ||
+          DevAccess.isDeveloper ||
+          hasPremium(
+            individualAppPurchase: _access == AppAccess.allowed,
+            deepBlueMembership: _deepBlue.hasAccess,
+          )
       ? AppAccess.allowed
       : _access;
+
+  /// Premium from DeepBlue All Access rather than this app's own
+  /// subscription.
+  bool get viaDeepBlue => _access != AppAccess.allowed && _deepBlue.hasAccess;
+
+  final _deepBlue = DeepBlueMembership.instance;
 
   /// Asks the store whether the subscription is still active and updates
   /// [access]. Opens straight away for anyone confirmed within
@@ -174,6 +187,7 @@ class PurchaseController extends ChangeNotifier {
         _access = withinGrace ? AppAccess.allowed : AppAccess.needsConnection;
       }
       _accessCheckedAt = DateTime.now();
+      unawaited(_deepBlue.refresh());
     } finally {
       _accessCheckInFlight = false;
       notifyListeners();
@@ -280,6 +294,9 @@ class PurchaseController extends ChangeNotifier {
     } finally {
       _loaded = true;
       if (!_ready.isCompleted) _ready.complete();
+      // A DeepBlue All Access membership unlocks the same premium.
+      _deepBlue.addListener(notifyListeners);
+      unawaited(_deepBlue.init());
       notifyListeners();
     }
   }
@@ -611,6 +628,7 @@ class PurchaseController extends ChangeNotifier {
 
   @override
   void dispose() {
+    _deepBlue.removeListener(notifyListeners);
     _sub?.cancel();
     super.dispose();
   }

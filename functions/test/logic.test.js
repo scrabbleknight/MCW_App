@@ -57,7 +57,7 @@ test('only the friend discount counts as a friend purchase', () => {
 
 test('plans are found for standard and friend products', () => {
   assert.equal(logic.planForProduct('ios', 'com.swiftbee.militarycalisthenicswomen.monthly'), 'monthly');
-  assert.equal(logic.planForProduct('android', 'com.swiftbee.militarycalisthenics.monthly'), 'monthly');
+  assert.equal(logic.planForProduct('android', 'com.swiftbee.militarycalisthenics.month'), 'monthly');
   // Weekly is no longer sold, but existing weekly subscribers still count.
   assert.equal(logic.planForProduct('ios', 'com.swiftbee.militarycalisthenicswomen.weekly'), 'weekly');
   assert.equal(logic.planForProduct('android', 'com.swiftbee.militarycalisthenics.weekly'), 'weekly');
