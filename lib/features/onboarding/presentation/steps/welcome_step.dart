@@ -3,8 +3,25 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:military_calisthenics_women/core/funnel/analytics_consent_sheet.dart';
+import 'package:military_calisthenics_women/core/funnel/funnel_tracker.dart';
 import 'package:military_calisthenics_women/core/onboarding_kit/onboarding_kit.dart';
 import 'package:military_calisthenics_women/core/theme/tactical_palette.dart';
+
+/// Whether this phone's region (EU/EEA, or none) needs people to agree
+/// before analytics starts ([AnalyticsAgreement.needed]). Read through the
+/// binding, which is the same dispatcher in the app and the one widget
+/// tests can set a region on.
+bool welcomeNeedsAgreement() => AnalyticsAgreement.needed(
+  WidgetsBinding.instance.platformDispatcher.locale.countryCode ?? '',
+);
+
+/// Welcome's button, which goes on and turns analytics on. In the EU/EEA
+/// it says so: "AGREE AND CONTINUE" (upper-case like the app's other
+/// buttons). Elsewhere it keeps "Start Now".
+String welcomeCtaLabel({bool? agreementNeeded}) =>
+    (agreementNeeded ?? welcomeNeedsAgreement())
+    ? 'AGREE AND CONTINUE'
+    : 'Start Now';
 
 class WelcomeStep extends StatelessWidget {
   const WelcomeStep({
@@ -46,7 +63,7 @@ class WelcomeStep extends StatelessWidget {
       tagline: 'Build strength at any level—one step at a time.',
       statHeadline: '25 Million+',
       statCaption: 'Women started their strength journey with us.',
-      primaryCtaLabel: 'Start Now',
+      primaryCtaLabel: welcomeCtaLabel(),
       onPrimaryCta: onContinue,
       onLogIn: onLogIn,
       overlayColor: context.palette.abyss,
@@ -64,7 +81,7 @@ class WelcomeStep extends StatelessWidget {
         fit: BoxFit.cover,
         alignment: Alignment.center,
       ),
-      // The (i) says what analytics is for; Start Now turns it on.
+      // The (i) says what analytics is for; the button turns it on.
       termsRich: AnalyticsSmallPrint(
         privacyPolicy: Uri.parse('https://deepblue.org.uk/privacy-policy'),
         color: context.palette.muted,

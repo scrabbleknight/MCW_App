@@ -27,7 +27,15 @@ class PrimaryCta extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(label),
+            // Same size and style; a label too long for a narrow phone
+            // (e.g. "AGREE AND CONTINUE") shrinks to fit instead of
+            // overflowing.
+            Flexible(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(label, maxLines: 1, softWrap: false),
+              ),
+            ),
             if (trailingIcon != null) ...[
               const SizedBox(width: 10),
               Icon(trailingIcon, size: 20),

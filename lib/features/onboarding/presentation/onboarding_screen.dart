@@ -334,8 +334,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       WelcomeStep(
         onContinue: _getStarted,
         onLogIn: () {
-          // Going on to log in also accepts Welcome's small print.
-          context.read<FunnelTracker>().acceptByContinuing();
+          // Going on to log in also accepts Welcome's small print, except
+          // in the EU/EEA, where only the "Agree and continue" button
+          // agrees; there consent stays unanswered.
+          if (!welcomeNeedsAgreement()) {
+            context.read<FunnelTracker>().acceptByContinuing();
+          }
           Navigator.of(context).push(
             MaterialPageRoute(builder: (_) => const LoginScreen()),
           );
