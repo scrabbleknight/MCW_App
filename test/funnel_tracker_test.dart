@@ -237,4 +237,25 @@ void main() {
     await t.load();
     expect(t.consent, AnalyticsConsent.granted);
   });
+
+  test('without a consent question, the Settings switch still turns it off',
+      () async {
+    SharedPreferences.setMockInitialValues({'funnel.consent.v1': 'denied'});
+    final sink = _Sink();
+    final t = FunnelTracker(
+      onboardingVersion: 'v1',
+      onboardingStepCount: 3,
+      consentRequired: false,
+      sink: sink,
+    );
+    await t.load();
+    expect(t.consent, AnalyticsConsent.denied);
+    t.firstCoreAction('x');
+    await Future<void>.delayed(Duration.zero);
+    expect(sink.events, isEmpty);
+    await t.setConsent(true);
+    t.paywallView(paywallId: 'p', placement: PaywallPlacement.feature);
+    await Future<void>.delayed(Duration.zero);
+    expect(sink.events.map((e) => e.$1), [FunnelEvents.paywallView]);
+  });
 }

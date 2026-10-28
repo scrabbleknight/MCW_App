@@ -260,7 +260,11 @@ class FunnelTracker extends ChangeNotifier {
         'denied' => AnalyticsConsent.denied,
         _ => AnalyticsConsent.unknown,
       };
-      if (!consentRequired) _consent = AnalyticsConsent.granted;
+      // Without a consent question analytics is on, unless switched off in
+      // Settings.
+      if (!consentRequired && _consent != AnalyticsConsent.denied) {
+        _consent = AnalyticsConsent.granted;
+      }
       _once.addAll(prefs.getStringList(_kOnce) ?? const []);
       _transactions.addAll(prefs.getStringList(_kTransactions) ?? const []);
       // Collection is off natively until consent; turn it on each launch.
