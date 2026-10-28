@@ -445,15 +445,25 @@ class FunnelTracker extends ChangeNotifier {
   };
 
   /// The user's own answer to "How did you find us?". Only a known platform
-  /// id is sent: anything else (and never the "Other" text) becomes
-  /// `other`. Logged each time the question is answered; reports use the
-  /// latest per user.
-  void acquisitionSurvey(String source) {
+  /// id goes in `source`: anything else becomes `other`. With `other`,
+  /// [otherText] (what they typed, the user's call 2026-10-28) goes in
+  /// `other_text`, cut to Google Analytics' 100-character limit. Logged
+  /// each time the question is answered; reports use the latest per user.
+  void acquisitionSurvey(String source, {String? otherText}) {
+    final known = acquisitionSources.contains(source) ? source : 'other';
+    final text = otherText?.trim().replaceAll(RegExp(r'\s+'), ' ') ?? '';
     _log(FunnelEvents.acquisitionSurvey, {
-      'source': acquisitionSources.contains(source) ? source : 'other',
+      'source': known,
+      if (known == 'other' && text.isNotEmpty)
+        'other_text': text.length > maxOtherText
+            ? text.substring(0, maxOtherText)
+            : text,
       'onboarding_version': onboardingVersion,
     });
   }
+
+  /// Google Analytics keeps at most 100 characters of a parameter.
+  static const maxOtherText = 100;
 
   // ---------------------------------------------------------- plumbing ---
 

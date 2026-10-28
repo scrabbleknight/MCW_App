@@ -90,6 +90,18 @@ void main() {
     ]);
   });
 
+  test('"Other" sends what was typed, tidied and cut to 100', () async {
+    final (t, sink) = await _tracker({'funnel.consent.v1': 'granted'});
+    t
+      ..acquisitionSurvey('other', otherText: '  a   podcast\n')
+      ..acquisitionSurvey('tiktok', otherText: 'ignored')
+      ..acquisitionSurvey('other', otherText: 'x' * 150);
+    await Future<void>.delayed(Duration.zero);
+    expect(sink.events[0].$2['other_text'], 'a podcast');
+    expect(sink.events[1].$2.containsKey('other_text'), isFalse);
+    expect(sink.events[2].$2['other_text'], 'x' * 100);
+  });
+
   test('a no discards what waited and sends nothing later', () async {
     final (t, sink) = await _tracker();
     t.onboardingStepView('first', 0);

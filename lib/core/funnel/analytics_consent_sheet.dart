@@ -24,7 +24,8 @@ class ConsentSheetText {
           'With your permission, we use Google Analytics for Firebase to '
           'understand how the app is used, so we can keep making it better.',
       promise =
-          'We never send your answers, health details, name or email. '
+          'We never send your answers (except where you heard about us), '
+          'health details, name or email. '
           'The app works the same either way, and you can change this '
           'any time in Settings.',
       privacyPolicy = 'Privacy Policy',
