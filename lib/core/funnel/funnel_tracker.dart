@@ -16,7 +16,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// firebase_analytics_collection_enabled = false).
 ///
 /// Only screen ids, counts and product ids are sent — never onboarding
-/// answers, health details or anything typed by the user.
+/// answers, health details or anything typed by the user, apart from the
+/// "Other" answer to "How did you find us?" ([acquisitionSurvey]).
 abstract final class FunnelEvents {
   /// Logged by Firebase itself on the first launch with collection on.
   static const firstOpen = 'first_open';
@@ -112,6 +113,27 @@ abstract final class PurchaseFailure {
 }
 
 enum AnalyticsConsent { unknown, granted, denied }
+
+/// Where the button that turns analytics on by continuing says "Agree and
+/// continue" (the user's call, 2026-10-28): the EU and EEA, whose
+/// regulators want people to agree before analytics starts. Read from the
+/// phone's region, so no permission is needed. A phone with no region gets
+/// it too, to be safe.
+abstract final class AnalyticsAgreement {
+  static const regions = {
+    'AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', //
+    'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PL', 'PT', 'RO', 'SK',
+    'SI', 'ES', 'SE', 'IS', 'LI', 'NO',
+  };
+
+  /// [countryCode] is for tests; the app passes nothing.
+  static bool needed([String? countryCode]) {
+    final code =
+        (countryCode ?? PlatformDispatcher.instance.locale.countryCode)
+            ?.toUpperCase();
+    return code == null || code.isEmpty || regions.contains(code);
+  }
+}
 
 /// Where events go. [FirebaseFunnelSink] in apps that use firebase_analytics
 /// directly; apps with their own analytics service adapt it.

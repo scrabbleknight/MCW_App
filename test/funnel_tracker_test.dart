@@ -238,6 +238,15 @@ void main() {
     expect(t.consent, AnalyticsConsent.granted);
   });
 
+  test('"Agree and continue" in the EU and EEA, or with no region', () {
+    expect(AnalyticsAgreement.needed('FR'), isTrue);
+    expect(AnalyticsAgreement.needed('no'), isTrue);
+    expect(AnalyticsAgreement.needed(''), isTrue);
+    expect(AnalyticsAgreement.needed('GB'), isFalse);
+    expect(AnalyticsAgreement.needed('US'), isFalse);
+    expect(AnalyticsAgreement.needed('CH'), isFalse);
+  });
+
   test('without a consent question, the Settings switch still turns it off',
       () async {
     SharedPreferences.setMockInitialValues({'funnel.consent.v1': 'denied'});
