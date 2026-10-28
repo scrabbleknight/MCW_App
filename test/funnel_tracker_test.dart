@@ -148,6 +148,39 @@ void main() {
     },
   );
 
+  test(
+    'real money also logs GA purchase; trials and sandbox never',
+    () async {
+      final (t, sink) = await _tracker({'funnel.consent.v1': 'granted'});
+      VerifiedPurchase paid(String id, String env) => VerifiedPurchase(
+        event: 'purchase_verified',
+        isNew: true,
+        transactionId: id,
+        productId: 'monthly',
+        offer: 'none',
+        paid: true,
+        environment: env,
+        value: 14.99,
+        currency: 'GBP',
+      );
+      t
+        ..recordVerified(_purchase('tx1'))
+        ..recordVerified(paid('tx2', 'sandbox'))
+        ..recordVerified(paid('tx3', 'production'))
+        ..recordVerified(paid('tx3', 'production'));
+      await Future<void>.delayed(Duration.zero);
+      expect(sink.events.map((e) => e.$1), [
+        'trial_start',
+        'purchase_verified',
+        'purchase_verified',
+        'purchase',
+      ]);
+      expect(sink.events.last.$2, containsPair('value', 14.99));
+      expect(sink.events.last.$2, containsPair('currency', 'GBP'));
+      expect(sink.events.last.$2, containsPair('product_id', 'monthly'));
+    },
+  );
+
   test('paywall views are once per session per placement', () async {
     final (t, sink) = await _tracker({'funnel.consent.v1': 'granted'});
     t

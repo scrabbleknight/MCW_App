@@ -29,6 +29,10 @@ abstract final class FunnelEvents {
   static const purchaseFailed = 'purchase_failed';
   static const trialStart = 'trial_start';
   static const purchaseVerified = 'purchase_verified';
+
+  /// Google Analytics' standard revenue event, the only one Firebase's
+  /// Revenue cards add up. Logged beside purchase_verified for real money.
+  static const purchase = 'purchase';
   static const trialConvertedToPaid = 'trial_converted_to_paid';
   static const subscriptionRenewed = 'subscription_renewed';
   static const subscriptionCancelled = 'subscription_cancelled';
@@ -375,7 +379,8 @@ class FunnelTracker extends ChangeNotifier {
   /// (event null) and transactions the ledger already knew are never logged
   /// as acquisitions.
   ///
-  /// Only acquisitions (trial_start, purchase_verified) go to analytics.
+  /// Only acquisitions (trial_start, purchase_verified, plus GA's standard
+  /// purchase for real money) go to analytics.
   /// StoreKit also hands the app renewals it missed while closed; those stay
   /// in the server's commerce ledger, which sees every renewal whether or
   /// not the app is opened.
@@ -398,6 +403,19 @@ class FunnelTracker extends ChangeNotifier {
       if (v.paid && v.value != null) 'value': v.value!,
       if (v.paid && v.currency != null) 'currency': v.currency!,
     });
+    // Sandbox money isn't real, so it stays out of the Revenue cards.
+    if (event == FunnelEvents.purchaseVerified &&
+        v.paid &&
+        v.value != null &&
+        v.currency != null &&
+        v.environment == 'production') {
+      _log(FunnelEvents.purchase, {
+        'value': v.value!,
+        'currency': v.currency!,
+        'product_id': v.productId,
+        'offer': v.offer,
+      });
+    }
   }
 
   // -------------------------------------------------------- engagement ---
