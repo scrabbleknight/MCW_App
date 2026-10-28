@@ -54,7 +54,7 @@ void main() {
   }
 
   test('label choice', () {
-    expect(welcomeCtaLabel(agreementNeeded: true), 'AGREE AND CONTINUE');
+    expect(welcomeCtaLabel(agreementNeeded: true), 'Agree and Continue');
     expect(welcomeCtaLabel(agreementNeeded: false), 'Start Now');
   });
 
@@ -63,11 +63,11 @@ void main() {
   ) async {
     await pump(tester, const Locale('fr', 'FR'));
     expect(welcomeNeedsAgreement(), isTrue);
-    expect(find.text('AGREE AND CONTINUE'), findsOneWidget);
+    expect(find.text('Agree and Continue'), findsOneWidget);
     expect(find.text('Start Now'), findsNothing);
     expect(funnel.consent, AnalyticsConsent.unknown);
 
-    await tester.tap(find.text('AGREE AND CONTINUE'));
+    await tester.tap(find.text('Agree and Continue'));
     await tester.runAsync(() => Future<void>.delayed(Duration.zero));
     expect(funnel.consent, AnalyticsConsent.granted);
   });
@@ -76,7 +76,7 @@ void main() {
     await pump(tester, const Locale('en', 'GB'));
     expect(welcomeNeedsAgreement(), isFalse);
     expect(find.text('Start Now'), findsOneWidget);
-    expect(find.text('AGREE AND CONTINUE'), findsNothing);
+    expect(find.text('Agree and Continue'), findsNothing);
   });
 
   testWidgets('EU: the longer label fits on a 320pt-wide phone', (
@@ -88,7 +88,7 @@ void main() {
       size: const Size(640, 1136),
       dpr: 2,
     );
-    expect(find.text('AGREE AND CONTINUE'), findsOneWidget);
+    expect(find.text('Agree and Continue'), findsOneWidget);
     expect(tester.takeException(), isNull);
     // Same button size as before.
     expect(tester.getSize(find.byType(FilledButton)).height, 58);

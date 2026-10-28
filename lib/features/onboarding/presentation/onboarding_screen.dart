@@ -335,7 +335,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         onContinue: _getStarted,
         onLogIn: () {
           // Going on to log in also accepts Welcome's small print, except
-          // in the EU/EEA, where only the "Agree and continue" button
+          // in the EU/EEA, where only the "Agree and Continue" button
           // agrees; there consent stays unanswered.
           if (!welcomeNeedsAgreement()) {
             context.read<FunnelTracker>().acceptByContinuing();

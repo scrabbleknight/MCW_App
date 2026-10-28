@@ -16,11 +16,10 @@ bool welcomeNeedsAgreement() => AnalyticsAgreement.needed(
 );
 
 /// Welcome's button, which goes on and turns analytics on. In the EU/EEA
-/// it says so: "AGREE AND CONTINUE" (upper-case like the app's other
-/// buttons). Elsewhere it keeps "Start Now".
+/// it says so: "Agree and Continue". Elsewhere it keeps "Start Now".
 String welcomeCtaLabel({bool? agreementNeeded}) =>
     (agreementNeeded ?? welcomeNeedsAgreement())
-    ? 'AGREE AND CONTINUE'
+    ? 'Agree and Continue'
     : 'Start Now';
 
 class WelcomeStep extends StatelessWidget {

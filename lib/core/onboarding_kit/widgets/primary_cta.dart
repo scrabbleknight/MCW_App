@@ -28,7 +28,7 @@ class PrimaryCta extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             // Same size and style; a label too long for a narrow phone
-            // (e.g. "AGREE AND CONTINUE") shrinks to fit instead of
+            // (e.g. "Agree and Continue") shrinks to fit instead of
             // overflowing.
             Flexible(
               child: FittedBox(
