@@ -115,7 +115,7 @@ abstract final class PurchaseFailure {
 enum AnalyticsConsent { unknown, granted, denied }
 
 /// Where the button that turns analytics on by continuing says "Agree and
-/// continue" (the user's call, 2026-10-28): the EU and EEA, whose
+/// Continue" (the user's call, 2026-10-28): the EU and EEA, whose
 /// regulators want people to agree before analytics starts. Read from the
 /// phone's region, so no permission is needed. A phone with no region gets
 /// it too, to be safe.
@@ -126,7 +126,9 @@ abstract final class AnalyticsAgreement {
     'SI', 'ES', 'SE', 'IS', 'LI', 'NO',
   };
 
-  /// [countryCode] is for tests; the app passes nothing.
+  /// Without [countryCode] it reads `PlatformDispatcher.instance`, which
+  /// widget tests can't change, so apps pass the view's region in
+  /// (`View.of(context).platformDispatcher.locale.countryCode`); same value.
   static bool needed([String? countryCode]) {
     final code =
         (countryCode ?? PlatformDispatcher.instance.locale.countryCode)

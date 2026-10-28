@@ -238,7 +238,7 @@ void main() {
     expect(t.consent, AnalyticsConsent.granted);
   });
 
-  test('"Agree and continue" in the EU and EEA, or with no region', () {
+  test('"Agree and Continue" in the EU and EEA, or with no region', () {
     expect(AnalyticsAgreement.needed('FR'), isTrue);
     expect(AnalyticsAgreement.needed('no'), isTrue);
     expect(AnalyticsAgreement.needed(''), isTrue);
