@@ -26,6 +26,7 @@ import 'package:military_calisthenics_women/features/onboarding/presentation/ste
 import 'package:military_calisthenics_women/features/onboarding/presentation/steps/flexibility_step.dart';
 import 'package:military_calisthenics_women/features/onboarding/presentation/steps/food_cravings_step.dart';
 import 'package:military_calisthenics_women/features/onboarding/presentation/steps/get_notified_step.dart';
+import 'package:military_calisthenics_women/features/onboarding/presentation/steps/heard_from_step.dart';
 import 'package:military_calisthenics_women/features/onboarding/presentation/steps/height_step.dart';
 import 'package:military_calisthenics_women/features/onboarding/presentation/steps/main_reason_step.dart';
 import 'package:military_calisthenics_women/features/onboarding/presentation/steps/meals_per_day_step.dart';
@@ -60,7 +61,9 @@ class OnboardingScreen extends StatefulWidget {
 
   /// Funnel analytics: bump [funnelVersion] whenever steps are added,
   /// removed or reordered (and update [_screenIds] to match the pages).
-  static const funnelVersion = 'v1';
+  /// v2-2026-10-28: "How did you find us?" (heard_from) added before the
+  /// paywall.
+  static const funnelVersion = 'v2-2026-10-28';
 
   /// The question screens between the welcome slide and the paywall.
   static int get funnelStepCount => _paywallIndex - 1;
@@ -106,6 +109,7 @@ class OnboardingScreen extends StatefulWidget {
     'get_notified',
     'calibration',
     'plan_preview',
+    'heard_from',
     'paywall',
     'squad_welcome',
   ];
@@ -224,13 +228,30 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       goal: controller.answerFor<FitnessGoal>('goal'),
       workoutDuration: controller.answerFor<WorkoutDuration>('workout_duration'),
       dailyCalorieTarget: rec.caloriesPerDay,
-      onConfirm: () {
-        // Questions done; the paywall is next.
-        context.read<FunnelTracker>().onboardingComplete();
-        _next();
-      },
+      onConfirm: _next,
       onFeelingChanged: (feeling) =>
           controller.setAnswer('pre_start_feeling', feeling),
+    );
+  }
+
+  /// "How did you find us?" — mandatory, the last question before the
+  /// paywall. The answer is kept on the controller so going back keeps it.
+  Widget _heardFrom(OnboardingController controller) {
+    return HeardFromStep(
+      selected: controller.answerFor<String>('heard_from'),
+      otherText: controller.answerFor<String>('heard_from_other'),
+      onCompleted: (id, otherText) {
+        controller.setAnswer('heard_from', id);
+        controller.setAnswer('heard_from_other', otherText);
+        final funnel = context.read<FunnelTracker>();
+        funnel.acquisitionSurvey(
+          id,
+          otherText: id == 'other' ? otherText : null,
+        );
+        // Questions done; the paywall is next.
+        funnel.onboardingComplete();
+        _next();
+      },
     );
   }
 
@@ -620,6 +641,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       ),
       _StepBody(child: _calibration(controller)),
       _StepBody(child: _planPreview(controller)),
+      _StepBody(child: _heardFrom(controller)),
       _StepBody(child: _paywall(controller)),
       // Post-paywall "welcome to the squad" reveal. Full-bleed (no
       // _StepBody padding, no chrome) so the enlistment moment lands.
