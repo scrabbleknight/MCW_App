@@ -27,14 +27,20 @@ class WelcomeStep extends StatelessWidget {
     super.key,
     required this.onContinue,
     required this.onLogIn,
+    this.onContinueWithoutAnalytics,
   });
 
   final VoidCallback onContinue;
   final VoidCallback onLogIn;
 
+  /// EU/EEA only: the small "Continue without analytics" link under the
+  /// button. Goes on with analytics off.
+  final VoidCallback? onContinueWithoutAnalytics;
+
   @override
   Widget build(BuildContext context) {
     final text = Theme.of(context).textTheme;
+    final needsAgreement = welcomeNeedsAgreement();
 
     // Broad, industrial-athletic display face — sits closer to the reference
     // than the system sans and reads as "military poster" without a bespoke
@@ -62,9 +68,12 @@ class WelcomeStep extends StatelessWidget {
       tagline: 'Build strength at any level—one step at a time.',
       statHeadline: '25 Million+',
       statCaption: 'Women started their strength journey with us.',
-      primaryCtaLabel: welcomeCtaLabel(),
+      primaryCtaLabel: welcomeCtaLabel(agreementNeeded: needsAgreement),
       onPrimaryCta: onContinue,
       onLogIn: onLogIn,
+      belowCta: needsAgreement && onContinueWithoutAnalytics != null
+          ? _NoAnalyticsLink(onTap: onContinueWithoutAnalytics!)
+          : null,
       overlayColor: context.palette.abyss,
       titleTextStyle: titleStyle,
       subheadTextStyle: text.labelLarge?.copyWith(
@@ -119,6 +128,39 @@ class WelcomeStep extends StatelessWidget {
             ],
           ),
           textAlign: TextAlign.center,
+        ),
+      ),
+    );
+  }
+}
+
+/// A plain small text link, not a button: no border, background or
+/// splash. The padding around it is invisible and only widens the tap area.
+class _NoAnalyticsLink extends StatelessWidget {
+  const _NoAnalyticsLink({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final linkColor = context.palette.arcticSoft;
+    return Semantics(
+      link: true,
+      child: GestureDetector(
+        key: const Key('welcome-no-analytics'),
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          child: Text(
+            'Continue without analytics',
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: linkColor,
+                  decoration: TextDecoration.underline,
+                  decorationColor: linkColor,
+                ),
+          ),
         ),
       ),
     );

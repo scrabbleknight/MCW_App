@@ -157,9 +157,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   /// Welcome → first question. Going on turns analytics on, as Welcome's
   /// small print says, unless it was turned off in Settings. Nothing is
   /// collected before this.
-  Future<void> _getStarted() async {
+  ///
+  /// [analytics] false is the EU/EEA "Continue without analytics" link:
+  /// consent is set to off, then onboarding goes on the same way.
+  Future<void> _getStarted({bool analytics = true}) async {
     final funnel = context.read<FunnelTracker>();
-    await funnel.acceptByContinuing();
+    if (analytics) {
+      await funnel.acceptByContinuing();
+    } else {
+      await funnel.setConsent(false);
+    }
     if (!mounted) return;
     funnel.onboardingStarted();
     await _next();
@@ -333,6 +340,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     final pages = <Widget>[
       WelcomeStep(
         onContinue: _getStarted,
+        onContinueWithoutAnalytics: () => _getStarted(analytics: false),
         onLogIn: () {
           // Going on to log in also accepts Welcome's small print, except
           // in the EU/EEA, where only the "Agree and Continue" button

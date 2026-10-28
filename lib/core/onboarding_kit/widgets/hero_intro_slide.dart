@@ -29,6 +29,7 @@ class HeroIntroSlide extends StatelessWidget {
     required this.primaryCtaLabel,
     required this.onPrimaryCta,
     this.onLogIn,
+    this.belowCta,
     this.termsRich,
     this.titleTextStyle,
     this.subheadTextStyle,
@@ -50,6 +51,10 @@ class HeroIntroSlide extends StatelessWidget {
   final String primaryCtaLabel;
   final VoidCallback onPrimaryCta;
   final VoidCallback? onLogIn;
+
+  /// Optional small widget right under the primary button (e.g. a text
+  /// link), above [termsRich].
+  final Widget? belowCta;
   final Widget? termsRich;
   final TextStyle? titleTextStyle;
   final TextStyle? subheadTextStyle;
@@ -243,6 +248,10 @@ class HeroIntroSlide extends StatelessWidget {
                     ),
                   const SizedBox(height: 12),
                   PrimaryCta(label: primaryCtaLabel, onPressed: onPrimaryCta),
+                  if (belowCta != null) ...[
+                    const SizedBox(height: 4),
+                    belowCta!,
+                  ],
                   if (termsRich != null) ...[
                     const SizedBox(height: 12),
                     termsRich!,
