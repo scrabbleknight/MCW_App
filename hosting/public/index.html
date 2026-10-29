@@ -45,6 +45,55 @@
     <span>Download for Android</span>
   </a>
   <small>Free to download</small>
+<!-- deepblue-allaccess:start — generated from ViralEngine links/allaccess-snippet.html; edit there and run `node links/sync-allaccess.js` -->
+<section class="db-aa" aria-label="DeepBlue All Access">
+  <style>
+    .db-aa { margin-top: 22px; text-align: center; }
+    .db-aa .db-or { display: flex; align-items: center; gap: 10px; color: var(--muted, #6b7280); font-size: 13px; margin-bottom: 14px; }
+    .db-aa .db-or::before, .db-aa .db-or::after { content: ""; flex: 1; height: 1px; background: var(--line, #e5e7eb); }
+    .db-aa .db-card { border-radius: 18px; padding: 18px 16px 16px; color: #fff; text-align: center;
+      background: radial-gradient(120% 100% at 50% 0%, #0e3f8a 0%, #082f66 60%, #061f45 100%); }
+    .db-aa .db-k { font-size: 11px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; color: #cfe0ff; }
+    .db-aa .db-h { font-size: 20px; font-weight: 800; margin: 4px 0 6px; letter-spacing: -0.01em; }
+    .db-aa .db-p { margin: 0 0 12px; color: #dbe7fb; font-size: 14px; }
+    .db-aa .db-icons { display: flex; justify-content: center; gap: 6px; margin-bottom: 14px; }
+    .db-aa .db-icons img { width: 30px; height: 30px; border-radius: 8px; }
+    .db-aa a.db-btn { display: block; padding: 13px 16px; border-radius: 12px; background: #fff; color: #082f66;
+      font-weight: 800; font-size: 16px; text-decoration: none; }
+    .db-aa .db-s { display: block; margin-top: 10px; font-size: 12px; color: #cfe0ff; }
+  </style>
+  <div class="db-or">or</div>
+  <div class="db-card">
+    <div class="db-k">DeepBlue All Access</div>
+    <div class="db-h">One Membership. Every&nbsp;App.</div>
+    <p class="db-p">Premium in this app and every other participating Deep Blue app, with one subscription.</p>
+    <div class="db-icons" aria-hidden="true">
+      <img src="https://deepblue.org.uk/icons/walking-tai-chi.png" alt=""><img src="https://deepblue.org.uk/icons/military-calisthenics-women.png" alt=""><img src="https://deepblue.org.uk/icons/cyclesync.png" alt=""><img src="https://deepblue.org.uk/icons/pistepath.png" alt=""><img src="https://deepblue.org.uk/icons/snackhack.png" alt=""><img src="https://deepblue.org.uk/icons/glance.png" alt="">
+    </div>
+    <a class="db-btn" id="db-aa-link" href="https://deepblue.org.uk/all-access?app=mcw">Get All Access</a>
+    <span class="db-s">Monthly or annual. Renews until you cancel.</span>
+  </div>
+  <script>
+  // The source this visit came with (VE, from the ve-attribution block) goes on to the
+  // membership site, so a purchase there credits this app and platform. VE is defined
+  // further down the page, so this waits for the page to finish loading.
+  document.addEventListener('DOMContentLoaded', function () {
+    var a = document.getElementById('db-aa-link');
+    var q = new URLSearchParams();
+    q.set('app', 'mcw');
+    var src = (window.VE && VE.src) || 'bio';
+    var p = (window.VE && VE.p) || '';
+    q.set('src', src);
+    if (p) q.set('p', p);
+    q.set('utm_source', src);
+    q.set('utm_medium', p ? 'post' : 'bio');
+    q.set('utm_campaign', p ? 'p_' + p : 'allaccess_bio');
+    a.href = 'https://deepblue.org.uk/all-access?' + q.toString();
+    a.addEventListener('click', function () { if (window.VE) VE.log('aa'); });
+  });
+  </script>
+</section>
+<!-- deepblue-allaccess:end -->
 </main>
 <script>
 /* ve-attribution:start — generated from ViralEngine links/smartlink-snippet.js; edit there and run `node links/sync-snippet.js` */
@@ -57,7 +106,7 @@ var VE = (function () {
   var APP = 'mcw', LOG = 'https://ve-links.pistepath-telemetry-worker.workers.dev/c', PT = '120321415';
   var q = new URLSearchParams(location.search);
   var ua = navigator.userAgent || '';
-  var LETTER = { t: 'tiktok', i: 'instagram', f: 'facebook', y: 'youtube' };
+  var LETTER = { t: 'tiktok', i: 'instagram', f: 'facebook', y: 'youtube', s: 'snapchat' };
   var ALIAS = { tt: 'tiktok', ig: 'instagram', fb: 'facebook', yt: 'youtube' };
   var p = (q.get('p') || '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 12);
   if (!LETTER[p.charAt(0)]) p = '';
@@ -71,7 +120,9 @@ var VE = (function () {
     referrer: 'utm_source=' + src + '&utm_medium=' + (p ? 'post' : 'bio') + '&utm_campaign=' + (p ? 'p_' + p : 've_bio') + (p ? '&utm_content=' + p : ''),
     ios: function (href) { return href + (href.indexOf('?') < 0 ? '?' : '&') + 'ct=' + ct + (PT ? '&pt=' + PT + '&mt=8' : ''); },
     log: function (store) {
-      if (q.get('l')) return; // already logged by the tracked-link redirect
+      // A tracked post link's visit was already logged by its redirect; a tap on the page
+      // (the All Access card) is still its own event.
+      if (q.get('l') && store !== 'aa') return;
       // The raw ?src= goes to the logger, which works the platform out the same way (code,
       // then src, then in-app browser) — so test clicks (?src=selftest) stay recognisable.
       try { navigator.sendBeacon(LOG, JSON.stringify({ app: APP, src: raw, p: p, store: store })); } catch (e) {}
@@ -93,8 +144,9 @@ var VE = (function () {
   var isIOS = /iphone|ipad|ipod/i.test(ua) || (/macintosh/i.test(ua) && navigator.maxTouchPoints > 1);
   VE.log(isAndroid ? 'android' : isIOS ? 'ios' : 'web');
 
-  // Android: straight to Play.
-  if (isAndroid) { location.replace(android.href); return; }
+  // Show the visitor's own store first and let them choose: no automatic redirect, so the
+  // DeepBlue All Access option below stays visible.
+  if (isAndroid) ios.parentNode.insertBefore(android, ios);
 
   // Ask Apple whether the app is live yet; if not, show "coming soon" instead of a dead link.
   var settled = false;
@@ -107,14 +159,10 @@ var VE = (function () {
       ios.removeAttribute('href');
       return;
     }
-    if (isIOS) location.replace(ios.href);
   };
   var s = document.createElement('script');
   s.src = 'https://itunes.apple.com/lookup?id=' + APPLE_ID + '&callback=__appleLookup';
-  s.onerror = function () { if (!settled && isIOS) location.replace(ios.href); };
   document.head.appendChild(s);
-  // If Apple is slow, don't strand iPhone users: send them on after 2.5s.
-  setTimeout(function () { if (!settled && isIOS) location.replace(ios.href); }, 2500);
 })();
 </script>
 </body>
