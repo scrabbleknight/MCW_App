@@ -197,13 +197,14 @@ var VE = (function () {
   var APP = 'mcw', LOG = 'https://ve-links.pistepath-telemetry-worker.workers.dev/c', PT = '120321415';
   var q = new URLSearchParams(location.search);
   var ua = navigator.userAgent || '';
-  var LETTER = { t: 'tiktok', i: 'instagram', f: 'facebook', y: 'youtube', s: 'snapchat' };
-  var ALIAS = { tt: 'tiktok', ig: 'instagram', fb: 'facebook', yt: 'youtube' };
+  var LETTER = { t: 'tiktok', i: 'instagram', f: 'facebook', y: 'youtube', p: 'pinterest', s: 'snapchat' };
+  var ALIAS = { tt: 'tiktok', ig: 'instagram', fb: 'facebook', yt: 'youtube', pin: 'pinterest' };
   var p = (q.get('p') || '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 12);
   if (!LETTER[p.charAt(0)]) p = '';
   var raw = (q.get('src') || '').toLowerCase().replace(/[^\w-]/g, '').slice(0, 30);
   var via = /musical_ly|Bytedance|TikTok|trill_/i.test(ua) ? 'tiktok' : /Instagram/i.test(ua) ? 'instagram'
-    : /FBAN|FBAV|FB_IAB|FBIOS|FB4A/i.test(ua) ? 'facebook' : '';
+    : /FBAN|FBAV|FB_IAB|FBIOS|FB4A/i.test(ua) ? 'facebook'
+    : /\[Pinterest\/|Pinterest for (iOS|Android)/i.test(ua) ? 'pinterest' : '';
   var src = (p && LETTER[p.charAt(0)]) || ALIAS[raw] || (raw !== 'bio' && raw) || via || 'bio';
   var ct = ('ve_' + src + (p ? '_' + p : '')).slice(0, 30); // Apple's campaign limit
   return {
