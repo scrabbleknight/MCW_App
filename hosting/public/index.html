@@ -8,6 +8,7 @@
 <meta property="og:title" content="Military Calisthenics for Women">
 <meta property="og:description" content="Bodyweight strength for women. No gym. No equipment.">
 <meta property="og:image" content="https://mcwapp.web.app/icon.png">
+<meta name="p:domain_verify" content="db3ffd302cab29746651e16942a8b9e3"/>
 <link rel="icon" href="icon.png">
 <link rel="apple-touch-icon" href="icon.png">
 <style>
@@ -61,18 +62,61 @@
     .db-aa a.db-btn { display: block; padding: 13px 16px; border-radius: 12px; background: #fff; color: #082f66;
       font-weight: 800; font-size: 16px; text-decoration: none; }
     .db-aa .db-s { display: block; margin-top: 10px; font-size: 12px; color: #cfe0ff; }
+    /* "What's included": every app and what membership unlocks in it */
+    .db-aa details.db-inc { margin: 0 0 14px; text-align: left; }
+    .db-aa .db-inc summary { list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;
+      width: max-content; margin: 0 auto; padding: 7px 14px; border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.35); color: #fff; font-size: 13px; font-weight: 700; }
+    .db-aa .db-inc summary::-webkit-details-marker { display: none; }
+    .db-aa .db-inc summary::after { content: "▾"; transition: transform .2s; }
+    .db-aa .db-inc[open] summary::after { transform: rotate(180deg); }
+    .db-aa .db-inc ul { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 8px; }
+    .db-aa .db-inc li { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 12px; background: rgba(255,255,255,.08); }
+    .db-aa .db-inc li img { width: 36px; height: 36px; border-radius: 9px; flex: none; }
+    .db-aa .db-inc .db-plus { width: 36px; height: 36px; border-radius: 9px; flex: none; display: flex; align-items: center; justify-content: center;
+      border: 2px dashed rgba(207,224,255,.7); color: #cfe0ff; font-size: 20px; box-sizing: border-box; }
+    .db-aa .db-inc li div { margin: 0; padding: 0; }
+    .db-aa .db-inc b { display: block; margin: 0; font-size: 14px; line-height: 1.3; color: #fff; }
+    .db-aa .db-inc small { display: block; margin: 2px 0 0; padding: 0; font-size: 12px; line-height: 1.35; color: #cfe0ff; }
+    /* Black Friday: same dates and prices as deepblue.org.uk/all-access/apps.json "promo" */
+    .db-aa .db-bf { display: inline-block; margin: 0 0 10px; padding: 5px 12px; border-radius: 999px;
+      background: #ffd84d; color: #000; font-size: 12px; font-weight: 800; letter-spacing: .5px; }
+    .db-aa .db-deal { display: flex; justify-content: center; gap: 10px; margin: 0 0 12px; }
+    .db-aa .db-deal div { flex: 1; max-width: 150px; background: rgba(255,255,255,.1); border-radius: 12px; padding: 8px 6px; }
+    .db-aa .db-deal b { display: block; font-size: 19px; line-height: 1.2; }
+    .db-aa .db-deal s { color: #ff8fa8; font-size: 13px; margin-right: 4px; }
+    .db-aa .db-deal small { display: block; margin: 0; font-size: 11px; line-height: 1.3; color: #cfe0ff; }
+    .db-aa .db-cd { display: inline-block; margin: 0 0 12px; padding: 3px 10px; border-radius: 6px;
+      background: #e11d48; font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .db-aa.sale .db-card { background: radial-gradient(120% 100% at 50% 0%, #1b1b1b 0%, #000 70%); }
+    .db-aa.sale a.db-btn { background: #ffd84d; color: #000; }
     .db-aa .db-priv { display: inline-block; margin-top: 14px; font-size: 11px; color: var(--muted, #6b7280); }
   </style>
   <div class="db-or">or</div>
   <div class="db-card">
+    <div class="db-bf" id="db-bf" hidden></div>
     <div class="db-k">DeepBlue All Access</div>
     <div class="db-h">One Membership. Every&nbsp;App.</div>
     <p class="db-p">Premium in this app and every other participating Deep Blue app, with one subscription.</p>
     <div class="db-icons" aria-hidden="true">
       <img src="https://deepblue.org.uk/icons/walking-tai-chi.png" alt=""><img src="https://deepblue.org.uk/icons/military-calisthenics-women.png" alt=""><img src="https://deepblue.org.uk/icons/cyclesync.png" alt=""><img src="https://deepblue.org.uk/icons/pistepath.png" alt=""><img src="https://deepblue.org.uk/icons/snackhack.png" alt=""><img src="https://deepblue.org.uk/icons/glance.png" alt="">
     </div>
+    <details class="db-inc">
+      <summary>What's included</summary>
+      <ul>
+        <li><img src="https://deepblue.org.uk/icons/walking-tai-chi.png" alt=""><div><b>Walking Tai Chi for Seniors</b><small>Every guided tai chi and balance session, plus full programmes</small></div></li>
+        <li><img src="https://deepblue.org.uk/icons/military-calisthenics-women.png" alt=""><div><b>Military Calisthenics: Women</b><small>Full training plans, form checks and progress tracking</small></div></li>
+        <li><img src="https://deepblue.org.uk/icons/cyclesync.png" alt=""><div><b>CycleSync</b><small>Workouts and food guidance for every phase of your cycle</small></div></li>
+        <li><img src="https://deepblue.org.uk/icons/pistepath.png" alt=""><div><b>PistePath</b><small>Offline ski maps and route planning</small></div></li>
+        <li><img src="https://deepblue.org.uk/icons/snackhack.png" alt=""><div><b>SnackHack</b><small>Healthier picks from the menus you actually eat from</small></div></li>
+        <li><img src="https://deepblue.org.uk/icons/glance.png" alt=""><div><b>Glance: Meet IRL</b><small>Glance Premium features</small></div></li>
+        <li><span class="db-plus" aria-hidden="true">+</span><div><b>All future apps</b><small>New Deep Blue apps are added to your membership</small></div></li>
+      </ul>
+    </details>
+    <div class="db-deal" id="db-deal" hidden></div>
+    <div class="db-cd" id="db-cd" hidden></div>
     <a class="db-btn" id="db-aa-link" href="https://deepblue.org.uk/all-access?app=mcw">Get All Access</a>
-    <span class="db-s">Monthly or annual. Renews until you cancel.</span>
+    <span class="db-s" id="db-s">Monthly or annual. Renews until you cancel.</span>
   </div>
   <a class="db-priv" href="https://deepblue.org.uk/privacy-policy#app-links">Privacy · how we count visits</a>
   <script>
@@ -92,7 +136,52 @@
     q.set('utm_campaign', p ? 'p_' + p : 'allaccess_bio');
     a.href = 'https://deepblue.org.uk/all-access?' + q.toString();
     a.addEventListener('click', function () { if (window.VE) VE.log('aa'); });
+    dbSale(a);
   });
+
+  // Sales (UK time). Keep in step with deepblue.org.uk apps.json "promos" and the
+  // checkout coupons; only the first month or year is discounted.
+  function dbSale(a) {
+    var SALES = [
+      { name: 'Early Bird', emoji: '🐦', starts: Date.parse('2026-10-29T00:00:00Z'), ends: Date.parse('2026-11-11T00:00:00Z'),
+        gbp: { sym: '£', monthly: [29.99, 19.99], annual: [74.99, 49.99] },
+        usd: { sym: '$', monthly: [39.99, 29.99], annual: [99.99, 59.99] } },
+      { name: 'Black Friday', emoji: '🔥', starts: Date.parse('2026-11-20T00:00:00Z'), ends: Date.parse('2026-11-29T00:00:00Z'),
+        gbp: { sym: '£', monthly: [29.99, 9.99], annual: [74.99, 34.99] },
+        usd: { sym: '$', monthly: [39.99, 14.99], annual: [99.99, 49.99] } }
+    ];
+    var now = Date.now(), SALE = null;
+    for (var i = 0; i < SALES.length; i++) if (now >= SALES[i].starts && now < SALES[i].ends) SALE = SALES[i];
+    if (!SALE) return;
+    var tz = '';
+    try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (e) {}
+    var uk = /^(Europe\/(London|Belfast|Jersey|Guernsey|Isle_of_Man)|GB)$/.test(tz);
+    // £ for visitors in the UK, $ for everyone else.
+    var c = SALE[uk ? 'gbp' : 'usd'];
+    var m = function (n) { return c.sym + n.toFixed(2); };
+    var off = function (pr) { return Math.round((1 - pr[1] / pr[0]) * 100); };
+    var root = a.closest('.db-aa');
+    root.classList.add('sale');
+    var bf = document.getElementById('db-bf');
+    bf.textContent = SALE.emoji + ' ' + SALE.name.toUpperCase() + ' · UP TO ' + Math.max(off(c.monthly), off(c.annual)) + '% OFF';
+    bf.hidden = false;
+    var deal = document.getElementById('db-deal');
+    deal.innerHTML =
+      '<div><s>' + m(c.annual[0]) + '</s><b>' + m(c.annual[1]) + '</b><small>first year</small></div>' +
+      '<div><s>' + m(c.monthly[0]) + '</s><b>' + m(c.monthly[1]) + '</b><small>first month</small></div>';
+    deal.hidden = false;
+    a.textContent = 'Get the ' + SALE.name + ' deal';
+    document.getElementById('db-s').textContent = 'Then ' + m(c.annual[0]) + ' a year or ' + m(c.monthly[0]) + ' a month. Renews until you cancel.';
+    var cd = document.getElementById('db-cd');
+    cd.hidden = false;
+    var pad = function (n) { return (n < 10 ? '0' : '') + n; };
+    (function tick() {
+      var ms = Math.max(0, SALE.ends - Date.now());
+      cd.textContent = 'Ends in ' + Math.floor(ms / 864e5) + 'd ' + pad(Math.floor(ms / 36e5) % 24) + 'h ' +
+        pad(Math.floor(ms / 6e4) % 60) + 'm ' + pad(Math.floor(ms / 1e3) % 60) + 's';
+      if (ms > 0) setTimeout(tick, 1000); else location.reload();
+    })();
+  }
   </script>
 </section>
 <!-- deepblue-allaccess:end -->
