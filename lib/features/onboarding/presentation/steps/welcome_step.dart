@@ -149,7 +149,7 @@ class _NoAnalyticsLink extends StatelessWidget {
       child: GestureDetector(
         key: const Key('welcome-no-analytics'),
         behavior: HitTestBehavior.opaque,
-        onTap: onTap,
+        onTap: OnboardingHaptics.onTap(onTap),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           child: Text(

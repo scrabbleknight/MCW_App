@@ -6,6 +6,7 @@
 /// with app-specific copy, images, and step transitions.
 library;
 
+export 'haptics.dart';
 export 'models/onboarding_option.dart';
 export 'widgets/blend_mask.dart';
 export 'widgets/camo_background.dart';

@@ -134,7 +134,10 @@ class _TrainerPickStepState extends State<TrainerPickStep> {
             controller: _controller,
             itemCount: _roster.length,
             physics: const BouncingScrollPhysics(),
-            onPageChanged: (i) => setState(() => _index = i),
+            onPageChanged: (i) {
+              OnboardingHaptics.tick();
+              setState(() => _index = i);
+            },
             itemBuilder: (context, i) =>
                 _TrainerCardView(card: _roster[i], active: i == _index),
           ),

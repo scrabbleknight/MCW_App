@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../haptics.dart';
+
 /// Two-segment pill for switching between measurement units (kg/lbs, ft/cm).
 class UnitToggle<T> extends StatelessWidget {
   const UnitToggle({
@@ -76,7 +78,7 @@ class _Segment<T> extends StatelessWidget {
       shape: const StadiumBorder(),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: onTap,
+        onTap: OnboardingHaptics.onTap(onTap),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 8),
           child: Text(

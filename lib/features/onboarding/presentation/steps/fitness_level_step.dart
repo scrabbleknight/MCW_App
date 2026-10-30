@@ -96,7 +96,10 @@ class _FitnessLevelStepState extends State<FitnessLevelStep> {
         _RankSlider(
           index: _index,
           count: _levels.length,
-          onChanged: (i) => setState(() => _index = i),
+          onChanged: (i) {
+            if (i != _index) OnboardingHaptics.tick();
+            setState(() => _index = i);
+          },
         ),
         const SizedBox(height: 6),
         Padding(

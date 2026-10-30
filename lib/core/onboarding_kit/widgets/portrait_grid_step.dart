@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../haptics.dart';
+
 /// One option in a [PortraitGridStep] — a portrait image with a label
 /// underneath and a typed [value] that flows back to the caller on tap.
 class PortraitOption<T> {
@@ -142,7 +144,7 @@ class _PortraitTile<T> extends StatelessWidget {
       ),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: onTap,
+        onTap: OnboardingHaptics.onTap(onTap),
         child: switch (placement) {
           PortraitLabelPlacement.belowImage => Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,

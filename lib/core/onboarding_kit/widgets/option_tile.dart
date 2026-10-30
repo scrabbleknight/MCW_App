@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../haptics.dart';
+
 /// Row-shaped selectable tile — icon left, label + optional subtitle right.
 ///
 /// Used by single- and multi-choice onboarding slides. Selected state uses
@@ -46,7 +48,7 @@ class OptionTile extends StatelessWidget {
       ),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: onTap,
+        onTap: OnboardingHaptics.onTap(onTap),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
           child: Row(

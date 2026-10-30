@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../haptics.dart';
+
 /// Full-width primary call-to-action used at the bottom of onboarding slides.
 ///
 /// Reads its color from the app theme's `filledButtonTheme` — so a future app
@@ -23,7 +25,7 @@ class PrimaryCta extends StatelessWidget {
     return SizedBox(
       width: double.infinity,
       child: FilledButton(
-        onPressed: enabled ? onPressed : null,
+        onPressed: enabled ? OnboardingHaptics.onPress(onPressed) : null,
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [

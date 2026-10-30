@@ -2,6 +2,8 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../haptics.dart';
+
 import '../models/onboarding_option.dart';
 
 /// One option in an [ImageChoiceGridStep]. Extends [OnboardingOption] with a
@@ -129,7 +131,7 @@ class _MagnitudeTile<T> extends StatelessWidget {
       ),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: onTap,
+        onTap: OnboardingHaptics.onTap(onTap),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           child: Row(

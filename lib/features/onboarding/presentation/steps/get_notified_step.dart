@@ -80,7 +80,7 @@ class _GetNotifiedStepState extends State<GetNotifiedStep> {
           ),
         ),
         TextButton(
-          onPressed: _prompting ? null : _skip,
+          onPressed: _prompting ? null : OnboardingHaptics.onTap(_skip),
           child: Text(
             'Not Right Now',
             style: text.titleSmall?.copyWith(

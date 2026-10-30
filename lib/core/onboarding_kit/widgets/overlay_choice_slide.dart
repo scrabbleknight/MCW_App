@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../haptics.dart';
+
 import '../models/onboarding_option.dart';
 
 /// Question with a full-height cut-out image behind, and single-select
@@ -141,7 +143,7 @@ class _OverlayPill extends StatelessWidget {
       ),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: onTap,
+        onTap: OnboardingHaptics.onTap(onTap),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
           child: Text(

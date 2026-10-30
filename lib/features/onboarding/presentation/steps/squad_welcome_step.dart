@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:military_calisthenics_women/core/onboarding_kit/haptics.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:military_calisthenics_women/core/theme/tactical_palette.dart';
 
@@ -653,7 +654,7 @@ class _DeployButton extends StatelessWidget {
         return Material(
           color: Colors.transparent,
           child: InkWell(
-            onTap: onTap,
+            onTap: OnboardingHaptics.onPress(onTap),
             borderRadius: BorderRadius.circular(16),
             child: Container(
               height: 62,

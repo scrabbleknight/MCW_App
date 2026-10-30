@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:military_calisthenics_women/core/deepblue/deepblue_sign_in_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:military_calisthenics_women/core/onboarding_kit/haptics.dart';
 import 'package:military_calisthenics_women/core/platform/store_platform.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -392,7 +393,7 @@ class _HeroSplit extends StatelessWidget {
                   shape: const CircleBorder(),
                   clipBehavior: Clip.antiAlias,
                   child: InkWell(
-                    onTap: onClose,
+                    onTap: OnboardingHaptics.onTap(onClose),
                     child: const SizedBox(
                       width: 36,
                       height: 36,
@@ -587,7 +588,7 @@ class _PlanCard extends StatelessWidget {
           ),
           clipBehavior: Clip.antiAlias,
           child: InkWell(
-            onTap: onTap,
+            onTap: OnboardingHaptics.onTap(onTap),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               child: Row(
@@ -681,7 +682,7 @@ class _PrimaryCta extends StatelessWidget {
       width: double.infinity,
       height: 56,
       child: FilledButton(
-        onPressed: onPressed,
+        onPressed: OnboardingHaptics.onPress(onPressed),
         style: FilledButton.styleFrom(shape: const StadiumBorder()),
         child: isBusy
             ? const SizedBox(
@@ -741,7 +742,7 @@ class _RestoreCta extends StatelessWidget {
       width: double.infinity,
       height: 48,
       child: OutlinedButton(
-        onPressed: onPressed,
+        onPressed: OnboardingHaptics.onTap(onPressed),
         style: OutlinedButton.styleFrom(
           shape: const StadiumBorder(),
           side: BorderSide(
@@ -816,7 +817,7 @@ class _FooterLinks extends StatelessWidget {
 
   Widget _linkButton(String label, TextStyle? style, VoidCallback? onTap) {
     return InkWell(
-      onTap: onTap,
+      onTap: OnboardingHaptics.onTap(onTap),
       borderRadius: BorderRadius.circular(8),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
@@ -957,7 +958,7 @@ class _ReferralPromo extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             InkWell(
-              onTap: onOpen,
+              onTap: OnboardingHaptics.onTap(onOpen),
               borderRadius: BorderRadius.vertical(
                 top: const Radius.circular(18),
                 bottom: Radius.circular(onEnterCode == null ? 18 : 0),
@@ -1008,7 +1009,7 @@ class _ReferralPromo extends StatelessWidget {
             if (onEnterCode != null) ...[
               Divider(height: 1, color: scheme.primary.withValues(alpha: 0.4)),
               InkWell(
-                onTap: onEnterCode,
+                onTap: OnboardingHaptics.onTap(onEnterCode),
                 borderRadius: const BorderRadius.vertical(
                   bottom: Radius.circular(18),
                 ),
@@ -1132,7 +1133,7 @@ class _FriendCodeRow extends StatelessWidget {
           ),
           if (available)
             TextButton(
-              onPressed: onToggle,
+              onPressed: OnboardingHaptics.onTap(onToggle),
               child: Text(on ? 'Turn off' : 'Use it'),
             ),
         ],
@@ -1243,7 +1244,7 @@ class _FriendCodeSheetState extends State<_FriendCodeSheet> {
           SizedBox(
             height: 52,
             child: FilledButton(
-              onPressed: _busy ? null : _apply,
+              onPressed: _busy ? null : OnboardingHaptics.onPress(_apply),
               style: FilledButton.styleFrom(shape: const StadiumBorder()),
               child: _busy
                   ? const SizedBox(

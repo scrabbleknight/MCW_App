@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../haptics.dart';
+
 import 'onboarding_progress_bar.dart';
 
 /// Chrome used by every step in an onboarding flow: back button + progress
@@ -87,7 +89,7 @@ class _BackChevron extends StatelessWidget {
         shape: const CircleBorder(),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
-          onTap: onTap,
+          onTap: OnboardingHaptics.onTap(onTap),
           child: Icon(Icons.chevron_left_rounded, color: color, size: 30),
         ),
       ),

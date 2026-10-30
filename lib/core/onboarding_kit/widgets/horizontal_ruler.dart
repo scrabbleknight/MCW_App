@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../haptics.dart';
+
 /// Horizontal scrolling ruler with a fixed center indicator.
 ///
 /// Values are quantised in [step] units between [min] and [max]. Major ticks
@@ -100,6 +102,7 @@ class _HorizontalRulerState extends State<HorizontalRuler> {
         .clamp(0, _tickCount - 1);
     if (index == _lastReportedIndex) return;
     _lastReportedIndex = index;
+    OnboardingHaptics.tick();
     widget.onChanged(widget.min + index * widget.step);
   }
 

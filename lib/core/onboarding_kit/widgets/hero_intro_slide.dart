@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../haptics.dart';
+
 import 'primary_cta.dart';
 
 /// Full-bleed onboarding welcome screen: a themed backdrop, a hero photo
@@ -231,7 +233,7 @@ class HeroIntroSlide extends StatelessWidget {
                           WidgetSpan(
                             alignment: PlaceholderAlignment.middle,
                             child: GestureDetector(
-                              onTap: onLogIn,
+                              onTap: OnboardingHaptics.onTap(onLogIn),
                               child: Text(
                                 'Log in',
                                 style: text.bodyMedium?.copyWith(

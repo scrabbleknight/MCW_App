@@ -737,7 +737,7 @@ class _StepChrome extends StatelessWidget {
                       shape: const CircleBorder(),
                       clipBehavior: Clip.antiAlias,
                       child: InkWell(
-                        onTap: onBack,
+                        onTap: OnboardingHaptics.onTap(onBack),
                         child: Icon(
                           Icons.chevron_left_rounded,
                           color: scheme.onSurface,
