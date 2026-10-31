@@ -5,6 +5,7 @@ import 'package:military_calisthenics_women/app/startup_shell.dart';
 import 'package:military_calisthenics_women/core/funnel/analytics_environment.dart';
 import 'package:military_calisthenics_women/core/funnel/funnel_purchases.dart';
 import 'package:military_calisthenics_women/core/funnel/funnel_tracker.dart';
+import 'package:military_calisthenics_women/core/funnel/recovery_offer.dart';
 import 'package:military_calisthenics_women/core/theme/tactical_palette.dart';
 import 'package:military_calisthenics_women/core/theme/tactical_theme.dart';
 import 'package:military_calisthenics_women/core/theme/theme_controller.dart';
@@ -58,6 +59,12 @@ class McwApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AuthController()..load()),
         ChangeNotifierProvider(create: (_) => OnboardingController()..load()),
         ChangeNotifierProvider(create: (_) => ReferralController()),
+        // The paywall exit recovery offer: once per install.
+        Provider(
+          create: (ctx) =>
+              RecoveryOfferController(tracker: ctx.read<FunnelTracker>())
+                ..load(),
+        ),
         ChangeNotifierProvider(
           create: (context) {
             final referrals = context.read<ReferralController>();
@@ -65,6 +72,7 @@ class McwApp extends StatelessWidget {
             final reporter = context.read<FunnelPurchaseReporter>();
             return PurchaseController()
               ..funnel = funnel
+              ..recovery = context.read<RecoveryOfferController>()
               ..onPurchase = (purchase) {
                 // Purchases go to the referral server while it's waiting on
                 // one, and always to the commerce ledger.
@@ -78,25 +86,31 @@ class McwApp extends StatelessWidget {
         // Not lazy: loading re-registers the scheduled workout reminders on
         // every launch, even if the reminder screen is never opened.
         ChangeNotifierProvider(
-            lazy: false, create: (_) => ReminderController()..load()),
+          lazy: false,
+          create: (_) => ReminderController()..load(),
+        ),
         ChangeNotifierProvider(create: (_) => HealthController()..load()),
         ChangeNotifierProvider(
-            create: (_) => StarredWorkoutsController()..load()),
+          create: (_) => StarredWorkoutsController()..load(),
+        ),
         ChangeNotifierProvider(create: (_) => ProgressController()..load()),
         ChangeNotifierProvider(
-            create: (_) => TrainingProgressController()..load()),
+          create: (_) => TrainingProgressController()..load(),
+        ),
         ChangeNotifierProvider(
-            create: (_) => WorkoutHistoryController()..load()),
+          create: (_) => WorkoutHistoryController()..load(),
+        ),
         ChangeNotifierProvider(
-            create: (_) => WorkoutSettingsController()..load()),
+          create: (_) => WorkoutSettingsController()..load(),
+        ),
         ChangeNotifierProvider(
-            create: (_) => CustomWorkoutsController()..load()),
+          create: (_) => CustomWorkoutsController()..load(),
+        ),
+        ChangeNotifierProvider(create: (_) => BodyProgressController()..load()),
         ChangeNotifierProvider(
-            create: (_) => BodyProgressController()..load()),
-        ChangeNotifierProvider(
-            create: (_) => ProfileAvatarController()..load()),
-        ChangeNotifierProvider(
-            create: (_) => RankProgressController()..load()),
+          create: (_) => ProfileAvatarController()..load(),
+        ),
+        ChangeNotifierProvider(create: (_) => RankProgressController()..load()),
       ],
       child: Builder(
         builder: (context) {
@@ -227,8 +241,8 @@ class _SubscriptionGateState extends State<_SubscriptionGate>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       context.read<PurchaseController>().checkAccess(
-            ifOlderThan: _recheckAfter,
-          );
+        ifOlderThan: _recheckAfter,
+      );
     }
   }
 
@@ -238,28 +252,29 @@ class _SubscriptionGateState extends State<_SubscriptionGate>
     return switch (purchases.access) {
       AppAccess.allowed => const HomeScreen(),
       AppAccess.checking => const StartupScaffold(
-          title: 'Checking your subscription',
-          message: 'This only takes a moment.',
-        ),
+        title: 'Checking your subscription',
+        message: 'This only takes a moment.',
+      ),
       // A purchase or restore flips access to allowed, which rebuilds this
       // gate into the home screen.
       AppAccess.notSubscribed => Scaffold(
-          backgroundColor: context.palette.abyss,
-          body: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
-              child: const ConnectedPaywall(),
-            ),
+        backgroundColor: context.palette.abyss,
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+            child: const ConnectedPaywall(),
           ),
         ),
+      ),
       AppAccess.needsConnection => StartupScaffold(
-          title: 'Connect to the internet',
-          message: "We couldn't confirm your subscription for a while. "
-              'Connect to the internet and try again to keep training.',
-          isLoading: false,
-          actionLabel: 'Try again',
-          onAction: purchases.checkAccess,
-        ),
+        title: 'Connect to the internet',
+        message:
+            "We couldn't confirm your subscription for a while. "
+            'Connect to the internet and try again to keep training.',
+        isLoading: false,
+        actionLabel: 'Try again',
+        onAction: purchases.checkAccess,
+      ),
     };
   }
 }

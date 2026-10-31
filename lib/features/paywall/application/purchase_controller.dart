@@ -10,6 +10,7 @@ import 'package:military_calisthenics_women/core/dev/dev_access.dart';
 import 'package:military_calisthenics_women/core/dev/review_access.dart';
 import 'package:military_calisthenics_women/core/funnel/funnel_tracker.dart';
 import 'package:military_calisthenics_women/core/funnel/install_attribution.dart';
+import 'package:military_calisthenics_women/core/funnel/recovery_offer.dart';
 import 'package:military_calisthenics_women/core/platform/store_platform.dart';
 import 'package:military_calisthenics_women/features/paywall/presentation/paywall_step.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -50,10 +51,22 @@ class PurchaseController extends ChangeNotifier {
   /// base plan. Play never picks it by itself.
   static const _playFriendOfferId = 'referral-friend';
 
+  /// The paywall exit recovery offer is sold on a twin of Monthly (same
+  /// price; same subscription group on iOS) so the paywall's own Monthly,
+  /// in this build and older ones, never picks up its trial. Play: 7 days
+  /// free then 25% off the first month ([recoveryPlayOfferId], new
+  /// customers only). App Store: a 7-day free trial introductory offer, since
+  /// Apple can't chain a trial and a discount (recovery_offer.dart).
+  static String get recoveryId => StorePlatform.isAndroid
+      ? 'com.swiftbee.militarycalisthenics.rescue'
+      : 'com.swiftbee.militarycalisthenicswomen.monthly.recovery';
+  static const recoveryPlayOfferId = 'recovery-7d-25';
+
   static Set<String> get _productIds => {
     _monthlyId,
     _yearlyId,
     _weeklyId,
+    recoveryId,
     if (!StorePlatform.isAndroid) _yearlyFriendId,
   };
 
@@ -84,6 +97,15 @@ class PurchaseController extends ChangeNotifier {
 
   /// Logs purchase attempts and the ones that don't go through.
   FunnelTracker? funnel;
+
+  /// Shows the exit recovery offer once and logs its trials.
+  RecoveryOfferController? recovery;
+
+  /// The recovery offer as the store returned it for this user, and (Play)
+  /// the offer token to buy it with. Null when the store has no offer this
+  /// user can get.
+  RecoveryOfferTerms? _recoveryTerms;
+  String? _recoveryOfferToken;
 
   /// The product of the purchase sheet currently open, for purchase_failed.
   String? _buyingProductId;
@@ -245,10 +267,29 @@ class PurchaseController extends ChangeNotifier {
   /// The plan of the subscription the store last reported, if any.
   PaywallPlan? get currentPlan => switch (_activeSubscription?.productID) {
     null => null,
-    final id when id == _monthlyId => PaywallPlan.monthly,
+    final id when id == _monthlyId || id == recoveryId => PaywallPlan.monthly,
     final id when id == _weeklyId => PaywallPlan.weekly,
     _ => PaywallPlan.yearly,
   };
+
+  /// The exit recovery offer, when this user can be offered it: not
+  /// subscribed (nor a DeepBlue member), and the store returned an offer
+  /// they're eligible for. Whether it was already shown is
+  /// [RecoveryOfferController.alreadyShown].
+  RecoveryOfferTerms? get recoveryOffer {
+    // The store's offer first: the account checks below reach Firebase.
+    final terms =
+        _recoveryTerms ??
+        RecoveryOfferTerms.debugPreview(StorePlatform.isAndroid);
+    if (terms == null ||
+        _hasActiveEntitlement ||
+        _access == AppAccess.allowed ||
+        _deepBlue.hasAccess ||
+        ReviewAccess.isReviewAccount) {
+      return null;
+    }
+    return terms;
+  }
 
   /// What the server needs to look the current subscription up: the Play
   /// purchase token, or Apple's signed transaction.
@@ -274,14 +315,19 @@ class PurchaseController extends ChangeNotifier {
               debugPrint('PurchaseController: stream error — $error'),
         );
         final response = await _iap.queryProductDetails(_productIds);
+        final recovery = <ProductDetails>[];
         for (final p in response.productDetails) {
-          if (p is GooglePlayProductDetails) {
+          if (p.id == recoveryId) {
+            recovery.add(p);
+            _products.putIfAbsent(p.id, () => p);
+          } else if (p is GooglePlayProductDetails) {
             _addPlayOffer(p);
           } else {
             _products[p.id] = p;
           }
         }
         if (!StorePlatform.isAndroid) await _checkAppStoreTrial();
+        await _loadRecoveryOffer(recovery);
         if (response.notFoundIDs.isNotEmpty) {
           debugPrint(
             'PurchaseController: products not found — ${response.notFoundIDs}',
@@ -367,6 +413,43 @@ class PurchaseController extends ChangeNotifier {
     );
   }
 
+  /// Buys the exit recovery offer ([recoveryOffer]). Same checks as
+  /// [purchase]: an account that's already subscribed never sees a sheet.
+  Future<PurchaseOutcome> purchaseRecovery({String? placement}) async {
+    funnel?.purchaseAttempt(productId: recoveryId, placement: placement);
+    if (!_storeAvailable) {
+      _logFailure(recoveryId, PurchaseFailure.storeUnavailable);
+      return PurchaseOutcome.storeUnavailable;
+    }
+    if (_pending != null) return PurchaseOutcome.pending;
+    if (await checkExistingSubscription()) {
+      _logFailure(recoveryId, PurchaseFailure.alreadyOwned);
+      return PurchaseOutcome.success;
+    }
+    final product = _products[recoveryId];
+    final token = _recoveryOfferToken;
+    if (_recoveryTerms == null ||
+        product == null ||
+        (StorePlatform.isAndroid && token == null)) {
+      _logFailure(recoveryId, PurchaseFailure.productUnavailable);
+      return PurchaseOutcome.productNotFound;
+    }
+    return _buy(
+      product is GooglePlayProductDetails
+          ? GooglePlayPurchaseParam(
+              productDetails: product,
+              offerToken: token,
+              obfuscatedProfileId:
+                  InstallAttribution.instance.obfuscatedProfileId,
+              applicationUserName:
+                  InstallAttribution.instance.obfuscatedAccountId,
+            )
+          // StoreKit applies the introductory offer itself to an eligible
+          // user, which _loadRecoveryOffer checked.
+          : PurchaseParam(productDetails: product),
+    );
+  }
+
   void _logFailure(String? productId, String category) {
     funnel?.purchaseFailed(
       // Play's errors don't name the product.
@@ -407,7 +490,9 @@ class PurchaseController extends ChangeNotifier {
   }
 
   Future<PurchaseOutcome> _buy(PurchaseParam param) async {
-    _pending = Completer<PurchaseOutcome>();
+    // Held here too: StoreKit 2 delivers the result on the purchase stream
+    // (which clears _pending) before buyNonConsumable returns.
+    final pending = _pending = Completer<PurchaseOutcome>();
     _buyingProductId = param.productDetails.id;
     notifyListeners();
 
@@ -426,10 +511,15 @@ class PurchaseController extends ChangeNotifier {
     } catch (error, stack) {
       debugPrint('PurchaseController: buy failed — $error');
       debugPrintStack(stackTrace: stack);
-      _logFailure(null, PurchaseFailure.categorise(error.toString()));
-      _resolvePending(PurchaseOutcome.failed);
+      final category = PurchaseFailure.categorise(error.toString());
+      _logFailure(null, category);
+      _resolvePending(
+        category == PurchaseFailure.cancelled
+            ? PurchaseOutcome.cancelled
+            : PurchaseOutcome.failed,
+      );
     }
-    return _pending?.future ?? Future.value(PurchaseOutcome.failed);
+    return pending.future;
   }
 
   /// Asks the store for an active subscription. Returns `true` when it
@@ -488,6 +578,7 @@ class PurchaseController extends ChangeNotifier {
           if (_isSubscription(purchase.productID)) {
             _activeSubscription = purchase;
           }
+          recovery?.observeActive(purchase.productID);
           _markEntitled();
           _resolvePending(PurchaseOutcome.success);
           onPurchase?.call(purchase);
@@ -496,16 +587,18 @@ class PurchaseController extends ChangeNotifier {
           debugPrint(
             'PurchaseController: transaction error — ${purchase.error}',
           );
-          if (_pending != null) {
-            _logFailure(
-              purchase.productID,
-              PurchaseFailure.categorise(
-                purchase.error?.code,
-                purchase.error?.message,
-              ),
-            );
-          }
-          _resolvePending(PurchaseOutcome.failed);
+          final category = PurchaseFailure.categorise(
+            purchase.error?.code,
+            purchase.error?.message,
+          );
+          if (_pending != null) _logFailure(purchase.productID, category);
+          // StoreKit 2 reports closing its sheet (or the sign-in prompt) as
+          // an error; it's still the user cancelling.
+          _resolvePending(
+            category == PurchaseFailure.cancelled
+                ? PurchaseOutcome.cancelled
+                : PurchaseOutcome.failed,
+          );
           break;
         case PurchaseStatus.canceled:
           if (_pending != null) {
@@ -614,6 +707,43 @@ class PurchaseController extends ChangeNotifier {
     }
   }
 
+  /// Reads the recovery offer's terms from what the store returned. Play
+  /// only returns the offer to users it's eligible for (new customers);
+  /// Apple is asked whether this user can still get an introductory offer
+  /// in the subscription group. Unlike the yearly trial, a failed check means
+  /// no offer: promising 7 days free and charging straight away would be
+  /// worse than not offering it.
+  Future<void> _loadRecoveryOffer(List<ProductDetails> details) async {
+    try {
+      if (StorePlatform.isAndroid) {
+        final terms = RecoveryOfferTerms.fromGooglePlay(
+          details,
+          recoveryPlayOfferId,
+        );
+        if (terms == null) return;
+        for (final p in details.whereType<GooglePlayProductDetails>()) {
+          final offers = p.productDetails.subscriptionOfferDetails;
+          final index = p.subscriptionIndex;
+          if (offers == null || index == null) continue;
+          if (offers[index].offerId != recoveryPlayOfferId) continue;
+          _products[recoveryId] = p;
+          _recoveryOfferToken = offers[index].offerIdToken;
+        }
+        _recoveryTerms = terms;
+      } else {
+        final product = _products[recoveryId];
+        if (product == null) return;
+        if (!await SK2Product.isIntroductoryOfferEligible(recoveryId)) return;
+        _recoveryTerms = await RecoveryOfferTerms.fromAppStore(product);
+      }
+    } catch (error) {
+      debugPrint('PurchaseController: recovery offer unavailable — $error');
+      _recoveryTerms = null;
+    } finally {
+      recovery?.productIds.add(recoveryId);
+    }
+  }
+
   String _idFor(PaywallPlan plan) => switch (plan) {
     PaywallPlan.monthly => _monthlyId,
     PaywallPlan.yearly => _yearlyId,
@@ -624,7 +754,8 @@ class PurchaseController extends ChangeNotifier {
       productId == _monthlyId ||
       productId == _yearlyId ||
       productId == _yearlyFriendId ||
-      productId == _weeklyId;
+      productId == _weeklyId ||
+      productId == recoveryId;
 
   @override
   void dispose() {

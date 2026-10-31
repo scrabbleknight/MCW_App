@@ -4,6 +4,7 @@ const {
   TIERS,
   SUBSCRIPTIONS,
   FRIEND_OFFER,
+  RECOVERY_OFFER,
   IOS_PROMO_OFFERS,
   IOS_APP_APPLE_ID,
 } = require('./config');
@@ -36,11 +37,15 @@ function normalizeCode(input) {
 }
 
 /**
- * 'monthly', 'yearly' or (retired) 'weekly' for a standard or friend
- * subscription, else null.
+ * 'monthly', 'yearly' or (retired) 'weekly' for a standard, friend or
+ * recovery-offer subscription, else null.
  */
 function planForProduct(platform, productId) {
-  for (const products of [SUBSCRIPTIONS[platform], FRIEND_OFFER[platform]]) {
+  for (const products of [
+    SUBSCRIPTIONS[platform],
+    FRIEND_OFFER[platform],
+    RECOVERY_OFFER[platform],
+  ]) {
     if (!products) continue;
     for (const [plan, id] of Object.entries(products)) {
       if (id === productId) return plan;

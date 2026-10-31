@@ -64,6 +64,9 @@ test('plans are found for standard and friend products', () => {
   assert.equal(logic.planForProduct('ios', 'com.swiftbee.militarycalisthenicswomen.annual.friend'), 'yearly');
   assert.equal(logic.planForProduct('android', 'com.swiftbee.militarycalisthenics.annual'), 'yearly');
   assert.equal(logic.planForProduct('android', 'com.swiftbee.militarycalisthenicswomen.annual'), null);
+  // The exit recovery offer's twin of Monthly.
+  assert.equal(logic.planForProduct('ios', 'com.swiftbee.militarycalisthenicswomen.monthly.recovery'), 'monthly');
+  assert.equal(logic.planForProduct('android', 'com.swiftbee.militarycalisthenics.rescue'), 'monthly');
 });
 
 test('promotional offer ids map back to their reward', () => {

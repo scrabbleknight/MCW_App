@@ -63,6 +63,24 @@ const FRIEND_OFFER = {
 };
 
 /**
+ * The paywall exit recovery offer is sold on a twin of Monthly (same price;
+ * same subscription group on iOS), so its subscribers are Monthly
+ * subscribers here: they count for referrals and claim Monthly's rewards.
+ * iOS: the twin's introductory offer is a 7-day free trial. Android: a
+ * separate subscription whose offer `recovery-7d-25` is 7 days free, then
+ * the first month 25% off.
+ */
+const RECOVERY_OFFER = {
+  ios: {
+    monthly: 'com.swiftbee.militarycalisthenicswomen.monthly.recovery',
+  },
+  android: {
+    // Play caps product IDs at 40 characters.
+    monthly: 'com.swiftbee.militarycalisthenics.rescue',
+  },
+};
+
+/**
  * iOS promotional offers that deliver the referrer's subscription rewards:
  * for each reward and the plan the referrer is on, the standard plan to buy
  * and the offer to buy it with. A referrer on the friend twin moves to the
@@ -117,6 +135,7 @@ module.exports = {
   REFERRAL_HOLD_DAYS,
   SUBSCRIPTIONS,
   FRIEND_OFFER,
+  RECOVERY_OFFER,
   IOS_PROMO_OFFERS,
   ANDROID_DEFER_DAYS,
   ANDROID_DEFER_AFTER_DAYS,

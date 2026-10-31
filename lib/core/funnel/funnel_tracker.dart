@@ -40,6 +40,16 @@ abstract final class FunnelEvents {
   static const subscriptionExpired = 'subscription_expired';
   static const firstCoreAction = 'first_core_action';
   static const acquisitionSurvey = 'acquisition_survey';
+
+  /// Paywall exit recovery offer (recovery_offer.dart): someone tried to
+  /// leave the paywall without buying, and what happened next.
+  static const paywallExitAttempt = 'paywall_exit_attempt';
+  static const recoveryOfferShown = 'recovery_offer_shown';
+  static const recoveryOfferAccepted = 'recovery_offer_accepted';
+  static const recoveryOfferDeclined = 'recovery_offer_declined';
+  static const recoveryTrialStarted = 'recovery_trial_started';
+  static const recoveryTrialConverted = 'recovery_trial_converted';
+  static const recoveryOfferPurchaseFailed = 'recovery_offer_purchase_failed';
 }
 
 /// Where a paywall was shown.
@@ -60,6 +70,11 @@ abstract final class PaywallDismissMethod {
   static const back = 'back';
   static const systemBack = 'system_back';
   static const sheetDismiss = 'sheet_dismiss';
+
+  /// The App Store / Google Play purchase sheet was closed without buying.
+  /// The paywall itself stays open; only [FunnelTracker.paywallExitAttempt]
+  /// uses it, to say what opened the recovery offer.
+  static const storeSheetCancel = 'store_sheet_cancel';
 }
 
 /// Why a purchase didn't go through. Never the store's own message.
@@ -324,6 +339,10 @@ class FunnelTracker extends ChangeNotifier {
   bool _completedThisSession = false;
   bool _loaded = false;
 
+  /// Called after a new trial_start or purchase_verified is logged (whether
+  /// or not it was sent). The recovery offer listens here for its trials.
+  void Function(VerifiedPurchase purchase)? onAcquisition;
+
   bool get isLoaded => _loaded;
   AnalyticsConsent get consent => _consent;
   bool get canCollect => _consent == AnalyticsConsent.granted;
@@ -553,6 +572,78 @@ class FunnelTracker extends ChangeNotifier {
         'offer': v.offer,
       });
     }
+    onAcquisition?.call(v);
+  }
+
+  // ---------------------------------------------- exit recovery offer ---
+
+  /// Someone tried to leave the paywall without buying: the close button,
+  /// Android back, or closing the store's purchase sheet
+  /// ([PaywallDismissMethod.storeSheetCancel]). [offerEligible] is whether
+  /// the recovery offer could be shown to them then.
+  void paywallExitAttempt({
+    required String paywallId,
+    required String placement,
+    required String method,
+    required bool offerEligible,
+  }) {
+    _log(FunnelEvents.paywallExitAttempt, {
+      'paywall_id': paywallId,
+      'placement': placement,
+      'method': method,
+      'offer_eligible': offerEligible ? 1 : 0,
+    });
+  }
+
+  /// [offer] is RecoveryOfferTerms.analyticsParams: offer and product ids,
+  /// currency, prices, trial days and the post code where there is one.
+  void recoveryOfferShown(
+    Map<String, Object> offer, {
+    required String trigger,
+    required String placement,
+  }) {
+    _log(FunnelEvents.recoveryOfferShown, {
+      ...offer,
+      'trigger': trigger,
+      'placement': placement,
+    });
+  }
+
+  /// "Claim My Special Offer" tapped; the store sheet opens next.
+  void recoveryOfferAccepted(Map<String, Object> offer) {
+    _log(FunnelEvents.recoveryOfferAccepted, offer);
+  }
+
+  /// "No thanks", or the offer closed by back / swipe.
+  void recoveryOfferDeclined(Map<String, Object> offer, {required String method}) {
+    _log(FunnelEvents.recoveryOfferDeclined, {...offer, 'method': method});
+  }
+
+  void recoveryOfferPurchaseFailed(
+    Map<String, Object> offer, {
+    required String category,
+  }) {
+    _log(FunnelEvents.recoveryOfferPurchaseFailed, {
+      ...offer,
+      'failure_category': category,
+    });
+  }
+
+  /// The server verified a new free-trial transaction on the recovery
+  /// product (beside the usual trial_start).
+  void recoveryTrialStarted(Map<String, Object> offer, {required String environment}) {
+    _log(FunnelEvents.recoveryTrialStarted, {
+      ...offer,
+      'environment': environment,
+    });
+  }
+
+  /// The recovery subscription was still active after its trial ended, as
+  /// seen on a later launch. An app-side estimate, once per install: the
+  /// commerce ledger's trial_converted_to_paid is the authoritative count.
+  void recoveryTrialConverted(Map<String, Object> offer) {
+    if (!_firstTime(FunnelEvents.recoveryTrialConverted)) return;
+    _log(FunnelEvents.recoveryTrialConverted, offer);
   }
 
   // -------------------------------------------------------- engagement ---
