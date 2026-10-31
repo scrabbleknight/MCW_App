@@ -9,12 +9,16 @@ void main() {
   String? why(FunnelEnvironment e) => e.excludedReason;
 
   group('iOS', () {
-    FunnelEnvironment ios(String? installer, {bool release = true}) =>
-        classifyInstall(
-          platform: TargetPlatform.iOS,
-          release: release,
-          installer: installer,
-        );
+    FunnelEnvironment ios(
+      String? installer, {
+      bool release = true,
+      String? appStore,
+    }) => classifyInstall(
+      platform: TargetPlatform.iOS,
+      release: release,
+      installer: installer,
+      appStore: appStore,
+    );
 
     test('an App Store install counts', () {
       expect(ios('com.apple').isProduction, isTrue);
@@ -38,6 +42,44 @@ void main() {
     );
     test('a debug or profile build is out', () {
       expect(why(ios('com.apple', release: false)), 'debug_build');
+    });
+
+    group('the signed AppTransaction decides when it answers', () {
+      test('production counts', () {
+        expect(ios('com.apple', appStore: 'production').isProduction, isTrue);
+        expect(
+          ios('com.apple', appStore: 'production').installSource,
+          'app_store',
+        );
+      });
+      test(
+        'sandbox (TestFlight, App Review) is out, though the receipt path '
+        'looks like the App Store\'s (iOS 18 SDK and later)',
+        () => expect(why(ios('com.apple', appStore: 'sandbox')), 'testflight'),
+      );
+      test(
+        'a store-signed build run from Xcode is out',
+        () => expect(why(ios('com.apple', appStore: 'xcode')), 'xcode'),
+      );
+      test('production beats a TestFlight-looking receipt path', () {
+        expect(
+          ios('com.apple.testflight', appStore: 'production').isProduction,
+          isTrue,
+        );
+      });
+      test('the Simulator is out whatever it says', () {
+        expect(
+          why(ios('com.apple.simulator', appStore: 'production')),
+          'simulator',
+        );
+      });
+      test('an unknown answer falls back to the receipt path', () {
+        expect(ios('com.apple', appStore: 'local').isProduction, isTrue);
+        expect(
+          why(ios('com.apple.testflight', appStore: 'local')),
+          'testflight',
+        );
+      });
     });
   });
 

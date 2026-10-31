@@ -10,9 +10,16 @@ import 'funnel_tracker.dart';
 ///
 /// Left out (analytics never turns on, whatever the consent answer):
 /// - debug and profile builds ([FunnelEnvironment.fromBuildMode]);
-/// - iOS: the Simulator, TestFlight, Xcode / ad-hoc installs and App Review —
-///   everything but an App Store receipt (package_info_plus reports
-///   com.apple.simulator / com.apple.testflight; the App Store is com.apple);
+/// - iOS: the Simulator, TestFlight, Xcode / ad-hoc installs and App Review.
+///   StoreKit 2's signed AppTransaction says which App Store environment the
+///   app came from (production, or sandbox for TestFlight and App Review, or
+///   xcode), answered by the app's AppDelegate on [environmentChannel]. Where
+///   it can't answer (iOS 15, offline before the App Store has vouched for
+///   the install), the receipt's path decides as before: package_info_plus
+///   reports com.apple.simulator / com.apple.testflight, the App Store
+///   com.apple. Apps built with the iOS 18 SDK or later reportedly get an
+///   App Store-style receipt path under TestFlight too, which is why the
+///   AppTransaction comes first;
 /// - Android: emulators and Firebase Test Lab, which runs Google Play's
 ///   pre-launch reports (both answered by the app's MainActivity on
 ///   [environmentChannel]).
@@ -24,6 +31,7 @@ Future<FunnelEnvironment> detectFunnelEnvironment() async {
   final release = FunnelEnvironment.fromBuildMode().isProduction;
   if (!release) return FunnelEnvironment.fromBuildMode();
   String? installer;
+  String? appStore;
   var android = const AndroidInstallFacts();
   try {
     installer = (await PackageInfo.fromPlatform()).installerStore;
@@ -32,11 +40,14 @@ Future<FunnelEnvironment> detectFunnelEnvironment() async {
   }
   if (defaultTargetPlatform == TargetPlatform.android) {
     android = await AndroidInstallFacts.read();
+  } else if (defaultTargetPlatform == TargetPlatform.iOS) {
+    appStore = await readAppStoreEnvironment();
   }
   return classifyInstall(
     platform: defaultTargetPlatform,
     release: release,
     installer: installer,
+    appStore: appStore,
     android: android,
   );
 }
@@ -46,11 +57,23 @@ FunnelEnvironment classifyInstall({
   required TargetPlatform platform,
   required bool release,
   String? installer,
+  String? appStore,
   AndroidInstallFacts android = const AndroidInstallFacts(),
 }) {
   if (!release) return const FunnelEnvironment.excluded('debug_build');
   switch (platform) {
     case TargetPlatform.iOS:
+      if (installer == 'com.apple.simulator') {
+        return const FunnelEnvironment.excluded('simulator');
+      }
+      switch (appStore) {
+        case 'production':
+          return const FunnelEnvironment.production('app_store');
+        case 'sandbox':
+          return const FunnelEnvironment.excluded('testflight');
+        case 'xcode':
+          return const FunnelEnvironment.excluded('xcode');
+      }
       return switch (installer) {
         'com.apple.simulator' => const FunnelEnvironment.excluded('simulator'),
         'com.apple.testflight' => const FunnelEnvironment.excluded(
@@ -96,6 +119,27 @@ class AndroidInstallFacts {
       debugPrint('[funnel] Android environment check failed, counting it: $e');
       return const AndroidInstallFacts();
     }
+  }
+}
+
+/// iOS: the App Store environment of the signed AppTransaction —
+/// 'production', 'sandbox' (TestFlight, App Review) or 'xcode' — or null
+/// when it can't be had: iOS 15, an app without the channel, or no answer
+/// within [timeout] (the App Store is asked when nothing is cached).
+Future<String?> readAppStoreEnvironment({
+  Duration timeout = const Duration(seconds: 4),
+}) async {
+  try {
+    final m = await environmentChannel
+        .invokeMapMethod<String, Object?>('environment')
+        .timeout(timeout);
+    final env = m?['appStore'];
+    return env is String ? env : null;
+  } on MissingPluginException {
+    return null;
+  } catch (e) {
+    debugPrint('[funnel] App Store environment check failed: $e');
+    return null;
   }
 }
 
