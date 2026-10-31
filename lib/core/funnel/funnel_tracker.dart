@@ -130,9 +130,8 @@ abstract final class AnalyticsAgreement {
   /// widget tests can't change, so apps pass the view's region in
   /// (`View.of(context).platformDispatcher.locale.countryCode`); same value.
   static bool needed([String? countryCode]) {
-    final code =
-        (countryCode ?? PlatformDispatcher.instance.locale.countryCode)
-            ?.toUpperCase();
+    final code = (countryCode ?? PlatformDispatcher.instance.locale.countryCode)
+        ?.toUpperCase();
     return code == null || code.isEmpty || regions.contains(code);
   }
 }
@@ -382,9 +381,15 @@ class FunnelTracker extends ChangeNotifier {
       }
       _once.addAll(prefs.getStringList(_kOnce) ?? const []);
       _transactions.addAll(prefs.getStringList(_kTransactions) ?? const []);
-      await _ensureEnvironment();
+      final env = await _ensureEnvironment();
       // Collection is off natively until consent; turn it on each launch.
-      if (_sending) await _startCollecting();
+      if (_sending) {
+        await _startCollecting();
+      } else if (!env.isProduction) {
+        // Firebase remembers "on" across launches: a tester's phone that said
+        // yes on an older build must stop sending automatic events too.
+        await _sink.setCollectionEnabled(false);
+      }
       _ready = true;
       _flushAwaitingEnvironment();
     } catch (e) {

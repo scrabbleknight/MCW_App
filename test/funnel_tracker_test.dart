@@ -164,38 +164,35 @@ void main() {
     },
   );
 
-  test(
-    'real money also logs GA purchase; trials and sandbox never',
-    () async {
-      final (t, sink) = await _tracker({'funnel.consent.v1': 'granted'});
-      VerifiedPurchase paid(String id, String env) => VerifiedPurchase(
-        event: 'purchase_verified',
-        isNew: true,
-        transactionId: id,
-        productId: 'monthly',
-        offer: 'none',
-        paid: true,
-        environment: env,
-        value: 14.99,
-        currency: 'GBP',
-      );
-      t
-        ..recordVerified(_purchase('tx1'))
-        ..recordVerified(paid('tx2', 'sandbox'))
-        ..recordVerified(paid('tx3', 'production'))
-        ..recordVerified(paid('tx3', 'production'));
-      await Future<void>.delayed(Duration.zero);
-      expect(sink.events.map((e) => e.$1), [
-        'trial_start',
-        'purchase_verified',
-        'purchase_verified',
-        'purchase',
-      ]);
-      expect(sink.events.last.$2, containsPair('value', 14.99));
-      expect(sink.events.last.$2, containsPair('currency', 'GBP'));
-      expect(sink.events.last.$2, containsPair('product_id', 'monthly'));
-    },
-  );
+  test('real money also logs GA purchase; trials and sandbox never', () async {
+    final (t, sink) = await _tracker({'funnel.consent.v1': 'granted'});
+    VerifiedPurchase paid(String id, String env) => VerifiedPurchase(
+      event: 'purchase_verified',
+      isNew: true,
+      transactionId: id,
+      productId: 'monthly',
+      offer: 'none',
+      paid: true,
+      environment: env,
+      value: 14.99,
+      currency: 'GBP',
+    );
+    t
+      ..recordVerified(_purchase('tx1'))
+      ..recordVerified(paid('tx2', 'sandbox'))
+      ..recordVerified(paid('tx3', 'production'))
+      ..recordVerified(paid('tx3', 'production'));
+    await Future<void>.delayed(Duration.zero);
+    expect(sink.events.map((e) => e.$1), [
+      'trial_start',
+      'purchase_verified',
+      'purchase_verified',
+      'purchase',
+    ]);
+    expect(sink.events.last.$2, containsPair('value', 14.99));
+    expect(sink.events.last.$2, containsPair('currency', 'GBP'));
+    expect(sink.events.last.$2, containsPair('product_id', 'monthly'));
+  });
 
   test('paywall views are once per session per placement', () async {
     final (t, sink) = await _tracker({'funnel.consent.v1': 'granted'});
@@ -255,27 +252,29 @@ void main() {
     expect(AnalyticsAgreement.needed('CH'), isFalse);
   });
 
-  test('without a consent question, the Settings switch still turns it off',
-      () async {
-    SharedPreferences.setMockInitialValues({'funnel.consent.v1': 'denied'});
-    final sink = _Sink();
-    final t = FunnelTracker(
-      onboardingVersion: 'v1',
-      onboardingStepCount: 3,
-      consentRequired: false,
-      sink: sink,
-      environment: _store,
-    );
-    await t.load();
-    expect(t.consent, AnalyticsConsent.denied);
-    t.firstCoreAction('x');
-    await Future<void>.delayed(Duration.zero);
-    expect(sink.events, isEmpty);
-    await t.setConsent(true);
-    t.paywallView(paywallId: 'p', placement: PaywallPlacement.feature);
-    await Future<void>.delayed(Duration.zero);
-    expect(sink.events.map((e) => e.$1), [FunnelEvents.paywallView]);
-  });
+  test(
+    'without a consent question, the Settings switch still turns it off',
+    () async {
+      SharedPreferences.setMockInitialValues({'funnel.consent.v1': 'denied'});
+      final sink = _Sink();
+      final t = FunnelTracker(
+        onboardingVersion: 'v1',
+        onboardingStepCount: 3,
+        consentRequired: false,
+        sink: sink,
+        environment: _store,
+      );
+      await t.load();
+      expect(t.consent, AnalyticsConsent.denied);
+      t.firstCoreAction('x');
+      await Future<void>.delayed(Duration.zero);
+      expect(sink.events, isEmpty);
+      await t.setConsent(true);
+      t.paywallView(paywallId: 'p', placement: PaywallPlacement.feature);
+      await Future<void>.delayed(Duration.zero);
+      expect(sink.events.map((e) => e.$1), [FunnelEvents.paywallView]);
+    },
+  );
 
   group('test installs never send, whatever the answer', () {
     for (final reason in ['simulator', 'emulator', 'testflight', 'test_lab']) {
@@ -295,38 +294,42 @@ void main() {
         await Future<void>.delayed(Duration.zero);
         expect(t.consent, AnalyticsConsent.granted); // the answer is kept
         expect(t.environment?.excludedReason, reason);
-        expect(sink.enabled, isEmpty);
+        expect(sink.enabled, [false]); // switched off, never on
         expect(sink.events, isEmpty);
         expect(await t.appInstanceIdIfConsented(), isNull);
       });
     }
   });
 
-  test('without a check, a debug build (as tests run) counts as excluded',
-      () async {
-    SharedPreferences.setMockInitialValues({'funnel.consent.v1': 'granted'});
-    final sink = _Sink();
-    final t = FunnelTracker(
-      onboardingVersion: 'v1',
-      onboardingStepCount: 3,
-      sink: sink,
-    );
-    await t.load();
-    t.firstCoreAction('x');
-    await Future<void>.delayed(Duration.zero);
-    expect(t.environment?.excludedReason, 'debug_build');
-    expect(sink.enabled, isEmpty);
-    expect(sink.events, isEmpty);
-  });
+  test(
+    'without a check, a debug build (as tests run) counts as excluded',
+    () async {
+      SharedPreferences.setMockInitialValues({'funnel.consent.v1': 'granted'});
+      final sink = _Sink();
+      final t = FunnelTracker(
+        onboardingVersion: 'v1',
+        onboardingStepCount: 3,
+        sink: sink,
+      );
+      await t.load();
+      t.firstCoreAction('x');
+      await Future<void>.delayed(Duration.zero);
+      expect(t.environment?.excludedReason, 'debug_build');
+      expect(sink.enabled, [false]);
+      expect(sink.events, isEmpty);
+    },
+  );
 
-  test('a returning user with consent is collected again on every launch',
-      () async {
-    final (t, sink) = await _tracker({'funnel.consent.v1': 'granted'});
-    expect(sink.enabled, [true]);
-    t.firstCoreAction('x');
-    await Future<void>.delayed(Duration.zero);
-    expect(sink.events.map((e) => e.$1), [FunnelEvents.firstCoreAction]);
-  });
+  test(
+    'a returning user with consent is collected again on every launch',
+    () async {
+      final (t, sink) = await _tracker({'funnel.consent.v1': 'granted'});
+      expect(sink.enabled, [true]);
+      t.firstCoreAction('x');
+      await Future<void>.delayed(Duration.zero);
+      expect(sink.events.map((e) => e.$1), [FunnelEvents.firstCoreAction]);
+    },
+  );
 
   test('a no stays a no across launches', () async {
     final (t, sink) = await _tracker({'funnel.consent.v1': 'denied'});
