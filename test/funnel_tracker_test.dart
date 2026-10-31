@@ -4,6 +4,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:military_calisthenics_women/core/funnel/funnel_tracker.dart';
 
+Future<FunnelEnvironment> _store() async =>
+    const FunnelEnvironment.production('google_play');
+
 class _Sink implements FunnelSink {
   final events = <(String, Map<String, Object>)>[];
   final enabled = <bool>[];
@@ -26,6 +29,7 @@ Future<(FunnelTracker, _Sink)> _tracker([
     onboardingVersion: 'v1',
     onboardingStepCount: 3,
     sink: sink,
+    environment: _store,
   );
   await t.load();
   await Future<void>.delayed(Duration.zero);
@@ -229,13 +233,17 @@ void main() {
       onboardingStepCount: 3,
       consentRequired: false,
       sink: sink,
+      environment: _store,
     );
-    // Even before load() finishes.
+    // Logged before load(): held until the install is known to be a store
+    // one and collection is on, then sent.
     t.paywallView(paywallId: 'p', placement: PaywallPlacement.feature);
     await Future<void>.delayed(Duration.zero);
-    expect(sink.events.map((e) => e.$1), [FunnelEvents.paywallView]);
+    expect(sink.events, isEmpty);
     await t.load();
     expect(t.consent, AnalyticsConsent.granted);
+    expect(sink.enabled, [true]);
+    expect(sink.events.map((e) => e.$1), [FunnelEvents.paywallView]);
   });
 
   test('"Agree and Continue" in the EU and EEA, or with no region', () {
@@ -256,6 +264,7 @@ void main() {
       onboardingStepCount: 3,
       consentRequired: false,
       sink: sink,
+      environment: _store,
     );
     await t.load();
     expect(t.consent, AnalyticsConsent.denied);
@@ -266,5 +275,66 @@ void main() {
     t.paywallView(paywallId: 'p', placement: PaywallPlacement.feature);
     await Future<void>.delayed(Duration.zero);
     expect(sink.events.map((e) => e.$1), [FunnelEvents.paywallView]);
+  });
+
+  group('test installs never send, whatever the answer', () {
+    for (final reason in ['simulator', 'emulator', 'testflight', 'test_lab']) {
+      test(reason, () async {
+        SharedPreferences.setMockInitialValues({});
+        final sink = _Sink();
+        final t = FunnelTracker(
+          onboardingVersion: 'v1',
+          onboardingStepCount: 3,
+          sink: sink,
+          environment: () async => FunnelEnvironment.excluded(reason),
+        );
+        await t.load();
+        t.onboardingStarted();
+        await t.acceptByContinuing();
+        t.paywallView(paywallId: 'p', placement: PaywallPlacement.onboarding);
+        await Future<void>.delayed(Duration.zero);
+        expect(t.consent, AnalyticsConsent.granted); // the answer is kept
+        expect(t.environment?.excludedReason, reason);
+        expect(sink.enabled, isEmpty);
+        expect(sink.events, isEmpty);
+        expect(await t.appInstanceIdIfConsented(), isNull);
+      });
+    }
+  });
+
+  test('without a check, a debug build (as tests run) counts as excluded',
+      () async {
+    SharedPreferences.setMockInitialValues({'funnel.consent.v1': 'granted'});
+    final sink = _Sink();
+    final t = FunnelTracker(
+      onboardingVersion: 'v1',
+      onboardingStepCount: 3,
+      sink: sink,
+    );
+    await t.load();
+    t.firstCoreAction('x');
+    await Future<void>.delayed(Duration.zero);
+    expect(t.environment?.excludedReason, 'debug_build');
+    expect(sink.enabled, isEmpty);
+    expect(sink.events, isEmpty);
+  });
+
+  test('a returning user with consent is collected again on every launch',
+      () async {
+    final (t, sink) = await _tracker({'funnel.consent.v1': 'granted'});
+    expect(sink.enabled, [true]);
+    t.firstCoreAction('x');
+    await Future<void>.delayed(Duration.zero);
+    expect(sink.events.map((e) => e.$1), [FunnelEvents.firstCoreAction]);
+  });
+
+  test('a no stays a no across launches', () async {
+    final (t, sink) = await _tracker({'funnel.consent.v1': 'denied'});
+    await t.acceptByContinuing(); // Welcome again: keeps the Settings answer
+    t.firstCoreAction('x');
+    await Future<void>.delayed(Duration.zero);
+    expect(t.consent, AnalyticsConsent.denied);
+    expect(sink.enabled, isEmpty);
+    expect(sink.events, isEmpty);
   });
 }

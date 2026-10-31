@@ -137,6 +137,34 @@ abstract final class AnalyticsAgreement {
   }
 }
 
+/// Whether this install belongs to a real store user. Analytics never turns
+/// on for developer builds, simulators and emulators, TestFlight, or Google's
+/// test devices (Play pre-launch reports) — whatever the consent answer, which
+/// is still kept. Nothing is ever sent on a guess either way: an install that
+/// can't be told apart counts as production.
+class FunnelEnvironment {
+  const FunnelEnvironment.production([this.installSource])
+    : excludedReason = null;
+  const FunnelEnvironment.excluded(String this.excludedReason)
+    : installSource = null;
+
+  /// debug_build | simulator | emulator | testflight | test_lab, or null.
+  final String? excludedReason;
+
+  /// app_store | google_play | the installing package | unknown.
+  final String? installSource;
+
+  bool get isProduction => excludedReason == null;
+
+  /// From the build mode alone: release builds count. A debug or profile
+  /// build only sends with `--dart-define=FUNNEL_ANALYTICS_IN_DEBUG=true`
+  /// (for Firebase DebugView), and its events then carry `debug_build: 1`.
+  static FunnelEnvironment fromBuildMode() =>
+      kReleaseMode || const bool.fromEnvironment('FUNNEL_ANALYTICS_IN_DEBUG')
+      ? const FunnelEnvironment.production()
+      : const FunnelEnvironment.excluded('debug_build');
+}
+
 /// Where events go. [FirebaseFunnelSink] in apps that use firebase_analytics
 /// directly; apps with their own analytics service adapt it.
 abstract class FunnelSink {
@@ -182,6 +210,15 @@ class FirebaseFunnelSink implements FunnelSink {
     } catch (_) {
       return null;
     }
+  }
+
+  /// Where the install came from (user property `install_source`), so
+  /// reports can split store users from anything else.
+  Future<void> setInstallSource(String? source) async {
+    if (source == null) return;
+    try {
+      await _analytics?.setUserProperty(name: 'install_source', value: source);
+    } catch (_) {}
   }
 }
 
@@ -240,7 +277,9 @@ class FunnelTracker extends ChangeNotifier {
     required this.onboardingStepCount,
     this.consentRequired = true,
     FunnelSink? sink,
-  }) : _sink = sink ?? FirebaseFunnelSink();
+    Future<FunnelEnvironment> Function()? environment,
+  }) : _sink = sink ?? FirebaseFunnelSink(),
+       _probe = environment ?? (() async => FunnelEnvironment.fromBuildMode());
 
   /// False only for an app that collects analytics without asking (Glance,
   /// the user's call): events go straight out and there's no consent sheet.
@@ -252,6 +291,16 @@ class FunnelTracker extends ChangeNotifier {
   final int onboardingStepCount;
 
   final FunnelSink _sink;
+
+  /// Tells a store install from a test one (detectFunnelEnvironment in
+  /// analytics_environment.dart); without it, only the build mode counts.
+  final Future<FunnelEnvironment> Function() _probe;
+  FunnelEnvironment? _env;
+  Future<FunnelEnvironment>? _envFuture;
+
+  /// The environment is known and collection is as it should be: events go
+  /// straight through from here.
+  bool _ready = false;
 
   static const _kConsent = 'funnel.consent.v1';
   static const _kOnce = 'funnel.once.v1';
@@ -269,12 +318,54 @@ class FunnelTracker extends ChangeNotifier {
 
   /// Events logged while consent is unanswered, this session only.
   final List<(String, Map<String, Object>)> _awaitingConsent = [];
+
+  /// Events logged before the environment is known (the first moments of a
+  /// launch), sent or dropped once it is.
+  final List<(String, Map<String, Object>)> _awaitingEnvironment = [];
   bool _completedThisSession = false;
   bool _loaded = false;
 
   bool get isLoaded => _loaded;
   AnalyticsConsent get consent => _consent;
   bool get canCollect => _consent == AnalyticsConsent.granted;
+
+  /// Null until [load] has looked.
+  FunnelEnvironment? get environment => _env;
+  bool get _sending => canCollect && (_env?.isProduction ?? false);
+
+  Future<FunnelEnvironment> _ensureEnvironment() async {
+    if (_env != null) return _env!;
+    final env = await (_envFuture ??= _probe().catchError((Object e) {
+      debugPrint('[funnel] environment check failed: $e');
+      return FunnelEnvironment.fromBuildMode();
+    }));
+    if (_env == null) {
+      _env = env;
+      if (!env.isProduction) {
+        debugPrint('[funnel] analytics stays off: ${env.excludedReason}');
+      }
+    }
+    return _env!;
+  }
+
+  /// What was logged before the environment was known. Called once
+  /// collection is on (Firebase drops events logged while it's off).
+  void _flushAwaitingEnvironment() {
+    final waiting = List.of(_awaitingEnvironment);
+    _awaitingEnvironment.clear();
+    for (final (name, params) in waiting) {
+      _log(name, params);
+    }
+  }
+
+  /// Collection on, and where the install came from.
+  Future<void> _startCollecting() async {
+    await _sink.setCollectionEnabled(true);
+    final sink = _sink;
+    if (sink is FirebaseFunnelSink) {
+      await sink.setInstallSource(_env?.installSource);
+    }
+  }
 
   Future<void> load() async {
     try {
@@ -291,10 +382,18 @@ class FunnelTracker extends ChangeNotifier {
       }
       _once.addAll(prefs.getStringList(_kOnce) ?? const []);
       _transactions.addAll(prefs.getStringList(_kTransactions) ?? const []);
+      await _ensureEnvironment();
       // Collection is off natively until consent; turn it on each launch.
-      if (canCollect) await _sink.setCollectionEnabled(true);
+      if (_sending) await _startCollecting();
+      _ready = true;
+      _flushAwaitingEnvironment();
     } catch (e) {
       debugPrint('[funnel] load failed: $e');
+    }
+    if (!_ready) {
+      _env ??= FunnelEnvironment.fromBuildMode();
+      _ready = true;
+      _flushAwaitingEnvironment();
     }
     _loaded = true;
     notifyListeners();
@@ -306,12 +405,17 @@ class FunnelTracker extends ChangeNotifier {
     notifyListeners();
     try {
       await _prefs?.setString(_kConsent, granted ? 'granted' : 'denied');
-      if (granted || was == AnalyticsConsent.granted) {
-        await _sink.setCollectionEnabled(granted);
+      final env = await _ensureEnvironment();
+      if (granted && env.isProduction) {
+        await _startCollecting();
+      } else if (!granted && was == AnalyticsConsent.granted) {
+        await _sink.setCollectionEnabled(false);
       }
+      _ready = true;
+      _flushAwaitingEnvironment();
       final waiting = List.of(_awaitingConsent);
       _awaitingConsent.clear();
-      if (granted) {
+      if (granted && env.isProduction) {
         for (final (name, params) in waiting) {
           await _sink.log(name, params);
         }
@@ -329,7 +433,7 @@ class FunnelTracker extends ChangeNotifier {
 
   /// The app-instance id to send with a purchase check, only with consent.
   Future<String?> appInstanceIdIfConsented() async =>
-      canCollect ? _sink.appInstanceId() : null;
+      _sending ? _sink.appInstanceId() : null;
 
   // --------------------------------------------------------- onboarding ---
 
@@ -516,6 +620,14 @@ class FunnelTracker extends ChangeNotifier {
       // Lets reports leave out events from developer builds.
       params = {...params, 'debug_build': 1};
     }
+    final env = _env;
+    if (env == null || !_ready) {
+      if (_awaitingEnvironment.length < 40) {
+        _awaitingEnvironment.add((name, params));
+      }
+      return;
+    }
+    if (!env.isProduction) return;
     if (_consent == AnalyticsConsent.unknown) {
       if (_awaitingConsent.length < 40) _awaitingConsent.add((name, params));
       return;

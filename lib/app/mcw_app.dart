@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:military_calisthenics_women/app/startup_shell.dart';
+import 'package:military_calisthenics_women/core/funnel/analytics_environment.dart';
 import 'package:military_calisthenics_women/core/funnel/funnel_purchases.dart';
 import 'package:military_calisthenics_women/core/funnel/funnel_tracker.dart';
 import 'package:military_calisthenics_women/core/theme/tactical_palette.dart';
@@ -44,6 +45,9 @@ class McwApp extends StatelessWidget {
           create: (_) => FunnelTracker(
             onboardingVersion: OnboardingScreen.funnelVersion,
             onboardingStepCount: OnboardingScreen.funnelStepCount,
+            // Store installs only: never simulators, emulators, TestFlight,
+            // Test Lab or debug builds.
+            environment: detectFunnelEnvironment,
           )..load(),
         ),
         Provider(
