@@ -98,7 +98,9 @@
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
 	</array>
-	<!-- Analytics is off until the user allows it (lib/core/funnel). -->
+	<!-- Analytics and crash reports are off until the user allows them (lib/core/funnel, lib/core/diagnostics). -->
+	<key>FirebaseCrashlyticsCollectionEnabled</key>
+	<false/>
 	<key>FIREBASE_ANALYTICS_COLLECTION_ENABLED</key>
 	<false/>
 	<key>GOOGLE_ANALYTICS_DEFAULT_ALLOW_AD_PERSONALIZATION_SIGNALS</key>

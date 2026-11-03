@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:military_calisthenics_women/core/funnel/funnel_tracker.dart';
+import 'package:military_calisthenics_women/core/funnel/trial_engagement.dart';
 import 'package:military_calisthenics_women/core/theme/tactical_theme.dart';
 import 'package:military_calisthenics_women/features/onboarding/application/onboarding_controller.dart';
 import 'package:military_calisthenics_women/features/onboarding/presentation/onboarding_screen.dart';
@@ -166,6 +167,10 @@ void main() {
         providers: [
           ChangeNotifierProvider(create: (_) => OnboardingController()),
           ChangeNotifierProvider.value(value: tracker),
+          Provider(
+            create: (_) =>
+                TrialEngagement(tracker: tracker, trialDaysFor: (_) => 3),
+          ),
         ],
         child: MaterialApp(
           theme: TacticalTheme.dark(),

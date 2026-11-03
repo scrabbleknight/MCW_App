@@ -1,10 +1,14 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:military_calisthenics_women/app/startup_shell.dart';
 import 'package:military_calisthenics_women/core/funnel/analytics_environment.dart';
 import 'package:military_calisthenics_women/core/funnel/funnel_purchases.dart';
+import 'package:military_calisthenics_women/core/diagnostics/crash_reporting.dart';
 import 'package:military_calisthenics_women/core/funnel/funnel_tracker.dart';
+import 'package:military_calisthenics_women/core/funnel/trial_engagement.dart';
 import 'package:military_calisthenics_women/core/funnel/recovery_offer.dart';
 import 'package:military_calisthenics_women/core/theme/tactical_palette.dart';
 import 'package:military_calisthenics_women/core/theme/tactical_theme.dart';
@@ -43,13 +47,20 @@ class McwApp extends StatelessWidget {
         // The commercial funnel (consent-gated analytics). First, so every
         // controller below can log to it.
         ChangeNotifierProvider(
-          create: (_) => FunnelTracker(
-            onboardingVersion: OnboardingScreen.funnelVersion,
-            onboardingStepCount: OnboardingScreen.funnelStepCount,
-            // Store installs only: never simulators, emulators, TestFlight,
-            // Test Lab or debug builds.
-            environment: detectFunnelEnvironment,
-          )..load(),
+          create: (_) {
+            final tracker = FunnelTracker(
+              onboardingVersion: OnboardingScreen.funnelVersion,
+              onboardingStepCount: OnboardingScreen.funnelStepCount,
+              // Store installs only: never simulators, emulators, TestFlight,
+              // Test Lab or debug builds.
+              environment: detectFunnelEnvironment,
+            );
+            // Crash reports follow the same consent answer.
+            tracker.addListener(
+              () => CrashReporting.applyConsent(tracker.consent),
+            );
+            return tracker..load();
+          },
         ),
         Provider(
           create: (ctx) =>
@@ -64,6 +75,29 @@ class McwApp extends StatelessWidget {
           create: (ctx) =>
               RecoveryOfferController(tracker: ctx.read<FunnelTracker>())
                 ..load(),
+        ),
+        // What trial users do after the paywall: workouts, coming back,
+        // cancelling or converting. Listens for acquisitions after the
+        // recovery offer, which sets the tracker's callback first.
+        Provider(
+          lazy: false,
+          create: (ctx) {
+            final funnel = ctx.read<FunnelTracker>();
+            ctx.read<RecoveryOfferController>();
+            final engagement = TrialEngagement(
+              tracker: funnel,
+              trialDaysFor: (productId) =>
+                  productId == PurchaseController.recoveryId ? 7 : 3,
+            )..startVisits();
+            unawaited(engagement.load());
+            final previous = funnel.onAcquisition;
+            funnel.onAcquisition = (purchase) {
+              previous?.call(purchase);
+              engagement.onAcquisition(purchase);
+            };
+            return engagement;
+          },
+          dispose: (_, engagement) => engagement.dispose(),
         ),
         ChangeNotifierProvider(
           create: (context) {
@@ -224,6 +258,10 @@ class _SubscriptionGateState extends State<_SubscriptionGate>
     with WidgetsBindingObserver {
   static const _recheckAfter = Duration(hours: 6);
 
+  /// The app has been opened (launched or brought back) and trial
+  /// analytics hasn't been told yet: it is once the user is let in.
+  bool _openPending = true;
+
   @override
   void initState() {
     super.initState();
@@ -240,15 +278,26 @@ class _SubscriptionGateState extends State<_SubscriptionGate>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      context.read<PurchaseController>().checkAccess(
-        ifOlderThan: _recheckAfter,
-      );
+      final purchases = context.read<PurchaseController>();
+      purchases.checkAccess(ifOlderThan: _recheckAfter);
+      if (purchases.access == AppAccess.allowed) {
+        unawaited(context.read<TrialEngagement>().onAppOpened());
+      } else {
+        _openPending = true;
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final purchases = context.watch<PurchaseController>();
+    if (_openPending && purchases.access == AppAccess.allowed) {
+      _openPending = false;
+      final engagement = context.read<TrialEngagement>();
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => unawaited(engagement.onAppOpened()),
+      );
+    }
     return switch (purchases.access) {
       AppAccess.allowed => const HomeScreen(),
       AppAccess.checking => const StartupScaffold(

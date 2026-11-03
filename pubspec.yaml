@@ -1,7 +1,7 @@
 name: military_calisthenics_women
 description: "Bodyweight strength training for women — no gym, no equipment, structured like military calisthenics."
 publish_to: 'none'
-version: 1.0.4+15
+version: 1.0.5+16
 
 environment:
   sdk: ^3.9.2
@@ -42,6 +42,7 @@ dependencies:
   in_app_review: ^2.0.12
   share_plus: ^12.0.2
   firebase_analytics: ^12.2.0
+  firebase_crashlytics: 5.1.0
   play_install_referrer: 0.5.0
 dev_dependencies:
   flutter_test:

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:military_calisthenics_women/app/mcw_app.dart';
 import 'package:military_calisthenics_women/app/startup_shell.dart';
+import 'package:military_calisthenics_women/core/diagnostics/crash_reporting.dart';
 import 'package:military_calisthenics_women/firebase_options.dart';
 
 class BootstrapApp extends StatefulWidget {
@@ -39,6 +40,7 @@ class _BootstrapAppState extends State<BootstrapApp> {
     // hit "No Firebase App '[DEFAULT]' has been created". The call already
     // has an 8-second timeout so a bad network can't wedge boot.
     await _warmUpFirebase();
+    CrashReporting.install();
   }
 
   Future<void> _loadEnvironment() async {

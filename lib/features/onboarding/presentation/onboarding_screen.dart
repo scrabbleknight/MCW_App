@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:military_calisthenics_women/core/funnel/funnel_tracker.dart';
+import 'package:military_calisthenics_women/core/funnel/trial_engagement.dart';
 import 'package:military_calisthenics_women/core/onboarding_kit/onboarding_kit.dart';
 import 'package:military_calisthenics_women/features/reminders/application/reminder_controller.dart';
 import 'package:military_calisthenics_women/features/auth/presentation/login_screen.dart';
@@ -126,8 +127,18 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   static const _pageDuration = Duration(milliseconds: 320);
   static const _pageCurve = Curves.easeOutCubic;
 
+  /// Times each screen, for onboarding_exit when the app is left mid-way.
+  late final TrialEngagement _engagement = context.read<TrialEngagement>();
+
+  @override
+  void initState() {
+    super.initState();
+    _engagement.onboardingScreen(OnboardingScreen._screenIds[0], 0);
+  }
+
   @override
   void dispose() {
+    _engagement.onboardingLeft();
     _pageController.dispose();
     super.dispose();
   }
@@ -174,6 +185,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   void _onPageChanged(int index) {
     setState(() => _index = index);
+    _engagement.onboardingScreen(OnboardingScreen._screenIds[index], index);
     // Question screens only: not the welcome slide, paywall or reveal.
     if (index >= 1 && index < OnboardingScreen._paywallIndex) {
       context.read<FunnelTracker>().onboardingStepView(

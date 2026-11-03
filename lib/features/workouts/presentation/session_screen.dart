@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:military_calisthenics_women/core/funnel/funnel_tracker.dart';
+import 'package:military_calisthenics_women/core/funnel/trial_engagement.dart';
 import 'package:military_calisthenics_women/core/promo/cross_promo.dart';
 import 'package:military_calisthenics_women/core/review/review_prompt.dart';
 import 'package:military_calisthenics_women/core/theme/tactical_palette.dart';
@@ -80,6 +81,7 @@ class _SessionScreenState extends State<SessionScreen>
     _ticker = createTicker(_onTick);
     _lifecycle = AppLifecycleListener(onResume: _onAppResumed);
     _sessionStartedAt = DateTime.now();
+    context.read<TrialEngagement>().workoutStarted(dayIndex: widget.day.dayIndex);
     _startStep(0);
   }
 
@@ -203,6 +205,10 @@ class _SessionScreenState extends State<SessionScreen>
     _ticker.stop();
     if (!mounted) return;
     context.read<FunnelTracker>().firstCoreAction('workout_complete');
+    context.read<TrialEngagement>().workoutCompleted(
+      dayIndex: widget.day.dayIndex,
+      seconds: DateTime.now().difference(_sessionStartedAt).inSeconds,
+    );
 
     // Grab controllers + trainer/level BEFORE we push the feedback screen so
     // the recording that follows doesn't depend on the current widget context
@@ -351,6 +357,12 @@ class _SessionScreenState extends State<SessionScreen>
     }
 
     final reason = result.reason;
+    context.read<TrialEngagement>().workoutQuit(
+      dayIndex: widget.day.dayIndex,
+      percent: _steps.isEmpty ? 0 : ((_index / _steps.length) * 100).round(),
+      seconds: DateTime.now().difference(_sessionStartedAt).inSeconds,
+      reason: reason?.name,
+    );
     if (reason != null && reason != QuitReason.justLook) {
       // Fire-and-forget — the user's flow must not wait on Firestore.
       unawaited(

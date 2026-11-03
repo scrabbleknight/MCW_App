@@ -49,3 +49,7 @@ exports.confirmReferrals = referrals.confirmReferrals;
 const commerce = require('./commerce');
 exports.verifyStorePurchase = commerce.verifyStorePurchase;
 exports.appStoreNotifications = commerce.appStoreNotifications;
+
+// Trial timing on the ledger: hours from trial start to cancel / convert.
+const trial = require('./trial');
+exports.timeTrialEvents = trial.timeTrialEvents;
