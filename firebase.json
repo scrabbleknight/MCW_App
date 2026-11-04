@@ -42,22 +42,114 @@
       }
     }
   },
-  "hosting": {
-    "site": "mcwapp",
-    "public": "hosting/public",
-    "ignore": [
-      "**/.*"
-    ],
-    "headers": [
-      {
-        "source": "/index.html",
-        "headers": [
-          {
-            "key": "Cache-Control",
-            "value": "no-cache"
-          }
-        ]
-      }
-    ]
-  }
+  "hosting": [
+    {
+      "site": "mcwapp",
+      "public": "hosting/public",
+      "ignore": [
+        "**/.*"
+      ],
+      "headers": [
+        {
+          "source": "/index.html",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-cache"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "site": "sophiecarter",
+      "public": "hosting-sophie/public",
+      "ignore": [
+        "**/.*"
+      ],
+      "headers": [
+        {
+          "source": "/index.html",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-cache"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "site": "oliviabennett",
+      "public": "hosting-olivia/public",
+      "ignore": [
+        "**/.*"
+      ],
+      "headers": [
+        {
+          "source": "/index.html",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-cache"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "site": "rachelmorgan",
+      "public": "hosting-rachel/public",
+      "ignore": [
+        "**/.*"
+      ],
+      "headers": [
+        {
+          "source": "/index.html",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-cache"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "site": "emilyparker",
+      "public": "hosting-emily/public",
+      "ignore": [
+        "**/.*"
+      ],
+      "headers": [
+        {
+          "source": "/index.html",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-cache"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "site": "alexrivera",
+      "public": "hosting-alex/public",
+      "ignore": [
+        "**/.*"
+      ],
+      "headers": [
+        {
+          "source": "/index.html",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-cache"
+            }
+          ]
+        }
+      ]
+    }
+  ]
 }
